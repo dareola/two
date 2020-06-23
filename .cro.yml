@@ -1,0 +1,26 @@
+---
+cro: 1
+id: two
+name: two
+entrypoint: start_TWO00_mcairsunday_net.p6
+env: 
+  - name: SID
+    value: 'TWO'
+  - name: SID_HOST
+    value: 'mcairsunday'
+  - name: SID_DOMAIN
+    value: 'net'
+  - name: SID_PORT
+    value: '8080'
+  - name: SID_NR
+    value: '00'
+ignore:  []
+endpoints: 
+  - 
+    id: http
+    protocol: http
+    name: HTTP
+    port-env: TWO_PORT
+    host-env: TWO_HOST.SID_DOMAIN
+links:  []
+...
