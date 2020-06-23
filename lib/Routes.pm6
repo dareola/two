@@ -2,6 +2,7 @@ use Cro::HTTP::Router;
 use Cro::HTTP::Session::InMemory;
 use Cro::HTTP::Auth;
 use Cro::HTTP::Session::Persistent;
+use Sys::Runtime;
 
 class Session does Cro::HTTP::Auth {
   has $.is-logged-in;
@@ -36,6 +37,57 @@ class UserSession does Cro::HTTP::Auth {
   }
 }
 
+class X::Routes is Exception {
+	has $.msg-id;
+	#message class
+	has $.msg-no;
+	#message number
+	has $.msg-ty;
+	#message type = [A, E, I, S, W]
+	has $.msg-t1;
+	#message text 1
+	has $.msg-t2;
+	#message text 2
+	has $.msg-t3;
+	#message text 3
+	has $.msg-t4;
+	#message text 4
+
+	method message() {
+		#-- TODO: Get the message from the data dictionary
+		"$.msg-id" ~ "-" 
+               ~ $.msg-no 
+               ~ " " 
+               ~ "$.msg-ty " 
+               ~ "$.msg-t1 $.msg-t2 $.msg-t3 $.msg-t4";
+	}
+}
+
+
+sub TRACE(Str $msg, 
+          Str :$id = "R0", 
+          Str :$no = "001", 
+          Str :$ty = "I", 
+          Str :$t1 = "", 
+          Str :$t2 = "", 
+          Str :$t3 = "", 
+          Str :$t4 = "" ) {
+  my Str $info = "";
+  $info = $t1;
+  $info = $t1 ~ $msg.Str if $msg ne "";
+  my $e = X::Routes.new( 
+          msg-id => $id, 
+          msg-no => $no, 
+          msg-ty => $ty,
+          msg-t1 => $info, 
+          msg-t2 => $t2, 
+          msg-t3 => $t3,
+          msg-t4 => $t4);
+  note $e.message;
+}
+
+my $oRuntime = Runtime.new();
+
 sub routes() is export {
     route {
         before Cro::HTTP::Session::InMemory[UserSession].new(
@@ -45,71 +97,88 @@ sub routes() is export {
         
         subset LoggedIn of UserSession where *.logged-in;
         
-        get -> UserSession $session {
-        content 'text/html', 
-                "DEFAULT PAGE - Current user: {$session.logged-in ?? 
-                                   $session.username ~ ', you can <a href="/logout">logout now</a> or go <a href="/home">home</a> or go <a href="/index">index</a>.' 
-                                   !! 
-                                   '- pls ' ~ '<a href="/login">login</a>' ~ ''
-                               }";
+        get -> UserSession $session, :%params {
+          my Str $userid = '';
+          $userid = $session.username if defined $session.username && $session.username ne '';
+          content 'text/html', 
+                  $oRuntime.dispatch(app => 'startup',
+                                     cmd => 'INIT', 
+                                     userid => $userid, 
+                                     :%params);
         }
 
-        get -> LoggedIn $user, 'home' {
-          content 'text/html', "Secret page just for *YOU*, $user.username()" 
-                             ~ '; you can <a href="/logout">logout now</a>' 
-                             ~ '; or you can <a href="/index">go to main page</a>';
+        get -> LoggedIn $user, 'home', :%params {
+          my Str $userid = '';
+          $userid = $user.username if defined $user.username && $user.username ne '';
+          content 'text/html', 
+                  $oRuntime.dispatch(app => 'home',
+                                     cmd => 'INIT', 
+                                     userid => $userid, 
+                                     :%params);
         }
 
-        get -> LoggedIn $user, 'logout' {
+        get -> LoggedIn $user, 'logout', :%params {
+          my Str $userid = '';
           $user.username = '';
-          content 'text/html', "Bye, back to <a href=/index>index</a>";
-        }
-
-        get -> LoggedIn $user, 'index' {
-          if $user.username {
-            content 'text/html', "Main Index, $user.username() " ~ ';' 
-                                ~ "perform <a href=/index>refresh</a>" 
-                                ~ ' or ' ~ '<a href="/home">home</a>'
-                                ~ ' or ' ~ '<a href="/logout">logout</a><hr>TODO: Display OKCODE FORM';
-
-          }
-          else {
-            content 'text/html', "Main Index, pls " ~ '<a href="/login">login</a> or got to applications that does not need forms';
-          }
-        }
-
-        get -> 'login' {
-          content 'text/html', q:to/HTML/;
-            <form method="POST" action="/login">
-              <div>
-                Username: <input type="text" name="username" />
-              </div>
-              <div>
-                Password: <input type="password" name="password" />
-              </div>
-              <input type="submit" value="Log In" />
-            </form>
-            HTML
-        }
-
-        get -> LoggedIn $user, $dead-end {
           content 'text/html', 
-          $dead-end ~ ': PAGE not found - back to <a href=/index>index</a>';
+                  $oRuntime.dispatch(app => 'logout',
+                                     cmd => 'INIT', 
+                                     userid => $userid, 
+                                     :%params);
         }
 
-        get -> $dead-end {
+        get -> LoggedIn $user, 'index', :%params {
+          my Str $userid = '';
+          $userid = $user.username if defined $user.username && $user.username ne '';
           content 'text/html', 
-          $dead-end ~ ': PAGE not found - back to <a href=/>index</a>';
+                  $oRuntime.dispatch(app => 'index',
+                                     cmd => 'INIT', 
+                                     userid => $userid, 
+                                     :%params);
+        }
+
+        get -> 'login', :%params {
+          my Str $userid = '';
+          content 'text/html', 
+                  $oRuntime.dispatch(app => 'login',
+                                     cmd => 'INIT', 
+                                     userid => $userid, 
+                                     :%params);
+        }
+
+        get -> LoggedIn $user, $dead-end, :%params {
+          my Str $userid = '';
+          $userid = $user.username if defined $user.username && $user.username ne '';
+          content 'text/html', 
+                  $oRuntime.dispatch(app => 'dead-end',
+                                     cmd => 'INIT', 
+                                     userid => $userid, 
+                                     :%params);
+        }
+
+        get -> $dead-end, :%params {
+            my Str $userid = '';
+          content 'text/html', 
+                  $oRuntime.dispatch(app => 'dead-end',
+                                     cmd => 'INIT', 
+                                     userid => $userid, 
+                                     :%params);
         }
 
         post -> UserSession $user, 'login' {
-          request-body -> (:$username, :$password, *%) {
+          request-body -> (:$username, :$password, *%params) {
             if valid-user-pass($username, $password) {
                 $user.username = $username;
                 redirect '/', :see-other;
             }
             else {
-                content 'text/html', "Bad username/password; - pls " ~ '<a href="/login">re-login</a>';
+              my Str $userid = '';          
+              content 'text/html', 
+                  $oRuntime.dispatch(app => 're-login',
+                                     cmd => 'WRONG-PASSWORD', 
+                                     userid => $userid, 
+                                     :%params);
+
             }
           }
         }
