@@ -183,6 +183,17 @@ sub routes() is export {
           }
         }
 
+        post -> LoggedIn $user {
+          request-body -> ( *%params ) {
+            my Str $userid = '';
+            $userid = $user.username if defined $user.username && $user.username ne '';
+            $oRuntime.dispatch(app => 'startup',
+                               cmd => 'INIT', 
+                               userid => $userid, 
+                               :%params);
+          }
+        }
+
         sub valid-user-pass($username, $password) {
           # Call a database or similar here
           return $username eq 'system' && $password eq 'pass';

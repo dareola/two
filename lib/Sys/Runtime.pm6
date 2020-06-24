@@ -24,7 +24,7 @@ class Runtime is export {
   has Str $.DebugInfo is rw = '';
   has %.Config is rw;
   has &!callback;
-
+ 
   submethod BUILD(:&!callback) { #-- constructor
   }
 
@@ -62,8 +62,7 @@ class Runtime is export {
                         Str :$cmd,
                         Str :$userid,
                         :%params) {
-
-
+    self.TRACE: 'Parameters: ' ~ %params;
 
     try self.run(signature => '1',
                  app => $app,
@@ -86,11 +85,21 @@ class Runtime is export {
     $user = $userid if $userid ne '';
 
     my Str $app-toolbar = '';
-    $app-toolbar ~= '<br><a href="/">home</a>' ~ '&nbsp;|&nbsp;';
-    $app-toolbar ~= '<a href="/login">login</a>' ~ '&nbsp;|&nbsp;' if $user eq '';
-    $app-toolbar ~= '<a href="/logout">logout</a>' ~ '&nbsp;|&nbsp;' if $user ne '';
+    
+    $app-toolbar ~= '<a href="/">home</a>' ~ '&nbsp;|&nbsp;';
     $app-toolbar ~= '<a href="/index">index</a>' ~ '&nbsp;|&nbsp;';
-    $app-toolbar ~= '<a href="/help">help</a>' ~ '<br/><hr/>';
+    $app-toolbar ~= '<a href="/help">help</a>' ~ '&nbsp;|&nbsp;';
+    $app-toolbar ~= '<a href="/login">login</a>' ~ '&nbsp;' if $user eq '';
+    $app-toolbar ~= '<a href="/logout">logout</a>' ~ '&nbsp;' if $user ne '';
+    $app-toolbar ~= '<hr/>';
+
+    if $user ne '' {
+      if $app ne 'login' {
+        $app-toolbar ~= self.begin-form() ~ self.user-command() ~ self.end-form() ;
+        $app-toolbar ~= 'Parameters: [' ~ %params.Str ~ ']<br>';
+      }
+    }
+
 
     my Str $text = '';
 
@@ -134,6 +143,29 @@ class Runtime is export {
           ~ 'Application = ' ~ $app ~ '<br>'
           ~ 'Command = ' ~ $cmd ~ '<br>';
     return $text;
+  }
+
+  method begin-form() {
+    my Str $form = '';
+    $form = '<form method="POST" action="/">';
+    return $form;
+  }
+  method end-form() {
+    my Str $form = '';
+    $form = '</form>';
+    return $form;
+  }
+
+  method user-command() {
+    my Str $form = '';
+    $form ~= '<input type="submit" name="enter" value="Enter" />';
+    $form ~= '&nbsp;<input type="text" name="ucomm" value="" size="10" maxlength="60" />';
+    $form ~= '&nbsp;<input type="submit" name="first" value="first" />';
+    $form ~= '&nbsp;<input type="submit" name="previous" value="previous" />';
+    $form ~= '&nbsp;<input type="submit" name="next" value="next" />';
+    $form ~= '&nbsp;<input type="submit" name="last" value="last" />';
+
+    return $form;
   }
 
   multi method run(Str :$signature,
