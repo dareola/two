@@ -152,7 +152,7 @@ sub routes() is export {
           my Str $userid = '';
           $userid = $user.username if defined $user.username && $user.username ne '';
           content 'text/html', 
-            $oRuntime.dispatch(app => 'dead-end',
+            $oRuntime.dispatch(app => 'dispatcher',
                                 cmd => 'INIT', 
                                 userid => $userid, 
                                 :%params);
@@ -161,7 +161,7 @@ sub routes() is export {
         get -> $dead-end, :%params {
             my Str $userid = '';
           content 'text/html', 
-            $oRuntime.dispatch(app => 'dead-end',
+            $oRuntime.dispatch(app => 'default',
                                 cmd => 'INIT', 
                                 userid => $userid, 
                                 :%params);
@@ -176,7 +176,7 @@ sub routes() is export {
             else {
               my Str $userid = '';          
               content 'text/html', 
-                $oRuntime.dispatch(app => 're-login',
+                $oRuntime.dispatch(app => 'relogin',
                                     cmd => 'WRONG-PASSWORD', 
                                     userid => $userid, 
                                     :%params);

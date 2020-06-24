@@ -109,18 +109,10 @@ class Runtime is export {
         $text ~= '<br>WELCOME<br><br>';
       }
       when 'login' {
+        $app-toolbar ~= self.begin-form(app => 'login') 
+                     ~ self.user-login() 
+                     ~ self.end-form() ;
         $text ~= $app-toolbar;
-        $text ~= q:to/HTML/;
-            <form method="POST" action="/login">
-              <div>
-                Username: <input type="text" name="username" />
-              </div>
-              <div>
-                Password: <input type="password" name="password" />
-              </div>
-              <input type="submit" value="Log In" />
-            </form>
-            HTML
       }
       when 'logout' {
         $text ~= $app-toolbar;
@@ -131,10 +123,13 @@ class Runtime is export {
       when 'index' {
         $text ~= $app-toolbar;
       }
-      when 'dead-end' {
+      when 'default' {
         $text ~= $app-toolbar;
       }
-      when 're-login' {
+      when 'dispatcher' {
+        $text ~= $app-toolbar;
+      }
+      when 'relogin' {
         $text ~= $app-toolbar;
       }
     }
@@ -145,9 +140,14 @@ class Runtime is export {
     return $text;
   }
 
-  method begin-form() {
+  method begin-form(Str :$app = '') {
     my Str $form = '';
-    $form = '<form method="POST" action="/" enctype="application/x-www-form-url-encoded">';
+    if $app ne '' {
+      $form = '<form method="POST" action="/' ~ $app ~ '" enctype="application/x-www-form-url-encoded">';
+    }
+    else {
+      $form = '<form method="POST" action="/" enctype="application/x-www-form-url-encoded">';
+    }  
     return $form;
   }
   method end-form() {
@@ -164,7 +164,18 @@ class Runtime is export {
     $form ~= '&nbsp;<input type="submit" name="fcode" value="previous" />';
     $form ~= '&nbsp;<input type="submit" name="fcode" value="next" />';
     $form ~= '&nbsp;<input type="submit" name="fcode" value="last" />';
+    return $form;
+  }
 
+  method user-login() {
+    my Str $form = '';
+    $form ~= '<input type="submit" name="login" value="Login" />';
+    $form ~= '<br><br><div>';
+    $form ~= 'Username: <input type="text" name="username" />';
+    $form ~= '</div>';
+    $form ~= '<div>';
+    $form ~= 'Password: <input type="password" name="password" />';
+    $form ~= '</div>';
     return $form;
   }
 
