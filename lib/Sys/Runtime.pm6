@@ -90,7 +90,7 @@ class Runtime is export {
     $app-toolbar ~= '<a href="/index">index</a>' ~ '&nbsp;|&nbsp;';
     $app-toolbar ~= '<a href="/help">help</a>' ~ '&nbsp;|&nbsp;';
     $app-toolbar ~= '<a href="/login">login</a>' ~ '&nbsp;' if $user eq '';
-    $app-toolbar ~= '<a href="/logout">logout</a>' ~ '&nbsp;' if $user ne '';
+    $app-toolbar ~= '<b>' ~ $user.uc ~ '</b>&nbsp;<a href="/logout">logout</a>' ~ '&nbsp;' if $user ne '';
     $app-toolbar ~= '<hr/>';
 
     if $user ne '' {
@@ -147,7 +147,7 @@ class Runtime is export {
 
   method begin-form() {
     my Str $form = '';
-    $form = '<form method="POST" action="/">';
+    $form = '<form method="POST" action="/" enctype="application/x-www-form-url-encoded">';
     return $form;
   }
   method end-form() {
@@ -160,10 +160,10 @@ class Runtime is export {
     my Str $form = '';
     $form ~= '<input type="submit" name="enter" value="Enter" />';
     $form ~= '&nbsp;<input type="text" name="ucomm" value="" size="10" maxlength="60" />';
-    $form ~= '&nbsp;<input type="submit" name="first" value="first" />';
-    $form ~= '&nbsp;<input type="submit" name="previous" value="previous" />';
-    $form ~= '&nbsp;<input type="submit" name="next" value="next" />';
-    $form ~= '&nbsp;<input type="submit" name="last" value="last" />';
+    $form ~= '&nbsp;<input type="submit" name="fcode" value="first" />';
+    $form ~= '&nbsp;<input type="submit" name="fcode" value="previous" />';
+    $form ~= '&nbsp;<input type="submit" name="fcode" value="next" />';
+    $form ~= '&nbsp;<input type="submit" name="fcode" value="last" />';
 
     return $form;
   }

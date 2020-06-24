@@ -88,6 +88,8 @@ sub TRACE(Str $msg,
 
 my $oRuntime = Runtime.new();
 
+#Ref: https://cro.services/docs/reference/cro-http-router
+
 sub routes() is export {
     route {
         before Cro::HTTP::Session::InMemory[UserSession].new(
@@ -101,68 +103,68 @@ sub routes() is export {
           my Str $userid = '';
           $userid = $session.username if defined $session.username && $session.username ne '';
           content 'text/html', 
-                  $oRuntime.dispatch(app => 'startup',
-                                     cmd => 'INIT', 
-                                     userid => $userid, 
-                                     :%params);
+            $oRuntime.dispatch(app => 'startup',
+                                cmd => 'INIT', 
+                                userid => $userid, 
+                                :%params);
         }
 
         get -> LoggedIn $user, 'home', :%params {
           my Str $userid = '';
           $userid = $user.username if defined $user.username && $user.username ne '';
           content 'text/html', 
-                  $oRuntime.dispatch(app => 'home',
-                                     cmd => 'INIT', 
-                                     userid => $userid, 
-                                     :%params);
+            $oRuntime.dispatch(app => 'home',
+                                cmd => 'INIT', 
+                                userid => $userid, 
+                                :%params);
         }
 
         get -> LoggedIn $user, 'logout', :%params {
           my Str $userid = '';
           $user.username = '';
           content 'text/html', 
-                  $oRuntime.dispatch(app => 'logout',
-                                     cmd => 'INIT', 
-                                     userid => $userid, 
-                                     :%params);
+            $oRuntime.dispatch(app => 'logout',
+                                cmd => 'INIT', 
+                                userid => $userid, 
+                                :%params);
         }
 
         get -> LoggedIn $user, 'index', :%params {
           my Str $userid = '';
           $userid = $user.username if defined $user.username && $user.username ne '';
           content 'text/html', 
-                  $oRuntime.dispatch(app => 'index',
-                                     cmd => 'INIT', 
-                                     userid => $userid, 
-                                     :%params);
+            $oRuntime.dispatch(app => 'index',
+                                cmd => 'INIT', 
+                                userid => $userid, 
+                                :%params);
         }
 
         get -> 'login', :%params {
           my Str $userid = '';
           content 'text/html', 
-                  $oRuntime.dispatch(app => 'login',
-                                     cmd => 'INIT', 
-                                     userid => $userid, 
-                                     :%params);
+            $oRuntime.dispatch(app => 'login',
+                                cmd => 'INIT', 
+                                userid => $userid, 
+                                :%params);
         }
 
         get -> LoggedIn $user, $dead-end, :%params {
           my Str $userid = '';
           $userid = $user.username if defined $user.username && $user.username ne '';
           content 'text/html', 
-                  $oRuntime.dispatch(app => 'dead-end',
-                                     cmd => 'INIT', 
-                                     userid => $userid, 
-                                     :%params);
+            $oRuntime.dispatch(app => 'dead-end',
+                                cmd => 'INIT', 
+                                userid => $userid, 
+                                :%params);
         }
 
         get -> $dead-end, :%params {
             my Str $userid = '';
           content 'text/html', 
-                  $oRuntime.dispatch(app => 'dead-end',
-                                     cmd => 'INIT', 
-                                     userid => $userid, 
-                                     :%params);
+            $oRuntime.dispatch(app => 'dead-end',
+                                cmd => 'INIT', 
+                                userid => $userid, 
+                                :%params);
         }
 
         post -> UserSession $user, 'login' {
@@ -174,10 +176,10 @@ sub routes() is export {
             else {
               my Str $userid = '';          
               content 'text/html', 
-                  $oRuntime.dispatch(app => 're-login',
-                                     cmd => 'WRONG-PASSWORD', 
-                                     userid => $userid, 
-                                     :%params);
+                $oRuntime.dispatch(app => 're-login',
+                                    cmd => 'WRONG-PASSWORD', 
+                                    userid => $userid, 
+                                    :%params);
 
             }
           }
@@ -187,10 +189,11 @@ sub routes() is export {
           request-body -> ( *%params ) {
             my Str $userid = '';
             $userid = $user.username if defined $user.username && $user.username ne '';
-            $oRuntime.dispatch(app => 'startup',
-                               cmd => 'INIT', 
-                               userid => $userid, 
-                               :%params);
+            content 'text/html', 
+              $oRuntime.dispatch(app => 'startup',
+                                 cmd => 'INIT', 
+                                 userid => $userid, 
+                                 :%params);
           }
         }
 
