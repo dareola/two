@@ -75,8 +75,8 @@ class Runtime is export {
                         Str :$cmd,
                         Str :$userid,
                         :%params) {
-    self.TRACE: 'Parameters: ' ~ %params;
-    %.Params = %params;
+    self.detect-button(:%params);
+    self.TRACE: 'Parameters: ' ~ %.Params;
 
     try self.run(signature => '1',
                  app => $app,
@@ -110,7 +110,7 @@ class Runtime is export {
     if $user ne '' {
       if $app ne 'login' {
         $app-toolbar ~= self.begin-form() ~ self.user-command() ~ self.end-form() ;
-        $app-toolbar ~= 'Parameters: [' ~ %params.Str ~ ']<br>';
+        $app-toolbar ~= 'Parameters: [' ~ %.Params.Str ~ ']<br>';
       }
     }
 
@@ -154,6 +154,26 @@ class Runtime is export {
     return $text;
   }
 
+  method detect-button(:%params) {
+    my Str $button = '';
+    %.Params = ();
+    for %params.kv -> $k, $v {
+      $button = $k;
+      if $button ~~ m:g/press\-(.+?)\.x/ {
+        $button ~~ s:g/(press\-)(.+?)(\.x)/$1/;
+        #%params{'fcode'} = $button;
+        %.Params{"$button"} = $button;
+      }
+      elsif $button ~~ m:g/press\-(.+?)\.y/ {
+        #-- do nothing
+      }
+      else {
+        %.Params{"$k"} = $v;
+      }
+    }
+  }
+
+
   method begin-form(Str :$app = '') {
     my Str $form = '';
     if $app ne '' {
@@ -172,17 +192,29 @@ class Runtime is export {
 
   method user-command() {
     my Str $form = '';
-    $form ~= '<input type="submit" name="enter" value="Enter" />';
+    my Str $alt = '';
+    $alt = 'Enter';
+    $form ~= '<input type="image" name="press-enter" '
+          ~  'src="themes/img/icons/tick.png" '
+          ~  'alt="' ~ $alt ~ '">'
+          ~  '&nbsp;<span style="font-size:75%;">' ~ $alt ~ '</span>&nbsp;';
+    #$form ~= '<input type="submit" name="enter" value="Enter" />';
     $form ~= '&nbsp;<input type="text" name="ucomm" value="" size="10" maxlength="60" />';
-    $form ~= '&nbsp;<input type="submit" name="fcode" value="first" />';
-    $form ~= '&nbsp;<input type="submit" name="fcode" value="previous" />';
-    $form ~= '&nbsp;<input type="submit" name="fcode" value="next" />';
-    $form ~= '&nbsp;<input type="submit" name="fcode" value="last" />';
+    #$form ~= '&nbsp;<input type="submit" name="fcode" value="first" />';
+    #$form ~= '&nbsp;<input type="submit" name="fcode" value="previous" />';
+    #$form ~= '&nbsp;<input type="submit" name="fcode" value="next" />';
+    #$form ~= '&nbsp;<input type="submit" name="fcode" value="last" />';
     return $form;
   }
 
   method user-login() {
     my Str $form = '';
+    my Str $alt = '';
+    $alt = 'Login';
+    $form ~= '<input type="image" name="press-login" '
+          ~  'src="themes/img/icons/key.png" '
+          ~  'alt="' ~ $alt ~ '">'
+          ~  '&nbsp;<span style="font-size:75%;">' ~ $alt ~ '</span>&nbsp;';
     $form ~= '<input type="submit" name="login" value="Login" />';
     $form ~= '<br><br><div>';
     $form ~= 'Username: <input type="text" name="username" />';
@@ -243,57 +275,57 @@ class Runtime is export {
 
 	method create-default-directories() {
 		my Str $instance = self.get(key => 'SID') ~ self.get(key => 'SID_NR');
-    self.TRACE: 'Instance = ' ~ $instance;
+    #self.TRACE: 'Instance = ' ~ $instance;
 
     my Str $temp-dir = './';
-    self.TRACE: 'Temp directory = ' ~ $temp-dir;
+    #self.TRACE: 'Temp directory = ' ~ $temp-dir;
 
     my Str $public-dir = self.get(key => 'PUBLIC_DIR');
-    self.TRACE: 'Public directory = ' ~ $public-dir;
+    #self.TRACE: 'Public directory = ' ~ $public-dir;
 
     my Str $data-dir = self.get(key => 'DATA_DIR');
-   self.TRACE: 'Data directory = ' ~ $data-dir;
+   #self.TRACE: 'Data directory = ' ~ $data-dir;
    
     my Str $instance-dir = $public-dir ~ '/' ~ $instance;
-    self.TRACE: 'Instance directory = ' ~ $instance-dir;
+    #self.TRACE: 'Instance directory = ' ~ $instance-dir;
    
     my Str $themes-dir = $public-dir ~ '/themes';
-    self.TRACE: 'Themes directory = ' ~ $themes-dir;
+    #self.TRACE: 'Themes directory = ' ~ $themes-dir;
    
     my Str $styles-dir = $public-dir ~ '/styles';
-    self.TRACE: 'Styles directory = ' ~ $styles-dir;
+    #self.TRACE: 'Styles directory = ' ~ $styles-dir;
    
     my Str $jscript-dir = $public-dir ~ '/jscript';
-    self.TRACE: 'Jscript directory = ' ~ $jscript-dir;
+    #self.TRACE: 'Jscript directory = ' ~ $jscript-dir;
    
     my Str $upload-dir = $public-dir ~ '/uploads';
-    self.TRACE: 'Upload directory = ' ~ $upload-dir;
+    #self.TRACE: 'Upload directory = ' ~ $upload-dir;
    
     my Str $wikidata-dir = $data-dir ~ '/' ~ $instance ~ '/wikidata';
-    self.TRACE: 'Wikidata directory = ' ~ $wikidata-dir;
+    #self.TRACE: 'Wikidata directory = ' ~ $wikidata-dir;
    
 		self.create-directory(path => $temp-dir);
 		self.create-directory(path => $public-dir);
-    #self.create-directory(path => $instance-dir);
-    #self.create-directory(path => $instance-dir ~ '/themes');
-    #self.create-directory(path => $instance-dir ~ '/themes/img');
-    #self.create-directory(path => $instance-dir ~ '/styles');
-    #self.create-directory(path => $instance-dir ~ '/jscript');
-    #self.create-directory(path => $instance-dir ~ '/uploads');
-    #self.create-directory(path => $themes-dir);
-    #self.create-directory(path => $themes-dir ~ '/img');
-    #self.create-directory(path => $themes-dir ~ '/img/common');
-    #self.create-directory(path => $styles-dir);
-    #self.create-directory(path => $styles-dir ~ '/common');
-    #self.create-directory(path => $jscript-dir);
-    #self.create-directory(path => $jscript-dir ~ '/common');
-    #self.create-directory(path => $upload-dir);
-    #self.create-directory(path => $wikidata-dir);
-    #self.create-directory(path => $wikidata-dir ~ '/page');
-    #self.create-directory(path => $wikidata-dir ~ '/user');
-    #self.create-directory(path => $wikidata-dir ~ '/temp');
-    #self.create-directory(path => $wikidata-dir ~ '/lock');
-    #self.create-directory(path => $wikidata-dir ~ '/tmpl');
+    self.create-directory(path => $instance-dir);
+    self.create-directory(path => $instance-dir ~ '/themes');
+    self.create-directory(path => $instance-dir ~ '/themes/img');
+    self.create-directory(path => $instance-dir ~ '/styles');
+    self.create-directory(path => $instance-dir ~ '/jscript');
+    self.create-directory(path => $instance-dir ~ '/uploads');
+    self.create-directory(path => $themes-dir);
+    self.create-directory(path => $themes-dir ~ '/img');
+    self.create-directory(path => $themes-dir ~ '/img/common');
+    self.create-directory(path => $styles-dir);
+    self.create-directory(path => $styles-dir ~ '/common');
+    self.create-directory(path => $jscript-dir);
+    self.create-directory(path => $jscript-dir ~ '/common');
+    self.create-directory(path => $upload-dir);
+    self.create-directory(path => $wikidata-dir);
+    self.create-directory(path => $wikidata-dir ~ '/page');
+    self.create-directory(path => $wikidata-dir ~ '/user');
+    self.create-directory(path => $wikidata-dir ~ '/temp');
+    self.create-directory(path => $wikidata-dir ~ '/lock');
+    self.create-directory(path => $wikidata-dir ~ '/tmpl');
 
 	}
 
