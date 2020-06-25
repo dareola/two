@@ -1,5 +1,5 @@
 unit module Sys::Runtime:ver<0.0.0>:auth<Domingo Areola (dareola@gmail.com)>;
-use JSON::Fast;
+use JSON::Tiny;
 
 #-- Exception handlers
 class X::Runtime is Exception {

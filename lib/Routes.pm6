@@ -3,7 +3,7 @@ use Cro::HTTP::Session::InMemory;
 use Cro::HTTP::Auth;
 use Cro::HTTP::Session::Persistent;
 use Sys::Runtime;
-use JSON::Fast;
+use JSON::Tiny;
 
 class Session does Cro::HTTP::Auth {
   has $.is-logged-in;
@@ -104,7 +104,7 @@ env:
   - name: SID_PORT
     value: '8080'
   - name: SID_NR
-    value: '00'
+    value: "00"
   - name: LANGUAGE
     value: 'EN'
   - name: SITE_NAME
