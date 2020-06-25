@@ -22,6 +22,13 @@ class X::Runtime is Exception {
 }
 
 class Runtime is export {
+
+  constant $C_AUTHOR = 'Domingo Areola (dareola@gmail.com)';
+  constant $C_VERSION = '0.0.0';
+  constant $C_NAMESPACE = 'Sys';
+	constant $C_LIBPATH = './lib';
+  constant $C_DBTYPE_SQLITE = 'SQLite';
+
   has %.Config is rw; # Configuration environment
   has Str $.DebugInfo is rw = ''; # Debugging information
   has Str $.Page is rw = ''; # HTML page
@@ -35,6 +42,9 @@ class Runtime is export {
   submethod BUILD(:&!callback) { #-- constructor
     $!DebugInfo = '';
     $!Page = '';
+
+
+
   }
 
   method new() { #-- Initialize configuration
@@ -229,7 +239,13 @@ class Runtime is export {
                   Str :$cmd,
                   Str :$userid,
                   :%params) {
-    self.create-default-directories();
+
+      #-- generate default directory structures
+      self.create-default-directories();
+      #-- generate Database module
+
+      #-- generate System Module
+
     self.TRACE: 'RUN-PARAMS: ' ~ %params.Str;
     return True;
   }
@@ -325,7 +341,218 @@ class Runtime is export {
     self.create-directory(path => $wikidata-dir ~ '/temp');
     self.create-directory(path => $wikidata-dir ~ '/lock');
     self.create-directory(path => $wikidata-dir ~ '/tmpl');
-	}
+  }
+
+  method is-tcode(Str :$tcode = '') {
+
+  }
+
+  method is-module($handler is rw, Str :$tcode,
+                                   Str :$module,
+                                   Str :$text) {
+  }
+
+  method generate-module(Str :$shortcut,
+                        Str :$module,
+                        Str :$file,
+                        Str :$text) {
+    given $shortcut {
+      when 'DB00' { #-- Database utility
+        #self.TRACE: 'TODO: Generate module: ' 
+        #        ~ "tcode: $shortcut; module: $module; file: $file; text: $text";      
+        self.generate-database-utility-module(shortcut => $shortcut,
+                                    module => $module,
+                                    file => $file,
+                                    text => $text);
+      }
+    }
+  }
+
+  method generate-database-utility-module(Str :$shortcut,
+                              Str :$module,
+                              Str :$file,
+                              Str :$text) {
+
+      my Str $module-name = $C_NAMESPACE ~ '::' ~ $module;
+      my $source-code = '';
+      my $snippet = '';
+      my $exception-text = $text;
+
+
+
+      $snippet = "\n" 
+      ~ 'unit module ' ~ $C_NAMESPACE ~ '::' ~ $module ~ ':ver<' ~ $C_VERSION ~ '>:auth<' ~ $C_AUTHOR ~ '>;' 
+      ~ "\n" ~ '  class X::' ~ $C_NAMESPACE ~ '::' ~ $module ~ ' is Exception {'
+      ~ "\n";
+      $source-code ~= $snippet;
+
+
+      $snippet = q:to/END_OF_CODE/;
+      has $.msg-id; #message class
+      has $.msg-no; #message number
+      has $.msg-ty; #message type = [A, E, I, S, W]
+      has $.msg-t1; #message text 1
+      has $.msg-t2; #message text 2
+      has $.msg-t3; #message text 3
+      has $.msg-t4; #message text 4
+
+    END_OF_CODE
+      $source-code ~= $snippet;
+
+
+      $snippet = q:to/END_OF_CODE/;
+      method message() {
+        #-- TODO: Get the message from the data dictionary
+
+        "$.msg-id" ~ "-" ~ $.msg-no ~ " " ~
+        "$.msg-ty " ~
+        "$.msg-t1 $.msg-t2 $.msg-t3 $.msg-t4"; # Generic error
+      }
+    }
+    END_OF_CODE
+      $source-code ~= $snippet;
+
+
+      $snippet = "\n"
+    ~ "\n" ~ 'class ' ~ $module ~ ' is export {'
+    ~ "\n";
+      $source-code ~= $snippet;
+
+      $snippet = q:to/END_OF_CODE/;
+      has %.params = ();
+      has $.Sys is rw =  '';
+      has $.DebugInfo is rw = "";
+      has %.Config is rw;
+      has $.UserID is rw;
+      has $.UserCommand is rw;
+
+      has Str %.CMD = (
+          "init" => "INIT"
+      );
+
+      has $SCREEN = "";
+      has %SCREEN_TITLE = (
+        1000 => "TESTING_1000";
+      );
+    END_OF_CODE
+      $source-code ~= $snippet;
+
+
+      $snippet = q:to/END_OF_CODE/;
+      method main($App, Str :$userid, Str :$ucomm, :%params) {
+        $.Sys = $App;
+        $.UserID = $userid;
+        $.UserCommand = $ucomm;
+        %.params = %params;
+        given $ucomm {
+          when %.CMD<init> {
+            #self.initialize-db();
+            $SCREEN = '1000';
+          }
+        }
+        self.goto-screen(screen => $SCREEN);
+      }
+    END_OF_CODE
+      $source-code ~= $snippet;
+
+
+      $snippet = q:to/END_OF_CODE/;
+      method goto-screen(Str :$screen) {
+        my Str $sNextScreen = 'screen_' ~ $screen;
+        if self.can($sNextScreen) {
+          self."$sNextScreen"();
+        }
+      }
+    END_OF_CODE
+      $source-code ~= $snippet;
+
+
+      $snippet = q:to/END_OF_CODE/;
+      method screen_1000 {
+        my Str $comment = '';
+        return True;
+      }
+    END_OF_CODE
+      $source-code ~= $snippet;
+
+
+      $snippet = q:to/END_OF_CODE/;
+      method initialize-config(:%cfg) {
+        %.Config = %cfg;
+      }
+    END_OF_CODE
+      $source-code ~= $snippet;
+
+
+      $snippet = q:to/END_OF_CODE/;
+      method get(Str :$key) {
+        my $sVar = '';
+        $sVar ~~ s:g/\{\{$key\}\}//;
+        if $sVar eq '' {
+          #-- get $sVar from config file
+          $sVar = %.Config{$key} if defined %.Config{$key};
+          $sVar ~~ s:g/\{(.*?)\}/{ #-- Convert embedded variables
+            self.get(key => $0.Str);    #-- for example: data_dir = ./{SID}{SID_NR}/some_value
+          }/;                      #--    translates to:        ./DEV00/some_value
+        }
+      return $sVar;
+      }
+    END_OF_CODE
+      $source-code ~= $snippet;
+
+
+      $snippet = q:to/END_OF_CODE/;
+      method getenv(Str :$key) {
+        my $sVar =  '';
+        $sVar = %*ENV{$key.uc} if defined %*ENV{$key};
+        return $sVar;
+      }
+    END_OF_CODE
+      $source-code ~= $snippet;
+
+
+      $snippet = "\n" 
+      ~ "\n" ~ 'method TRACE(Str $msg, :$id = "' ~ $exception-text ~ '", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = "", :$t3 = "", :$t4 = "" ) {'
+      ~ "\n";
+      $source-code ~= $snippet;
+
+
+      $snippet = q:to/END_OF_CODE/;  
+        my Str $sInfo = "";
+
+        $sInfo = $t1;
+        $sInfo = $t1 ~ $msg.Str if $msg ne "";
+
+        $.DebugInfo ~= $id ~ "-" ~ $no ~ " " ~ $ty ~ " ";
+        $.DebugInfo ~= $msg ~ "<br/>" if $msg ne "";
+    END_OF_CODE
+      $source-code ~= $snippet;
+
+
+      $snippet = "\n" 
+      ~ "\n" ~ '  my $e = X::' ~ $C_NAMESPACE ~ '::' ~ $module ~ '.new('
+      ~ "\n";
+      $source-code ~= $snippet;
+
+
+      $snippet = q:to/END_OF_CODE/;
+          msg-id => $id, msg-no => $no, msg-ty => $ty,
+          msg-t1 => $sInfo, msg-t2 => $t2, msg-t3 => $t3,msg-t4 => $t4);
+          note $e.message;
+      }
+    };
+    END_OF_CODE
+      $source-code ~= $snippet;
+
+
+      self.write-string-to-file(file-name => $file,
+                                  data => $source-code);
+
+  }
+
+
+
+
 
 #-- END-OF-CLASS --
 
