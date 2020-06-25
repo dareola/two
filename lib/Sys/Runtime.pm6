@@ -82,7 +82,7 @@ class Runtime is export {
                  app => $app,
                  cmd => $cmd,
                  userid => $userid,
-                 :%params);
+                 params => %.Params);
     if ($!) {
       note $!.gist;
     }
@@ -113,7 +113,6 @@ class Runtime is export {
         $app-toolbar ~= 'Parameters: [' ~ %.Params.Str ~ ']<br>';
       }
     }
-
 
     my Str $text = '';
 
@@ -231,7 +230,7 @@ class Runtime is export {
                   Str :$userid,
                   :%params) {
     self.create-default-directories();
-
+    self.TRACE: 'RUN-PARAMS: ' ~ %params.Str;
     return True;
   }
 
@@ -326,7 +325,6 @@ class Runtime is export {
     self.create-directory(path => $wikidata-dir ~ '/temp');
     self.create-directory(path => $wikidata-dir ~ '/lock');
     self.create-directory(path => $wikidata-dir ~ '/tmpl');
-
 	}
 
 #-- END-OF-CLASS --
