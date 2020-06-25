@@ -1,4 +1,5 @@
 unit module Sys::Runtime:ver<0.0.0>:auth<Domingo Areola (dareola@gmail.com)>;
+use JSON::Fast;
 
 #-- Exception handlers
 class X::Runtime is Exception {
@@ -21,11 +22,19 @@ class X::Runtime is Exception {
 }
 
 class Runtime is export {
-  has Str $.DebugInfo is rw = '';
-  has %.Config is rw;
+  has %.Config is rw; # Configuration environment
+  has Str $.DebugInfo is rw = ''; # Debugging information
+  has Str $.Page is rw = ''; # HTML page
+  has $.Sys is rw; # System object
+  has $.Dbu is rw; # Database object
+  has $.App is rw;  # Application object
+  has $.Shortcut is rw; # User command
+  has %.Params is rw; # Parameters
   has &!callback;
  
   submethod BUILD(:&!callback) { #-- constructor
+    $!DebugInfo = '';
+    $!Page = '';
   }
 
   method new() { #-- Initialize configuration
@@ -58,11 +67,16 @@ class Runtime is export {
 		note $e.message;
 	}
 
+  method load-config-file(Str :$file) {
+    %.Config = from-json(slurp($file));
+  }
+
   multi method dispatch(Str :$app, 
                         Str :$cmd,
                         Str :$userid,
                         :%params) {
     self.TRACE: 'Parameters: ' ~ %params;
+    %.Params = %params;
 
     try self.run(signature => '1',
                  app => $app,
@@ -85,7 +99,7 @@ class Runtime is export {
     $user = $userid if $userid ne '';
 
     my Str $app-toolbar = '';
-    
+
     $app-toolbar ~= '<a href="/">home</a>' ~ '&nbsp;|&nbsp;';
     $app-toolbar ~= '<a href="/index">index</a>' ~ '&nbsp;|&nbsp;';
     $app-toolbar ~= '<a href="/help">help</a>' ~ '&nbsp;|&nbsp;';
@@ -184,7 +198,105 @@ class Runtime is export {
                   Str :$cmd,
                   Str :$userid,
                   :%params) {
+    self.create-default-directories();
+
     return True;
   }
+
+  method create-directory(Str :$path) {
+    my Str @FilePath = $path.split('/');
+    my Str $directory = '.';
+    for @FilePath -> $dir {
+      next if $dir ~~ /\./;
+      next if $dir ~~ /^.*\\(.*)$/;
+      $directory ~= '/' ~ $dir;
+      unless $directory.IO ~~ :d {
+        $directory.IO.mkdir;
+      }
+    }
+  }
+
+  method write-string-to-file (Str :$file-name, Str :$data) {
+		my $file-handle = open $file-name, :w;
+		$file-handle.say: $data;
+		$file-handle.close;
+		return True;
+	}
+
+	method get(Str :$key) {
+		my Str $value = '';
+		#-- get $sVar from config file
+		$value = %.Config{"$key"}.Str if defined %.Config{"$key"};
+		$value ~~ s:g/\{(.*?)\}/{   #-- Convert embedded variables
+			self.get(key => $0.Str);  #-- for example: data_dir = ./{SID}{SID_NR}/some_value
+		}/;                         #--   translates to:        ./DEV00/some_value
+		return $value;
+	}
+
+  method get-param(Str :$key = '') {
+    my Str $parameter-value = '';
+    if %.Params{"$key"}:exists {
+      $parameter-value = %.Params{"$key"}.Str;
+    }
+    return $parameter-value;
+  }
+
+	method create-default-directories() {
+		my Str $instance = self.get(key => 'SID') ~ self.get(key => 'SID_NR');
+    self.TRACE: 'Instance = ' ~ $instance;
+
+    my Str $temp-dir = './';
+    self.TRACE: 'Temp directory = ' ~ $temp-dir;
+
+    my Str $public-dir = self.get(key => 'PUBLIC_DIR');
+    self.TRACE: 'Public directory = ' ~ $public-dir;
+
+    my Str $data-dir = self.get(key => 'DATA_DIR');
+   self.TRACE: 'Data directory = ' ~ $data-dir;
+   
+    my Str $instance-dir = $public-dir ~ '/' ~ $instance;
+    self.TRACE: 'Instance directory = ' ~ $instance-dir;
+   
+    my Str $themes-dir = $public-dir ~ '/themes';
+    self.TRACE: 'Themes directory = ' ~ $themes-dir;
+   
+    my Str $styles-dir = $public-dir ~ '/styles';
+    self.TRACE: 'Styles directory = ' ~ $styles-dir;
+   
+    my Str $jscript-dir = $public-dir ~ '/jscript';
+    self.TRACE: 'Jscript directory = ' ~ $jscript-dir;
+   
+    my Str $upload-dir = $public-dir ~ '/uploads';
+    self.TRACE: 'Upload directory = ' ~ $upload-dir;
+   
+    my Str $wikidata-dir = $data-dir ~ '/' ~ $instance ~ '/wikidata';
+    self.TRACE: 'Wikidata directory = ' ~ $wikidata-dir;
+   
+		self.create-directory(path => $temp-dir);
+		self.create-directory(path => $public-dir);
+    #self.create-directory(path => $instance-dir);
+    #self.create-directory(path => $instance-dir ~ '/themes');
+    #self.create-directory(path => $instance-dir ~ '/themes/img');
+    #self.create-directory(path => $instance-dir ~ '/styles');
+    #self.create-directory(path => $instance-dir ~ '/jscript');
+    #self.create-directory(path => $instance-dir ~ '/uploads');
+    #self.create-directory(path => $themes-dir);
+    #self.create-directory(path => $themes-dir ~ '/img');
+    #self.create-directory(path => $themes-dir ~ '/img/common');
+    #self.create-directory(path => $styles-dir);
+    #self.create-directory(path => $styles-dir ~ '/common');
+    #self.create-directory(path => $jscript-dir);
+    #self.create-directory(path => $jscript-dir ~ '/common');
+    #self.create-directory(path => $upload-dir);
+    #self.create-directory(path => $wikidata-dir);
+    #self.create-directory(path => $wikidata-dir ~ '/page');
+    #self.create-directory(path => $wikidata-dir ~ '/user');
+    #self.create-directory(path => $wikidata-dir ~ '/temp');
+    #self.create-directory(path => $wikidata-dir ~ '/lock');
+    #self.create-directory(path => $wikidata-dir ~ '/tmpl');
+
+	}
+
+#-- END-OF-CLASS --
 
 }

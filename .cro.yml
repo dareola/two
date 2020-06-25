@@ -14,7 +14,29 @@ env:
     value: '8080'
   - name: SID_NR
     value: '00'
-ignore:  []
+  - name: LANGUAGE
+    value: 'EN'
+  - name: SITE_NAME
+    value: 'Site Two'
+  - name: SITE_HOME
+    value: 'HomePage'
+  - name: SITE_URL
+    value: 'http://mcairsunday.net:8080'
+  - name: PUBLIC_DIR
+    value: './pub'
+  - name: DATA_DIR
+    value: './data'
+  - name: DEBUG_MODE
+    value: 'TRUE'
+  - name: WIKI_HOME
+    value: 'BookShelf'
+  - name: WIKI_NAME
+    value: 'ResearchLibrary'
+ignore:  
+  - TWO00/
+  - data/
+  - pub/
+  - t/
 endpoints: 
   - 
     id: http
