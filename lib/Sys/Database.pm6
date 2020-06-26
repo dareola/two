@@ -1,7 +1,7 @@
 
-unit module Sys::Sys::Database:ver<0.0.0>:auth<Domingo Areola (dareola@gmail.com)>;
+unit module Sys::Database:ver<0.0.0>:auth<Domingo Areola (dareola@gmail.com)>;
   use DBIish;
-  class X::Sys::Sys::Database is Exception {
+  class X::Sys::Database is Exception {
   has $.msg-id; #message class
   has $.msg-no; #message number
   has $.msg-ty; #message type = [A, E, I, S, W]
@@ -12,25 +12,17 @@ unit module Sys::Sys::Database:ver<0.0.0>:auth<Domingo Areola (dareola@gmail.com
 
 
     
-  method message() {
-    #-- TODO: Get the message from the data dictionary
+    method message() {
+      #-- TODO: Get the message from the data dictionary
 
-    "$.msg-id" ~ "-" ~ $.msg-no ~ " " ~
-    "$.msg-ty " ~
-    "$.msg-t1 $.msg-t2 $.msg-t3 $.msg-t4"; # Generic error
+      "$.msg-id" ~ "-" ~ $.msg-no ~ " " ~
+      "$.msg-ty " ~
+      "$.msg-t1 $.msg-t2 $.msg-t3 $.msg-t4"; # Generic error
+    }
   }
-}
-q:to/END_OF_CODE/;
-
-  $source-code ~= $snippet;
 
 
-  $snippet = "\n"
-~ "\n" ~ 'class ' ~ $module ~ ' is export {'
-~ "\n";
-  $source-code ~= $snippet;
-
-  $snippet = q:to/END_OF_CODE/;
+class Sys::Database is export {
     constant $C_DBTYPE_SQLITE = 'SQLite';
     has %.params = ();
     has $.Sys is rw =  '';
@@ -205,7 +197,7 @@ method TRACE(Str $msg, :$id = "D0", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     
 
 
-  my $e = X::Sys::Sys::Database.new(
+  my $e = X::Sys::Database.new(
       msg-id => $id, msg-no => $no, msg-ty => $ty,
       msg-t1 => $sInfo, msg-t2 => $t2, msg-t3 => $t3,msg-t4 => $t4);
       note $e.message;
@@ -1996,7 +1988,7 @@ method TRACE(Str $msg, :$id = "D0", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
         my Str $directory = '.';
         for @FilePath -> $dir {
           next if $dir ~~ /\./;
-          next if $dir ~~ /^.*\(.*)$/;
+          next if $dir ~~ /^.*\(.*\)$/;
           $directory ~= '/' ~ $dir;
           unless $directory.IO ~~ :d {
             $directory.IO.mkdir;
