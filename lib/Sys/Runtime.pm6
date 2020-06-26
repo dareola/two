@@ -245,7 +245,84 @@ class Runtime is export {
   method initialize() {
     $.Page = '';
     $.DebugInfo = '';
+
+    #-- create default system directories
+    self.create-default-directories();
+
+    #-- generate system module
+    self.generate-default-modules();
   }
+
+  method generate-default-modules() {
+    my Str $module-id = '';
+    my Str $module = '';
+    my Str $module-name = '';
+    my Str $module-path = '';
+
+    ($module-id, $module, $module-name, $module-path) = self.get-module-name(module-id => 'DB00');
+    self.generate-module(module => $module-id,
+                         name => $module-name,
+                         path => $module-path);
+
+
+    ($module-id, $module, $module-name, $module-path) = self.get-module-name(module-id => 'SY00');
+    self.generate-module(module => $module-id,
+                         name => $module-name,
+                         path => $module-path);
+
+
+  }
+
+  method get-module-name(Str :$module-id = '') {
+    #-- check first for internally-defined shortcuts
+    my Str $id = '';
+    my Str $module = '';
+    my Str $module-name = '';
+    my Str $module-path = '';
+    $module = %.APPTABLE{"$module-id"};
+    if $module ne '' {
+      $id = $module-id;
+      $module-name = $C_NAMESPACE ~ '::' ~ $module;
+      $module-path = $C_LIBPATH 
+                   ~ '/' 
+                   ~ $C_NAMESPACE
+                   ~ '/'
+                   ~ $module
+                   ~ '.pm6';
+    }
+    return ($id, $module, $module-name, $module-path);
+  }
+
+  method generate-module(Str :$module, Str :$name, Str :$path) {
+    #self.TRACE: 'module-id = ' ~ $module;
+    #self.TRACE: 'module-name = ' ~ $name;
+    #self.TRACE: 'module-path = ' ~ $path;
+    if $path.IO.e {
+      #-- do nothing
+      self.TRACE: 'Module file ' ~ $path ~ ' already exists';
+    }
+    else {
+      self.TRACE: 'TODO: Create module file ' ~ $path;
+
+      my Str $text = %.APPTEXTS{"$module"};
+
+      given $module {
+        when 'SY00' {
+          self.generate-system-module(shortcut => $module,
+                                    module => $name,
+                                    file => $path,
+                                    text => $text);
+        }
+        when 'DB00' {
+          self.generate-database-utility-module(shortcut => $module,
+                                    module => $name,
+                                    file => $path,
+                                    text => $text);
+        }
+      }
+
+    }
+  } 
 
   method detect-button(:%params) {
     my Str $button = '';
@@ -265,6 +342,7 @@ class Runtime is export {
       }
     }
   }
+
 
 
   method begin-form(Str :$app = '') {
@@ -328,14 +406,9 @@ class Runtime is export {
     my Str $db-utility = 'DB00';
     my Str $module-name = '';
 
-
-
       #-- generate default directory structures
-      self.create-default-directories();
       #-- generate Database module
       #-- then load DB utility module
-      $module-name = self.is-tcode(tcode => $db-utility);
-
       #-- generate System Module
 
     #self.TRACE: 'RUN-PARAMS: ' ~ %params.Str;
@@ -382,35 +455,16 @@ class Runtime is export {
 
 	method create-default-directories() {
 		my Str $instance = self.get(key => 'SID') ~ self.get(key => 'SID_NR');
-    #self.TRACE: 'Instance = ' ~ $instance;
-
     my Str $temp-dir = './';
-    #self.TRACE: 'Temp directory = ' ~ $temp-dir;
-
     my Str $public-dir = self.get(key => 'PUBLIC_DIR');
-    #self.TRACE: 'Public directory = ' ~ $public-dir;
-
     my Str $data-dir = self.get(key => 'DATA_DIR');
-   #self.TRACE: 'Data directory = ' ~ $data-dir;
-   
     my Str $instance-dir = $public-dir ~ '/' ~ $instance;
-    #self.TRACE: 'Instance directory = ' ~ $instance-dir;
-   
     my Str $themes-dir = $public-dir ~ '/themes';
-    #self.TRACE: 'Themes directory = ' ~ $themes-dir;
-   
     my Str $styles-dir = $public-dir ~ '/styles';
-    #self.TRACE: 'Styles directory = ' ~ $styles-dir;
-   
     my Str $jscript-dir = $public-dir ~ '/jscript';
-    #self.TRACE: 'Jscript directory = ' ~ $jscript-dir;
-   
     my Str $upload-dir = $public-dir ~ '/uploads';
-    #self.TRACE: 'Upload directory = ' ~ $upload-dir;
-   
     my Str $wikidata-dir = $data-dir ~ '/' ~ $instance ~ '/wikidata';
-    #self.TRACE: 'Wikidata directory = ' ~ $wikidata-dir;
-   
+
 		self.create-directory(path => $temp-dir);
 		self.create-directory(path => $public-dir);
     self.create-directory(path => $instance-dir);
@@ -435,68 +489,6 @@ class Runtime is export {
     self.create-directory(path => $wikidata-dir ~ '/tmpl');
   }
 
-  method is-tcode(Str :$tcode = '') {
-    my Str $module-name = '';
-    my Str $module-text = '';
-    my Str $module-type = '';
-    if defined %.APPTABLE{"$tcode"} { #check for hardcoded tcode
-      # check hard coded listing first
-      $module-name = %.APPTABLE{$tcode};
-      $module-text = %.APPTEXTS{$tcode};
-      given $tcode {
-        when 'SY00' { #-- App HANDLE is $.Sys
-          self.is-module($.Sys, tcode => $tcode,
-                                module => $module-name,
-                                text => $module-text);
-        }
-        when 'DB00' { #-- App HANDLE is $.Dbu
-          self.is-module($.Dbu, tcode => $tcode,
-                                module => $module-name,
-                                text => $module-text);
-        }
-        default {
-          #self.TRACE: 'MODULE NAME = ' ~ $module-name;
-          self.is-module($.App, tcode => $tcode,
-                                module => $module-name,
-                                text => $module-text);
-        }
-      }
-    }
-    else { 
-      #- for non-hardcoded tcode, get shortcut from Dbu
-      if defined $.Dbu { #-- make sure Dbu exists
-        ($module-name, $module-text, $module-type) = $.Dbu.is-shortcut(shortcut => $tcode.uc);
-        if $module-name ne '' {
-          self.is-module($.App, tcode => $tcode,
-                                module => $module-name,
-                                text => $module-text);
-        }
-      }
-    }
-    return $module-name;
-  }
-
-  method is-module($handler is rw, Str :$tcode,
-                                   Str :$module,
-                                   Str :$text) {
-  }
-
-  method generate-module(Str :$shortcut,
-                        Str :$module,
-                        Str :$file,
-                        Str :$text) {
-    given $shortcut {
-      when 'DB00' { #-- Database utility
-        #self.TRACE: 'TODO: Generate module: ' 
-        #        ~ "tcode: $shortcut; module: $module; file: $file; text: $text";      
-        self.generate-database-utility-module(shortcut => $shortcut,
-                                    module => $module,
-                                    file => $file,
-                                    text => $text);
-      }
-    }
-  }
-
   method generate-database-utility-module(Str :$shortcut,
                               Str :$module,
                               Str :$file,
@@ -511,6 +503,7 @@ class Runtime is export {
 
       $snippet = "\n" 
       ~ 'unit module ' ~ $C_NAMESPACE ~ '::' ~ $module ~ ':ver<' ~ $C_VERSION ~ '>:auth<' ~ $C_AUTHOR ~ '>;' 
+      ~ "\n" ~ '  use DBIish;'
       ~ "\n" ~ '  class X::' ~ $C_NAMESPACE ~ '::' ~ $module ~ ' is Exception {'
       ~ "\n";
       $source-code ~= $snippet;
@@ -525,6 +518,8 @@ class Runtime is export {
       has $.msg-t3; #message text 3
       has $.msg-t4; #message text 4
 
+
+        
     END_OF_CODE
       $source-code ~= $snippet;
 
@@ -538,7 +533,8 @@ class Runtime is export {
         "$.msg-t1 $.msg-t2 $.msg-t3 $.msg-t4"; # Generic error
       }
     }
-    END_OF_CODE
+q:to/END_OF_CODE/;
+
       $source-code ~= $snippet;
 
 
@@ -548,73 +544,171 @@ class Runtime is export {
       $source-code ~= $snippet;
 
       $snippet = q:to/END_OF_CODE/;
-      has %.params = ();
-      has $.Sys is rw =  '';
-      has $.DebugInfo is rw = "";
-      has %.Config is rw;
-      has $.UserID is rw;
-      has $.UserCommand is rw;
+        constant $C_DBTYPE_SQLITE = 'SQLite';
+        has %.params = ();
+        has $.Sys is rw =  '';
+        has $.DebugInfo is rw = "";
+        has %.Config is rw;
+        has $.UserID is rw;
+        has $.UserCommand is rw;
 
-      has Str %.CMD = (
-          "init" => "INIT"
-      );
+        has Str %.CMD = (
+            'init' => 'INIT',
+        );
 
-      has $SCREEN = "";
-      has %SCREEN_TITLE = (
-        1000 => "TESTING_1000";
-      );
+        has $SCREEN = "";
+        has %SCREEN_TITLE = (
+          1000 => "TESTING_1000";
+        );
+
+
+
+        
     END_OF_CODE
       $source-code ~= $snippet;
 
 
       $snippet = q:to/END_OF_CODE/;
-      method main($App, Str :$userid, Str :$ucomm, :%params) {
+        method main($App, Str :$userid, Str :$ucomm, :%params) {
         $.Sys = $App;
         $.UserID = $userid;
         $.UserCommand = $ucomm;
         %.params = %params;
+        
+        #self.TRACE: 'Database user command = ' ~ $ucomm;
+
         given $ucomm {
           when %.CMD<init> {
-            #self.initialize-db();
-            $SCREEN = '1000';
+            $SCREEN = '1000'; #- create blank database
           }
         }
         self.goto-screen(screen => $SCREEN);
       }
+
+        
     END_OF_CODE
       $source-code ~= $snippet;
 
 
       $snippet = q:to/END_OF_CODE/;
-      method goto-screen(Str :$screen) {
+        method goto-screen(Str :$screen) {
         my Str $sNextScreen = 'screen_' ~ $screen;
         if self.can($sNextScreen) {
           self."$sNextScreen"();
         }
       }
+
+        
     END_OF_CODE
       $source-code ~= $snippet;
 
 
       $snippet = q:to/END_OF_CODE/;
-      method screen_1000 {
-        my Str $comment = '';
-        return True;
+      method screen_1000 { #-- ucomm = INIT; Create a blank database 
+      my str $database-file = self.get(key => 'DATA_DIR')
+                            ~ '/' 
+                            ~ self.get(key => 'SID')
+                            ~ self.get(key => 'SID_NR')
+                            ~ '/' 
+                            ~ self.get(key => 'SID')
+                            ~ self.get(key => 'SID_NR')
+                            ~ '.db';
+      
+      if $database-file.IO.e {
+
+        #-- self.TRACE: 'FOUND!! Database file name = ' ~ $database-file;    
+
       }
+      else {
+
+        #-- Create empty sqlite database
+        self.db-connect(dbtype => $C_DBTYPE_SQLITE, dbname => $database-file);
+
+        #-- Create empty table structures
+        self.initialize-DBTABLES();
+
+        #-- Populate tables
+        self.initialize-TABLFLDS(tabname => 'TABLFLDS');
+        self.initialize-DBDOMAIN(tabname => 'DBDOMAIN');
+        self.initialize-DBDOMAIT(tabname => 'DBDOMAIT');
+        self.initialize-DATAELEM(tabname => 'DATAELEM');
+        self.initialize-DATAELET(tabname => 'DATAELET');
+        self.initialize-STATCODE(tabname => 'STATCODE');
+        self.initialize-STATCODT(tabname => 'STATCODT');
+        self.initialize-DDICVERS(tabname => 'DDICVERS');
+        self.initialize-VERSTEXT(tabname => 'VERSTEXT');
+        self.initialize-ISOLANGU(tabname => 'ISOLANGU');
+        self.initialize-LOGICALS(tabname => 'LOGICALS');
+        self.initialize-BOOLEANS(tabname => 'BOOLEANS');
+        self.initialize-DATATYPE(tabname => 'DATATYPE');
+        self.initialize-TABLTYPE(tabname => 'TABLTYPE');
+        self.initialize-TABLTYPT(tabname => 'TABLTYPT');
+        self.initialize-OBJTYPES(tabname => 'OBJTYPES');
+        self.initialize-OBJTYPET(tabname => 'OBJTYPET');
+        self.initialize-USERMSTR(tabname => 'USERMSTR');
+        self.initialize-CLNTMSTR(tabname => 'CLNTMSTR');
+        self.initialize-CLNTMSTT(tabname => 'CLNTMSTT');
+        self.initialize-CLNTUSER(tabname => 'CLNTUSER');
+        self.initialize-APPLAREA(tabname => 'APPLAREA');
+        self.initialize-PROGTABL(tabname => 'PROGTABL');
+        self.initialize-PROGTABT(tabname => 'PROGTABT');
+        self.initialize-SHORTCUT(tabname => 'SHORTCUT'); 
+        self.initialize-DDRELATE(tabname => 'DDRELATE'); 
+        self.initialize-DDRELATT(tabname => 'DDRELATT'); 
+        self.initialize-MESGTXTS(tabname => 'MESGTXTS');
+
+        #-- Define table index
+        self.create-table-index(tabname => 'TABLFLDS', reindex => True);
+        self.create-table-index(tabname => 'DBDOMAIN', reindex => True);
+        self.create-table-index(tabname => 'DBDOMAIT', reindex => True);
+        self.create-table-index(tabname => 'DATAELEM', reindex => True);
+        self.create-table-index(tabname => 'DATAELET', reindex => True);
+        self.create-table-index(tabname => 'STATCODE', reindex => True);
+        self.create-table-index(tabname => 'STATCODT', reindex => True);
+        self.create-table-index(tabname => 'DDICVERS', reindex => True);
+        self.create-table-index(tabname => 'VERSTEXT', reindex => True);
+        self.create-table-index(tabname => 'ISOLANGU', reindex => True);
+        self.create-table-index(tabname => 'LOGICALS', reindex => True);
+        self.create-table-index(tabname => 'BOOLEANS', reindex => True);
+        self.create-table-index(tabname => 'DATATYPE', reindex => True);
+        self.create-table-index(tabname => 'TABLTYPE', reindex => True);
+        self.create-table-index(tabname => 'TABLTYPT', reindex => True);
+        self.create-table-index(tabname => 'OBJTYPES', reindex => True);
+        self.create-table-index(tabname => 'OBJTYPET', reindex => True);
+        self.create-table-index(tabname => 'USERMSTR', reindex => True);
+        self.create-table-index(tabname => 'CLNTMSTR', reindex => True);
+        self.create-table-index(tabname => 'CLNTMSTT', reindex => True);
+        self.create-table-index(tabname => 'CLNTUSER', reindex => True);
+        self.create-table-index(tabname => 'APPLAREA', reindex => True);
+        self.create-table-index(tabname => 'PROGTABL', reindex => True);
+        self.create-table-index(tabname => 'PROGTABT', reindex => True);
+        self.create-table-index(tabname => 'SHORTCUT', reindex => True);
+        self.create-table-index(tabname => 'DDRELATE', reindex => True);
+        self.create-table-index(tabname => 'DDRELATT', reindex => True);
+        self.create-table-index(tabname => 'MESGTXTS', reindex => True);
+
+      }
+
+      return True;
+    }
+
+        
     END_OF_CODE
       $source-code ~= $snippet;
 
 
       $snippet = q:to/END_OF_CODE/;
-      method initialize-config(:%cfg) {
+        method initialize-config(:%cfg) {
         %.Config = %cfg;
       }
+
+        
     END_OF_CODE
       $source-code ~= $snippet;
 
 
       $snippet = q:to/END_OF_CODE/;
-      method get(Str :$key) {
+        method get(Str :$key) {
         my $sVar = '';
         $sVar ~~ s:g/\{\{$key\}\}//;
         if $sVar eq '' {
@@ -626,16 +720,20 @@ class Runtime is export {
         }
       return $sVar;
       }
+
+        
     END_OF_CODE
       $source-code ~= $snippet;
 
 
       $snippet = q:to/END_OF_CODE/;
-      method getenv(Str :$key) {
+        method getenv(Str :$key) {
         my $sVar =  '';
         $sVar = %*ENV{$key.uc} if defined %*ENV{$key};
         return $sVar;
       }
+
+        
     END_OF_CODE
       $source-code ~= $snippet;
 
@@ -654,6 +752,8 @@ class Runtime is export {
 
         $.DebugInfo ~= $id ~ "-" ~ $no ~ " " ~ $ty ~ " ";
         $.DebugInfo ~= $msg ~ "<br/>" if $msg ne "";
+
+        
     END_OF_CODE
       $source-code ~= $snippet;
 
@@ -670,12 +770,4528 @@ class Runtime is export {
           note $e.message;
       }
     };
+
+        
     END_OF_CODE
       $source-code ~= $snippet;
 
 
+      $snippet = q:to/END_OF_CODE/;
+        method initialize-DBTABLES() {
+
+            #----------------------------------------------
+            my $tabname = 'DBTABLES';
+            my $descrip = 'Database table';
+            my $langiso = 'E';
+            my $new-table = qq:to/SQL/;
+              CREATE TABLE $tabname (
+                tabname varchar2(30),
+                actvatd varchar2(1),
+                version varchar2(4),
+                tabltyp varchar2(1),
+                clntdep varchar2(1),
+                langdep varchar2(1),
+                contflg varchar2(1),
+                changby varchar2(12),
+                changdt varchar2(8),
+                changtm varchar2(6)
+              );
+              SQL
+            self.db-create-table(tabname => $tabname, descrip => $descrip,
+                                  sql => $new-table, language => $langiso);
+            #----------------------------------------------
+
+            $tabname = 'DBTABLET';
+            $descrip = 'Database table description';
+            $langiso = 'E';
+            $new-table = qq:to/SQL/;
+              CREATE TABLE $tabname (
+                tabname varchar2(30),
+                actvatd varchar2(1),
+                version varchar2(4),
+                langiso varchar2(1),
+                shortxt varchar2(10),
+                changby varchar2(12),
+                changdt varchar2(8),
+                changtm varchar2(6)
+              );
+              SQL
+            self.db-create-table(tabname => $tabname, descrip => $descrip,
+                                  sql => $new-table, language => $langiso);
+            #----------------------------------------------
+
+            $tabname = 'ISOLANGU';
+            $descrip = 'ISO languages';
+            $langiso = 'E';
+            $new-table = qq:to/SQL/;
+              CREATE TABLE $tabname (
+                langiso varchar2(1),
+                shortxt varchar2(10),
+                changby varchar2(12),
+                changdt varchar2(8),
+                changtm varchar2(6)
+              );
+              SQL
+            self.db-create-table(tabname => $tabname, descrip => $descrip,
+                                  sql => $new-table, language => $langiso);
+            #----------------------------------------------
+
+            $tabname = 'DDICTEXT';
+            $descrip = 'Data dictionary text';
+            $langiso = 'E';
+            $new-table = qq:to/SQL/;
+              CREATE TABLE $tabname (
+                langiso varchar2(1),
+                shortxt varchar2(20),
+                changby varchar2(12),
+                changdt varchar2(8),
+                changtm varchar2(6)
+              );
+              SQL
+            self.db-create-table(tabname => $tabname, descrip => $descrip,
+                                  sql => $new-table, language => $langiso);
+            #----------------------------------------------
+
+            $tabname = 'TABLTYPE';
+            $descrip = 'Table types';
+            $langiso = 'E';
+            $new-table = qq:to/SQL/;
+              CREATE TABLE $tabname (
+                tabltyp varchar2(1),
+                changby varchar2(12),
+                changdt varchar2(8),
+                changtm varchar2(6)
+              );
+              SQL
+            self.db-create-table(tabname => $tabname, descrip => $descrip,
+                                  sql => $new-table, language => $langiso);
+            #----------------------------------------------
+
+            $tabname = 'TABLTYPT';
+            $descrip = 'Table type description';
+            $langiso = 'E';
+            $new-table = qq:to/SQL/;
+              CREATE TABLE $tabname (
+                tabltyp varchar2(1),
+                langiso varchar2(1),
+                shortxt varchar2(20),
+                changby varchar2(12),
+                changdt varchar2(8),
+                changtm varchar2(6)
+              );
+              SQL
+            self.db-create-table(tabname => $tabname, descrip => $descrip,
+                                  sql => $new-table, language => $langiso);
+            #----------------------------------------------
+
+
+            $tabname = 'OBJTYPES';
+            $descrip = 'Dictionary object types';
+            $langiso = 'E';
+            $new-table = qq:to/SQL/;
+              CREATE TABLE $tabname (
+                objtype varchar2(4),
+                changby varchar2(12),
+                changdt varchar2(8),
+                changtm varchar2(6)
+              );
+              SQL
+            self.db-create-table(tabname => $tabname, descrip => $descrip,
+                                  sql => $new-table, language => $langiso);
+            #----------------------------------------------
+
+            $tabname = 'OBJTYPET';
+            $descrip = 'Data dictionary object types description';
+            $langiso = 'E';
+            $new-table = qq:to/SQL/;
+              CREATE TABLE $tabname (
+                objtype varchar2(4),
+                langiso varchar2(1),
+                shortxt varchar2(20),
+                changby varchar2(12),
+                changdt varchar2(8),
+                changtm varchar2(6)
+              );
+              SQL
+            self.db-create-table(tabname => $tabname, descrip => $descrip,
+                                  sql => $new-table, language => $langiso);
+            #----------------------------------------------
+
+
+            $tabname = 'LOGICALS';
+            $descrip = 'Logical true or false';
+            $langiso = 'E';
+            $new-table = qq:to/SQL/;
+              CREATE TABLE $tabname (
+                logical varchar2(1),
+                changby varchar2(12),
+                changdt varchar2(8),
+                changtm varchar2(6)
+              );
+              SQL
+            self.db-create-table(tabname => $tabname, descrip => $descrip,
+                                  sql => $new-table, language => $langiso);
+            #----------------------------------------------
+
+            $tabname = 'BOOLEANS';
+            $descrip = 'Logical values';
+            $langiso = 'E';
+            $new-table = qq:to/SQL/;
+              CREATE TABLE $tabname (
+                codenam varchar2(1),
+                langiso varchar2(1),
+                shortxt varchar2(20),
+                changby varchar2(12),
+                changdt varchar2(8),
+                changtm varchar2(6)
+              );
+              SQL
+            self.db-create-table(tabname => $tabname, descrip => $descrip,
+                                  sql => $new-table, language => $langiso);
+            #----------------------------------------------
+
+            $tabname = 'VERSTEXT';
+            $descrip = 'Data dictionary object description';
+            $langiso = 'E';
+            $new-table = qq:to/SQL/;
+              CREATE TABLE $tabname (
+                version varchar2(4),
+                langiso varchar2(1),
+                shortxt varchar2(20),
+                changby varchar2(12),
+                changdt varchar2(8),
+                changtm varchar2(6)
+              );
+              SQL
+            self.db-create-table(tabname => $tabname, descrip => $descrip,
+                                  sql => $new-table, language => $langiso);
+            #----------------------------------------------
+
+            $tabname = 'DDICVERS';
+            $descrip = 'Data dictionary object version';
+            $langiso = 'E';
+            $new-table = qq:to/SQL/;
+              CREATE TABLE $tabname (
+                version varchar2(4),
+                hiversn varchar2(4),
+                loversn varchar2(4),
+                changby varchar2(12),
+                changdt varchar2(8),
+                changtm varchar2(6)
+              );
+              SQL
+            self.db-create-table(tabname => $tabname, descrip => $descrip,
+                                  sql => $new-table, language => $langiso);
+            #----------------------------------------------
+
+            $tabname = 'STATCODE';
+            $descrip = 'Data dictionary object activation status';
+            $langiso = 'E';
+            $new-table = qq:to/SQL/;
+              CREATE TABLE $tabname (
+                statcod varchar2(1),
+                changby varchar2(12),
+                changdt varchar2(8),
+                changtm varchar2(6)
+              );
+              SQL
+            self.db-create-table(tabname => $tabname, descrip => $descrip,
+                                  sql => $new-table, language => $langiso);
+            #----------------------------------------------
+
+            $tabname = 'STATCODT';
+            $descrip = 'Data dictionary object activation description';
+            $langiso = 'E';
+            $new-table = qq:to/SQL/;
+              CREATE TABLE $tabname (
+                statcod varchar2(1),
+                langiso varchar2(1),
+                shortxt varchar2(20),
+                changby varchar2(12),
+                changdt varchar2(8),
+                changtm varchar2(6)
+              );
+              SQL
+            self.db-create-table(tabname => $tabname, descrip => $descrip,
+                                  sql => $new-table, language => $langiso);
+            #----------------------------------------------
+
+            $tabname = 'USERMSTR';
+            $descrip = 'User master record';
+            $langiso = 'E';
+            $new-table = qq:to/SQL/;
+              CREATE TABLE $tabname (
+                usercod varchar2(12),
+                firstnm varchar2(60),
+                lastnam varchar2(60),
+                actvatd varchar2(1),
+                changby varchar2(64),
+                changdt varchar2(8),
+                changtm varchar2(6)
+              );
+              SQL
+            self.db-create-table(tabname => $tabname, descrip => $descrip,
+                                  sql => $new-table, language => $langiso);
+            #----------------------------------------------
+
+            $tabname = 'DBDOMAIN';
+            $descrip = 'Data domain';
+            $langiso = 'E';
+            $new-table = qq:to/SQL/;
+              CREATE TABLE $tabname (
+                domname varchar2(30),
+                actvatd varchar2(1),
+                version varchar2(4),
+                datatyp varchar2(4),
+                datalen varchar2(4),
+                displen varchar2(4),
+                datadec varchar2(4),
+                lowcase varchar2(1),
+                signflg varchar2(1),
+                langflg varchar2(1),
+                fixvalu varchar2(1),
+                valtabl varchar2(30),
+                changby varchar2(12),
+                changdt varchar2(8),
+                changtm varchar2(6)
+              );
+              SQL
+            self.db-create-table(tabname => $tabname, descrip => $descrip,
+                                  sql => $new-table, language => $langiso);
+            #----------------------------------------------
+
+            $tabname = 'DBDOMAIT';
+            $descrip = 'Data domain description';
+            $langiso = 'E';
+            $new-table = qq:to/SQL/;
+              CREATE TABLE $tabname (
+                domname varchar2(30),
+                actvatd varchar2(1),
+                version varchar2(4),
+                langiso varchar2(1),
+                shortxt varchar2(20),
+                changby varchar2(12),
+                changdt varchar2(8),
+                changtm varchar2(6)
+              );
+              SQL
+            self.db-create-table(tabname => $tabname, descrip => $descrip,
+                                  sql => $new-table, language => $langiso);
+            #----------------------------------------------
+
+            $tabname = 'DOMVALUE';
+            $descrip = 'Data domain values';
+            $langiso = 'E';
+            $new-table = qq:to/SQL/;
+              CREATE TABLE $tabname (
+                domname varchar2(30),
+                actvatd varchar2(1),
+                version varchar2(4),
+                dvalkey varchar2(4),
+                lovalue varchar2(10),
+                hivalue varchar2(10),
+                changby varchar2(12),
+                changdt varchar2(8),
+                changtm varchar2(6)
+              );
+              SQL
+            self.db-create-table(tabname => $tabname, descrip => $descrip,
+                                  sql => $new-table, language => $langiso);
+            #----------------------------------------------
+
+            $tabname = 'DOMVALUT';
+            $descrip = 'Data domain value description';
+            $langiso = 'E';
+            $new-table = qq:to/SQL/;
+              CREATE TABLE $tabname (
+                domname varchar2(30),
+                actvatd varchar2(1),
+                version varchar2(4),
+                dvalkey varchar2(4),
+                langiso varchar2(1),
+                descrip varchar2(20),
+                lovalue varchar2(10),
+                hivalue varchar2(10),
+                slvalue varchar2(10),
+                changby varchar2(12),
+                changdt varchar2(8),
+                changtm varchar2(6)
+              );
+              SQL
+            self.db-create-table(tabname => $tabname, descrip => $descrip,
+                                  sql => $new-table, language => $langiso);
+            #----------------------------------------------
+
+            $tabname = 'VALUETAB';
+            $descrip = 'Data domain value table';
+            $langiso = 'E';
+            $new-table = qq:to/SQL/;
+              CREATE TABLE $tabname (
+                domname varchar2(30),
+                tabname varchar2(30),
+                txttabl varchar2(30),
+                fldname varchar2(30),
+                changby varchar2(12),
+                changdt varchar2(8),
+                changtm varchar2(6)
+              );
+              SQL
+            self.db-create-table(tabname => $tabname, descrip => $descrip,
+                                  sql => $new-table, language => $langiso);
+            #----------------------------------------------
+
+            $tabname = 'DATAELEM';
+            $descrip = 'Data elements';
+            $langiso = 'E';
+            $new-table = qq:to/SQL/;
+              CREATE TABLE $tabname (
+                delemnt varchar2(30),
+                actvatd varchar2(1),
+                version varchar2(4),
+                domname varchar2(30),
+                changby varchar2(12),
+                changdt varchar2(8),
+                changtm varchar2(6)
+              );
+              SQL
+            self.db-create-table(tabname => $tabname, descrip => $descrip,
+                                  sql => $new-table, language => $langiso);
+            #----------------------------------------------
+
+            $tabname = 'DATAELET';
+            $descrip = 'Data element description';
+            $langiso = 'E';
+            $new-table = qq:to/SQL/;
+              CREATE TABLE $tabname (
+                delemnt varchar2(30),
+                actvatd varchar2(1),
+                version varchar2(4),
+                langiso varchar2(1),
+                descrip varchar2(20),
+                shortxt varchar2(20),
+                medtext varchar2(30),
+                longtxt varchar2(4),
+                changby varchar2(12),
+                changdt varchar2(8),
+                changtm varchar2(6)
+              );
+              SQL
+            self.db-create-table(tabname => $tabname, descrip => $descrip,
+                                  sql => $new-table, language => $langiso);
+            #----------------------------------------------
+
+            $tabname = 'DATATYPE';
+            $descrip = 'Internal data types';
+            $langiso = 'E';
+            $new-table = qq:to/SQL/;
+              CREATE TABLE $tabname (
+                datatyp varchar2(4),
+                shortxt varchar2(20),
+                changby varchar2(12),
+                changdt varchar2(8),
+                changtm varchar2(6)
+              );
+              SQL
+            self.db-create-table(tabname => $tabname, descrip => $descrip,
+                                  sql => $new-table, language => $langiso);
+            #----------------------------------------------
+
+            $tabname = 'TABLFLDS';
+            $descrip = 'Table fields';
+            $langiso = 'E';
+            $new-table = qq:to/SQL/;
+              CREATE TABLE $tabname (
+                tabname varchar2(30),
+                fldname varchar2(30),
+                actvatd varchar2(1),
+                version varchar2(4),
+                delemnt varchar2(30),
+                fldspos varchar2(4),
+                primkey varchar2(1),
+                nullflg varchar2(1),
+                chktabl varchar2(30),
+                inttype varchar2(4),
+                intleng varchar2(6),
+                datadec varchar2(4),
+                changby varchar2(12),
+                changdt varchar2(8),
+                changtm varchar2(6)
+              );
+              SQL
+            self.db-create-table(tabname => $tabname, descrip => $descrip,
+                                  sql => $new-table, language => $langiso);
+            #----------------------------------------------
+
+            $tabname = 'APPLAREA';
+            $descrip = 'Application area';
+            $langiso = 'E';
+            $new-table = qq:to/SQL/;
+              CREATE TABLE $tabname (
+                apparea varchar2(30),
+                langiso varchar2(1),
+                descrip varchar2(20),
+                creatby varchar2(12),
+                changby varchar2(12),
+                changdt varchar2(8),
+                changtm varchar2(6)
+              );
+              SQL
+            self.db-create-table(tabname => $tabname, descrip => $descrip,
+                                  sql => $new-table, language => $langiso);
+            #----------------------------------------------
+
+            $tabname = 'MESGTXTS';
+            $descrip = 'Message texts';
+            $langiso = 'E';
+            $new-table = qq:to/SQL/;
+              CREATE TABLE $tabname (
+                langiso varchar2(1),
+                apparea varchar2(30),
+                mesgnum varchar2(3),
+                mesgtxt varchar2(73),
+                changby varchar2(12),
+                changdt varchar2(8),
+                changtm varchar2(6)
+              );
+              SQL
+            self.db-create-table(tabname => $tabname, descrip => $descrip,
+                                  sql => $new-table, language => $langiso);
+            #----------------------------------------------
+
+            $tabname = 'DDRELATE';
+            $descrip = 'Data dictionary object relationships';
+            $langiso = 'E';
+            $new-table = qq:to/SQL/;
+              CREATE TABLE $tabname (
+                tabname varchar2(30),
+                fldname varchar2(30),
+                actvatd varchar2(1),
+                version varchar2(4),
+                chktabl varchar2(30),
+                objrela varchar2(4),
+                lcrdnal varchar2(2),
+                rcrdnal varchar2(2),
+                apparea varchar2(30),
+                mesgnum varchar2(3),
+                chkflag varchar2(1),
+                changby varchar2(12),
+                changdt varchar2(8),
+                changtm varchar2(6)
+              );
+              SQL
+            self.db-create-table(tabname => $tabname, descrip => $descrip,
+                                  sql => $new-table, language => $langiso);
+            #----------------------------------------------
+
+            $tabname = 'DDRELATT';
+            $descrip = 'Data dictionary object relationship texts';
+            $langiso = 'E';
+            $new-table = qq:to/SQL/;
+              CREATE TABLE $tabname (
+                tabname varchar2(30),
+                fldname varchar2(30),
+                actvatd varchar2(1),
+                version varchar2(4),
+                langiso varchar2(1),
+                descrip varchar2(60),
+                mesgtxt varchar2(73),
+                changby varchar2(12),
+                changdt varchar2(8),
+                changtm varchar2(6)
+              );
+              SQL
+            self.db-create-table(tabname => $tabname, descrip => $descrip,
+                                  sql => $new-table, language => $langiso);
+            #----------------------------------------------
+
+            $tabname = 'CLNTMSTR';
+            $descrip = 'Client master table';
+            $langiso = 'E';
+            $new-table = qq:to/SQL/;
+              CREATE TABLE $tabname (
+                clntnum varchar2(3),
+                actvatd varchar2(1),
+                changby varchar2(12),
+                changdt varchar2(8),
+                changtm varchar2(6)
+              );
+              SQL
+            self.db-create-table(tabname => $tabname, descrip => $descrip,
+                                  sql => $new-table, language => $langiso);
+            #----------------------------------------------
+
+            $tabname = 'CLNTMSTT';
+            $descrip = 'Client master table description';
+            $langiso = 'E';
+            $new-table = qq:to/SQL/;
+              CREATE TABLE $tabname (
+                clntnum varchar2(3),
+                actvatd varchar2(1),
+                langiso varchar2(1),
+                descrip varchar2(20),
+                changby varchar2(12),
+                changdt varchar2(8),
+                changtm varchar2(6)
+              );
+              SQL
+            self.db-create-table(tabname => $tabname, descrip => $descrip,
+                                  sql => $new-table, language => $langiso);
+            #----------------------------------------------
+
+            $tabname = 'CLNTUSER';
+            $descrip = 'Client user master table';
+            $langiso = 'E';
+            $new-table = qq:to/SQL/;
+              CREATE TABLE $tabname (
+                clntnum varchar2(3),
+                actvatd varchar2(1),
+                usercod varchar2(12),
+                usrlock varchar2(1),
+                langiso varchar2(1),
+                passwrd varchar2(8),
+                changby varchar2(12),
+                changdt varchar2(8),
+                changtm varchar2(6)
+              );
+              SQL
+            self.db-create-table(tabname => $tabname, descrip => $descrip,
+                                  sql => $new-table, language => $langiso);
+            #----------------------------------------------
+
+            $tabname = 'PROGTABL';
+            $descrip = 'Programs listing';
+            $langiso = 'E';
+            $new-table = qq:to/SQL/;
+              CREATE TABLE $tabname (
+                program varchar2(60),
+                actvatd varchar2(1),
+                progtxt varchar2(2),
+                objtype varchar2(4),
+                changby varchar2(12),
+                changdt varchar2(8),
+                changtm varchar2(6)
+              );
+              SQL
+            self.db-create-table(tabname => $tabname, descrip => $descrip,
+                                  sql => $new-table, language => $langiso);
+            #----------------------------------------------
+
+            $tabname = 'PROGTABT';
+            $descrip = 'Program description';
+            $langiso = 'E';
+            $new-table = qq:to/SQL/;
+              CREATE TABLE $tabname (
+                program varchar2(60),
+                actvatd varchar2(1),
+                langiso varchar2(1),
+                descrip varchar2(20),
+                changby varchar2(12),
+                changdt varchar2(8),
+                changtm varchar2(6)
+              );
+              SQL
+            self.db-create-table(tabname => $tabname, descrip => $descrip,
+                                  sql => $new-table, language => $langiso);
+            #----------------------------------------------
+
+            $tabname = 'SHORTCUT';
+            $descrip = 'Program shortcuts';
+            $langiso = 'E';
+            $new-table = qq:to/SQL/;
+              CREATE TABLE $tabname (
+                shortct varchar2(20),
+                program varchar2(65),
+                actvatd varchar2(1),
+                changby varchar2(12),
+                changdt varchar2(8),
+                changtm varchar2(6)
+              );
+              SQL
+            self.db-create-table(tabname => $tabname, descrip => $descrip,
+                                  sql => $new-table, language => $langiso);
+            #----------------------------------------------
+
+
+            $tabname = 'PROGTEXT';
+            $descrip = 'Program text elements';
+            $langiso = 'E';
+            $new-table = qq:to/SQL/;
+              CREATE TABLE $tabname (
+                program varchar2(65),
+                progtxt varchar2(2),
+                langiso varchar2(1),
+                messgid varchar2(4),
+                mesgtxt varchar2(254),
+                changby varchar2(12),
+                changdt varchar2(8),
+                changtm varchar2(6)
+              );
+              SQL
+            self.db-create-table(tabname => $tabname, descrip => $descrip,
+                                  sql => $new-table, language => $langiso);
+            #----------------------------------------------
+
+
+            #$tabname = 'LOCKTABLE';
+            #$descrip = 'Lock objects';
+            #$langiso = 'E';
+            #my Str $new-table = qq:to/SQL/;
+            #  CREATE TABLE $tabname (
+            #    <field> <type>
+            #  );
+            #  SQL
+            #self.db-create-table(tabname => $tabname, descrip => $descrip,
+            #                     sql => $new-table, language => $langiso);
+            #----------------------------------------------
+
+            #$tabname = 'LOCKTABLT';
+            #$descrip = 'Lock object description';
+            #$langiso = 'E';
+            #my Str $new-table = qq:to/SQL/;
+            #  CREATE TABLE $tabname (
+            #    <field> <type>
+            #  );
+            #  SQL
+            #self.db-create-table(tabname => $tabname, descrip => $descrip,
+            #                     sql => $new-table, language => $langiso);
+            #----------------------------------------------
+
+          }
+
+        
+    END_OF_CODE
+      $source-code ~= $snippet;
+
+
+      $snippet = q:to/END_OF_CODE/;
+        method initialize-TABLFLDS(Str :$tabname) {
+            
+            #-- Pupulate TABLFLDS
+            # TABLFLDS own structure
+            self.insert-table($tabname, key => 'TABLFLDS|TABNAME|A|0', values => 'DBTABLE|0001|X| |DBTABLES|CHAR|30|30');
+            self.insert-table($tabname, key => 'TABLFLDS|FLDNAME|A|0', values => 'FLDNAME|0002|X| ||CHAR|30|30');
+            self.insert-table($tabname, key => 'TABLFLDS|ACTVATD|A|0', values => 'ACTVATD|0003|X| |STATCODE|CHAR|1|1');
+            self.insert-table($tabname, key => 'TABLFLDS|VERSION|A|0', values => 'DDOVERS|0004|X| |DDICVERS|CHAR|4|4');
+            self.insert-table($tabname, key => 'TABLFLDS|DELEMNT|A|0', values => 'DELEMNT|0005| | |DATAELEM|CHAR|30|30');
+            self.insert-table($tabname, key => 'TABLFLDS|FLDSPOS|A|0', values => 'FLDSPOS|0006| | ||CHAR|4|4');
+            self.insert-table($tabname, key => 'TABLFLDS|PRIMKEY|A|0', values => 'PRIMKEY|0007| | |LOGICALS|CHAR|1|1');
+            self.insert-table($tabname, key => 'TABLFLDS|NULLFLG|A|0', values => 'NULLFLG|0008| | |LOGICALS|CHAR|1|1');
+            self.insert-table($tabname, key => 'TABLFLDS|CHKTABL|A|0', values => 'CHKTABL|0009| | |DBTABLES|CHAR|30|30');
+            self.insert-table($tabname, key => 'TABLFLDS|INTTYPE|A|0', values => 'INTTYPE|0010| | |DATATYPE|CHAR|4|4');
+            self.insert-table($tabname, key => 'TABLFLDS|INTLENG|A|0', values => 'INTLENG|0011| | ||CHAR|6|6');
+            self.insert-table($tabname, key => 'TABLFLDS|DATADEC|A|0', values => 'DATADEC|0012| | ||CHAR|4|4');
+            self.insert-table($tabname, key => 'TABLFLDS|CHANGBY|A|0', values => 'CHANGBY|0013| | |USERMSTR|CHAR|12|12');
+            self.insert-table($tabname, key => 'TABLFLDS|CHANGDT|A|0', values => 'CHANGDT|0014| | ||CHAR|8|8');
+            self.insert-table($tabname, key => 'TABLFLDS|CHANGTM|A|0', values => 'CHANGTM|0015| | ||CHAR|6|6');
+
+            # ISOLANGU
+            self.insert-table($tabname, key => 'ISOLANGU|LANGISO|A|0', values => 'LANGUAG|0001|X| |ISOLANGU|CHAR|1|1');
+            self.insert-table($tabname, key => 'ISOLANGU|SHORTXT|A|0', values => 'DESCRIP|0002| | ||CHAR|20|20');
+            self.insert-table($tabname, key => 'ISOLANGU|CHANGBY|A|0', values => 'CHANGBY|0003| | |USERMSTR|CHAR|12|12');
+            self.insert-table($tabname, key => 'ISOLANGU|CHANGDT|A|0', values => 'CHANGDT|0004| | ||CHAR|8|8');
+            self.insert-table($tabname, key => 'ISOLANGU|CHANGTM|A|0', values => 'CHANGTM|0005| | ||CHAR|6|6');
+
+            # DDICTEXT
+            self.insert-table($tabname, key => 'DDICTEXT|LANGISO|A|0', values => 'LANGUAG|0001|X| |ISOLANGU|CHAR|1|1');
+            self.insert-table($tabname, key => 'DDICTEXT|SHORTXT|A|0', values => 'DESCRIP|0002| | ||CHAR|20|20');
+            self.insert-table($tabname, key => 'DDICTEXT|CHANGBY|A|0', values => 'CHANGBY|0003| | |USERMSTR|CHAR|12|12');
+            self.insert-table($tabname, key => 'DDICTEXT|CHANGDT|A|0', values => 'CHANGDT|0004| | ||CHAR|8|8');
+            self.insert-table($tabname, key => 'DDICTEXT|CHANGTM|A|0', values => 'CHANGTM|0005| | ||CHAR|6|6');
+
+            # TABLTYPE
+            self.insert-table($tabname, key => 'TABLTYPE|TABLTYP|A|0', values => 'TABLTYP|0001|X| |TABLTYPE|CHAR|1|1');
+            self.insert-table($tabname, key => 'TABLTYPE|CHANGBY|A|0', values => 'CHANGBY|0002| | |USERMSTR|CHAR|12|12');
+            self.insert-table($tabname, key => 'TABLTYPE|CHANGDT|A|0', values => 'CHANGDT|0003| | ||CHAR|8|8');
+            self.insert-table($tabname, key => 'TABLTYPE|CHANGTM|A|0', values => 'CHANGTM|0004| | ||CHAR|6|6');
+
+            # TABLTYPT
+            self.insert-table($tabname, key => 'TABLTYPT|TABLTYP|A|0', values => 'TABLTYP|0001|X| |TABLTYPE|CHAR|1|1');
+            self.insert-table($tabname, key => 'TABLTYPT|LANGISO|A|0', values => 'LANGUAG|0002|X| |ISOLANGU|CHAR|1|1');
+            self.insert-table($tabname, key => 'TABLTYPT|SHORTXT|A|0', values => 'DESCRIP|0003| | ||CHAR|20|20');
+            self.insert-table($tabname, key => 'TABLTYPT|CHANGBY|A|0', values => 'CHANGBY|0004| | |USERMSTR|CHAR|12|12');
+            self.insert-table($tabname, key => 'TABLTYPT|CHANGDT|A|0', values => 'CHANGDT|0005| | ||CHAR|8|8');
+            self.insert-table($tabname, key => 'TABLTYPT|CHANGTM|A|0', values => 'CHANGTM|0006| | ||CHAR|6|6');
+
+            # OBJTYPES
+            self.insert-table($tabname, key => 'OBJTYPES|OBJTYPE|A|0', values => 'OBJTYPE|0001|X| |OBJTYPE|CHAR|4|4');
+            self.insert-table($tabname, key => 'OBJTYPES|CHANGBY|A|0', values => 'CHANGBY|0002| | |USERMSTR|CHAR|12|12');
+            self.insert-table($tabname, key => 'OBJTYPES|CHANGDT|A|0', values => 'CHANGDT|0003| | ||CHAR|8|8');
+            self.insert-table($tabname, key => 'OBJTYPES|CHANGTM|A|0', values => 'CHANGTM|0004| | ||CHAR|6|6');
+
+            # OBJTYPET
+            self.insert-table($tabname, key => 'OBJTYPET|OBJTYPE|A|0', values => 'OBJTYPE|0001|X| |OBJTYPE|CHAR|4|4');
+            self.insert-table($tabname, key => 'OBJTYPET|LANGISO|A|0', values => 'LANGUAG|0002|X| |ISOLANGU|CHAR|1|1');
+            self.insert-table($tabname, key => 'OBJTYPET|SHORTXT|A|0', values => 'DESCRIP|0003| | ||CHAR|20|20');
+            self.insert-table($tabname, key => 'OBJTYPET|CHANGBY|A|0', values => 'CHANGBY|0004| | |USERMSTR|CHAR|12|12');
+            self.insert-table($tabname, key => 'OBJTYPET|CHANGDT|A|0', values => 'CHANGDT|0005| | ||CHAR|8|8');
+            self.insert-table($tabname, key => 'OBJTYPET|CHANGTM|A|0', values => 'CHANGTM|0006| | ||CHAR|6|6');
+
+            # LOGICALS
+            self.insert-table($tabname, key => 'LOGICALS|LOGICAL|A|0', values => 'LOGICAL|0001|X| |LOGICALS|CHAR|1|1');
+            self.insert-table($tabname, key => 'LOGICALS|CHANGBY|A|0', values => 'CHANGBY|0002| | |USERMSTR|CHAR|12|12');
+            self.insert-table($tabname, key => 'LOGICALS|CHANGDT|A|0', values => 'CHANGDT|0003| | ||CHAR|8|8');
+            self.insert-table($tabname, key => 'LOGICALS|CHANGTM|A|0', values => 'CHANGTM|0004| | ||CHAR|6|6');
+
+            # BOOLEANS
+            self.insert-table($tabname, key => 'BOOLEANS|CODENAM|A|0', values => 'BOOLEAN|0001|X| |LOGICALS|CHAR|1|1');
+            self.insert-table($tabname, key => 'BOOLEANS|LANGISO|A|0', values => 'LANGUAG|0002|X| |ISOLANGU|CHAR|1|1');
+            self.insert-table($tabname, key => 'BOOLEANS|SHORTXT|A|0', values => 'DESCRIP|0003| | ||CHAR|20|20');
+            self.insert-table($tabname, key => 'BOOLEANS|CHANGBY|A|0', values => 'CHANGBY|0004| | |USERMSTR|CHAR|12|12');
+            self.insert-table($tabname, key => 'BOOLEANS|CHANGDT|A|0', values => 'CHANGDT|0005| | ||CHAR|8|8');
+            self.insert-table($tabname, key => 'BOOLEANS|CHANGTM|A|0', values => 'CHANGTM|0006| | ||CHAR|6|6');
+
+            # VERSTEXT
+            self.insert-table($tabname, key => 'VERSTEXT|VERSION|A|0', values => 'DDOVERS|0001|X| |DDICVERS|CHAR|4|4');
+            self.insert-table($tabname, key => 'VERSTEXT|LANGISO|A|0', values => 'LANGUAG|0002|X| |ISOLANGU|CHAR|1|1');
+            self.insert-table($tabname, key => 'VERSTEXT|SHORTXT|A|0', values => 'DESCRIP|0003| | ||CHAR|20|20');
+            self.insert-table($tabname, key => 'VERSTEXT|CHANGBY|A|0', values => 'CHANGBY|0004| | |USERMSTR|CHAR|12|12');
+            self.insert-table($tabname, key => 'VERSTEXT|CHANGDT|A|0', values => 'CHANGDT|0005| | ||CHAR|8|8');
+            self.insert-table($tabname, key => 'VERSTEXT|CHANGTM|A|0', values => 'CHANGTM|0006| | ||CHAR|6|6');
+
+            # DDICVERS
+            self.insert-table($tabname, key => 'DDICVERS|VERSION|A|0', values => 'DDOVERS|0001|X| |DDICVERS|CHAR|4|4');
+            self.insert-table($tabname, key => 'DDICVERS|HIVERSN|A|0', values => 'DDHVERS|0002| | ||CHAR|4|4');
+            self.insert-table($tabname, key => 'DDICVERS|LOVERSN|A|0', values => 'DDLVERS|0003| | ||CHAR|4|4');
+            self.insert-table($tabname, key => 'DDICVERS|CHANGBY|A|0', values => 'CHANGBY|0004| | |USERMSTR|CHAR|12|12');
+            self.insert-table($tabname, key => 'DDICVERS|CHANGDT|A|0', values => 'CHANGDT|0005| | ||CHAR|8|8');
+            self.insert-table($tabname, key => 'DDICVERS|CHANGTM|A|0', values => 'CHANGTM|0006| | ||CHAR|6|6');
+
+            # STATCODE
+            self.insert-table($tabname, key => 'STATCODE|STATCOD|A|0', values => 'DDOSTAT|0001|X| |STATCODE|CHAR|1|1');
+            self.insert-table($tabname, key => 'STATCODE|CHANGBY|A|0', values => 'CHANGBY|0002| | |USERMSTR|CHAR|12|12');
+            self.insert-table($tabname, key => 'STATCODE|CHANGDT|A|0', values => 'CHANGDT|0003| | ||CHAR|8|8');
+            self.insert-table($tabname, key => 'STATCODE|CHANGTM|A|0', values => 'CHANGTM|0004| | ||CHAR|6|6');
+
+            # STATCODT
+            self.insert-table($tabname, key => 'STATCODT|STATCOD|A|0', values => 'DDOSTAT|0001|X| |STATCODE|CHAR|1|1');
+            self.insert-table($tabname, key => 'STATCODT|LANGISO|A|0', values => 'LANGUAG|0002|X| |ISOLANGU|CHAR|1|1');
+            self.insert-table($tabname, key => 'STATCODT|SHORTXT|A|0', values => 'DESCRIP|0003| | ||CHAR|20|20');
+            self.insert-table($tabname, key => 'STATCODT|CHANGBY|A|0', values => 'CHANGBY|0004| | |USERMSTR|CHAR|12|12');
+            self.insert-table($tabname, key => 'STATCODT|CHANGDT|A|0', values => 'CHANGDT|0005| | ||CHAR|8|8');
+            self.insert-table($tabname, key => 'STATCODT|CHANGTM|A|0', values => 'CHANGTM|0006| | ||CHAR|6|6');
+
+            # USERMSTR
+            self.insert-table($tabname, key => 'USERMSTR|USERCOD|A|0', values => 'USERCOD|0001|X| |USERMSTR|CHAR|12|12');
+            self.insert-table($tabname, key => 'USERMSTR|ACTVATD|A|0', values => 'ACTVATD|0002|X| |STATCODE|CHAR|1|1');
+            self.insert-table($tabname, key => 'USERMSTR|FIRSTNM|A|0', values => 'FIRSTNM|0003| | ||CHAR|60|60');
+            self.insert-table($tabname, key => 'USERMSTR|LASTNAM|A|0', values => 'LASTNAM|0004| | ||CHAR|60|60'); 
+            self.insert-table($tabname, key => 'USERMSTR|CHANGBY|A|0', values => 'CHANGBY|0005| | |USERMSTR|CHAR|12|12');
+            self.insert-table($tabname, key => 'USERMSTR|CHANGDT|A|0', values => 'CHANGDT|0006| | ||CHAR|8|8');
+            self.insert-table($tabname, key => 'USERMSTR|CHANGTM|A|0', values => 'CHANGTM|0007| | ||CHAR|6|6');
+
+            # DBTABLES
+            self.insert-table($tabname, key => 'DBTABLES|TABNAME|A|0', values => 'DBTABLE|0001|X| |DBTABLES|CHAR|30|30');
+            self.insert-table($tabname, key => 'DBTABLES|ACTVATD|A|0', values => 'ACTVATD|0002|X| |STATCODE|CHAR|1|1');
+            self.insert-table($tabname, key => 'DBTABLES|VERSION|A|0', values => 'DDOVERS|0003|X| |DDICVERS|CHAR|4|4');
+            self.insert-table($tabname, key => 'DBTABLES|TABLTYP|A|0', values => 'TABLTYP|0004|X| |TABLTYPE|CHAR|1|1');
+            self.insert-table($tabname, key => 'DBTABLES|CLNTDEP|A|0', values => 'CLNTDEP|0005| | |LOGICALS|CHAR|1|1');
+            self.insert-table($tabname, key => 'DBTABLES|LANGDEP|A|0', values => 'LANGDEP|0006| | |LOGICALS|CHAR|1|1');
+            self.insert-table($tabname, key => 'DBTABLES|CONTFLG|A|0', values => 'CONTFLG|0007| | ||CHAR|1|1');
+            self.insert-table($tabname, key => 'DBTABLES|CHANGBY|A|0', values => 'CHANGBY|0008| | |USERMSTR|CHAR|12|12');
+            self.insert-table($tabname, key => 'DBTABLES|CHANGDT|A|0', values => 'CHANGDT|0009| | ||CHAR|8|8');
+            self.insert-table($tabname, key => 'DBTABLES|CHANGTM|A|0', values => 'CHANGTM|0010| | ||CHAR|6|6');
+
+            # DBTABLET
+            self.insert-table($tabname, key => 'DBTABLET|TABNAME|A|0', values => 'DBTABLE|0001|X| |DBTABLES|CHAR|30|30');
+            self.insert-table($tabname, key => 'DBTABLET|ACTVATD|A|0', values => 'ACTVATD|0002|X| |STATCODE|CHAR|1|1');
+            self.insert-table($tabname, key => 'DBTABLET|VERSION|A|0', values => 'DDOVERS|0003|X| |DDICVERS|CHAR|4|4');
+            self.insert-table($tabname, key => 'DBTABLET|LANGISO|A|0', values => 'LANGUAG|0004|X| |ISOLANGU|CHAR|1|1');
+            self.insert-table($tabname, key => 'DBTABLET|SHORTXT|A|0', values => 'DESCRIP|0005| | ||CHAR|20|20');
+            self.insert-table($tabname, key => 'DBTABLET|CHANGBY|A|0', values => 'CHANGBY|0006| | |USERMSTR|CHAR|12|12');
+            self.insert-table($tabname, key => 'DBTABLET|CHANGDT|A|0', values => 'CHANGDT|0007| | ||CHAR|8|8');
+            self.insert-table($tabname, key => 'DBTABLET|CHANGTM|A|0', values => 'CHANGTM|0008| | ||CHAR|6|6');
+
+            # DBDOMAIN
+            self.insert-table($tabname, key => 'DBDOMAIN|DOMNAME|A|0', values => 'DOMNAME|0001|X| |DBDOMAIN|CHAR|30|30');
+            self.insert-table($tabname, key => 'DBDOMAIN|ACTVATD|A|0', values => 'ACTVATD|0002|X| |STATCODE|CHAR|1|1');
+            self.insert-table($tabname, key => 'DBDOMAIN|VERSION|A|0', values => 'DDOVERS|0003|X| |DDICVERS|CHAR|4|4');
+            self.insert-table($tabname, key => 'DBDOMAIN|DATATYP|A|0', values => 'DATATYP|0004| | |DATATYPE|CHAR|4|4');
+            self.insert-table($tabname, key => 'DBDOMAIN|DATALEN|A|0', values => 'DATALEN|0005| | ||CHAR|4|4');
+            self.insert-table($tabname, key => 'DBDOMAIN|DISPLEN|A|0', values => 'DISPLEN|0006| | ||CHAR|4|4');
+            self.insert-table($tabname, key => 'DBDOMAIN|DATADEC|A|0', values => 'DATADEC|0007| | ||CHAR|4|4');
+            self.insert-table($tabname, key => 'DBDOMAIN|LOWCASE|A|0', values => 'LOWCASE|0008| | |LOGICALS|CHAR|1|1');
+            self.insert-table($tabname, key => 'DBDOMAIN|SIGNFLG|A|0', values => 'SIGNFLG|0009| | |LOGICALS|CHAR|1|1');
+            self.insert-table($tabname, key => 'DBDOMAIN|LANGFLG|A|0', values => 'LANGFLG|0010| | |LOGICALS|CHAR|1|1');
+            self.insert-table($tabname, key => 'DBDOMAIN|FIXVALU|A|0', values => 'FIXVALU|0011| | |LOGICALS|CHAR|1|1');
+            self.insert-table($tabname, key => 'DBDOMAIN|VALTABL|A|0', values => 'VALTABL|0012| | |DBTABLES|CHAR|30|30');
+            self.insert-table($tabname, key => 'DBDOMAIN|CHANGBY|A|0', values => 'CHANGBY|0013| | |USERMSTR|CHAR|12|12');
+            self.insert-table($tabname, key => 'DBDOMAIN|CHANGDT|A|0', values => 'CHANGDT|0014| | ||CHAR|8|8');
+            self.insert-table($tabname, key => 'DBDOMAIN|CHANGTM|A|0', values => 'CHANGTM|0015| | ||CHAR|6|6');
+
+            # DBDOMAIT
+            self.insert-table($tabname, key => 'DBDOMAIT|DOMNAME|A|0', values => 'DOMNAME|0001|X| |DBDOMAIN|CHAR|30|30');
+            self.insert-table($tabname, key => 'DBDOMAIT|ACTVATD|A|0', values => 'ACTVATD|0002|X| |STATCODE|CHAR|1|1');
+            self.insert-table($tabname, key => 'DBDOMAIT|VERSION|A|0', values => 'DDOVERS|0003|X| |DDICVERS|CHAR|4|4');
+            self.insert-table($tabname, key => 'DBDOMAIT|LANGISO|A|0', values => 'LANGUAG|0004|X| |ISOLANGU|CHAR|1|1');
+            self.insert-table($tabname, key => 'DBDOMAIT|SHORTXT|A|0', values => 'DESCRIP|0005| | ||CHAR|20|20');
+            self.insert-table($tabname, key => 'DBDOMAIT|CHANGBY|A|0', values => 'CHANGBY|0006| | |USERMSTR|CHAR|12|12');
+            self.insert-table($tabname, key => 'DBDOMAIT|CHANGDT|A|0', values => 'CHANGDT|0007| | ||CHAR|8|8');
+            self.insert-table($tabname, key => 'DBDOMAIT|CHANGTM|A|0', values => 'CHANGTM|0008| | ||CHAR|6|6');
+
+            # DATAELEM
+            self.insert-table($tabname, key => 'DATAELEM|DELEMNT|A|0', values => 'DELEMNT|0001|X| |DATAELEM|CHAR|30|30');
+            self.insert-table($tabname, key => 'DATAELEM|ACTVATD|A|0', values => 'ACTVATD|0002|X| |STATCODE|CHAR|1|1');
+            self.insert-table($tabname, key => 'DATAELEM|VERSION|A|0', values => 'DDOVERS|0003|X| |DDICVERS|CHAR|4|4');
+            self.insert-table($tabname, key => 'DATAELEM|DOMNAME|A|0', values => 'DOMNAME|0004| | |DBDOMAIN|CHAR|30|30');
+            self.insert-table($tabname, key => 'DATAELEM|CHANGBY|A|0', values => 'CHANGBY|0005| | |USERMSTR|CHAR|12|12');
+            self.insert-table($tabname, key => 'DATAELEM|CHANGDT|A|0', values => 'CHANGDT|0006| | ||CHAR|8|8');
+            self.insert-table($tabname, key => 'DATAELEM|CHANGTM|A|0', values => 'CHANGTM|0007| | ||CHAR|6|6');
+
+            # DATAELET
+            self.insert-table($tabname, key => 'DATAELET|DELEMNT|A|0', values => 'DELEMNT|0001|X| |DATAELEM|CHAR|30|30');
+            self.insert-table($tabname, key => 'DATAELET|ACTVATD|A|0', values => 'ACTVATD|0002|X| |STATCODE|CHAR|1|1');
+            self.insert-table($tabname, key => 'DATAELET|VERSION|A|0', values => 'DDOVERS|0003|X| |DDICVERS|CHAR|4|4');
+            self.insert-table($tabname, key => 'DATAELET|LANGISO|A|0', values => 'LANGUAG|0004|X| |ISOLANGU|CHAR|1|1');
+            self.insert-table($tabname, key => 'DATAELET|DESCRIP|A|0', values => 'DESCRIP|0005| | ||CHAR|20|20');
+            self.insert-table($tabname, key => 'DATAELET|SHORTXT|A|0', values => 'SHORTXT|0006| | ||CHAR|20|20');
+            self.insert-table($tabname, key => 'DATAELET|MEDTEXT|A|0', values => 'MEDTEXT|0007| | ||CHAR|30|30');
+            self.insert-table($tabname, key => 'DATAELET|LONGTXT|A|0', values => 'LONGTXT|0008| | ||CHAR|60|60');
+            self.insert-table($tabname, key => 'DATAELET|CHANGBY|A|0', values => 'CHANGBY|0009| | |USERMSTR|CHAR|12|12');
+            self.insert-table($tabname, key => 'DATAELET|CHANGDT|A|0', values => 'CHANGDT|0010| | ||CHAR|8|8');
+            self.insert-table($tabname, key => 'DATAELET|CHANGTM|A|0', values => 'CHANGTM|0011| | ||CHAR|6|6');
+
+            # DATATYPE
+            self.insert-table($tabname, key => 'DATATYPE|DATATYP|A|0', values => 'DATATYP|0001|X| |DATATYPE|CHAR|4|4');
+            self.insert-table($tabname, key => 'DATATYPE|SHORTXT|A|0', values => 'DESCRIP|0002| | ||CHAR|20|20');
+            self.insert-table($tabname, key => 'DATATYPE|CHANGBY|A|0', values => 'CHANGBY|0003| | |USERMSTR|CHAR|12|12');
+            self.insert-table($tabname, key => 'DATATYPE|CHANGDT|A|0', values => 'CHANGDT|0004| | ||CHAR|8|8');
+            self.insert-table($tabname, key => 'DATATYPE|CHANGTM|A|0', values => 'CHANGTM|0005| | ||CHAR|6|6');
+
+            # DOMVALUE
+            self.insert-table($tabname, key => 'DOMVALUE|DOMNAME|A|0', values => 'DOMNAME|0001|X| |DBDOMAIN|CHAR|30|30');
+            self.insert-table($tabname, key => 'DOMVALUE|ACTVATD|A|0', values => 'ACTVATD|0002|X| |STATCODE|CHAR|1|1');
+            self.insert-table($tabname, key => 'DOMVALUE|VERSION|A|0', values => 'DDOVERS|0003|X| |DDICVERS|CHAR|4|4');
+            self.insert-table($tabname, key => 'DOMVALUE|DVALKEY|A|0', values => 'DVALKEY|0004|X| ||CHAR|4|4');
+            self.insert-table($tabname, key => 'DOMVALUE|LOVALUE|A|0', values => 'LOVALUE|0005| | ||CHAR|10|10');
+            self.insert-table($tabname, key => 'DOMVALUE|HIVALUE|A|0', values => 'HIVALUE|0006| | ||CHAR|10|10');
+            self.insert-table($tabname, key => 'DOMVALUE|CHANGBY|A|0', values => 'CHANGBY|0007| | |USERMSTR|CHAR|12|12');
+            self.insert-table($tabname, key => 'DOMVALUE|CHANGDT|A|0', values => 'CHANGDT|0008| | ||CHAR|8|8');
+            self.insert-table($tabname, key => 'DOMVALUE|CHANGTM|A|0', values => 'CHANGTM|0009| | ||CHAR|6|6');
+
+            # DOMVALUT
+            self.insert-table($tabname, key => 'DOMVALUT|DOMNAME|A|0', values => 'DOMNAME|0001|X| |DBDOMAIN|CHAR|30|30');
+            self.insert-table($tabname, key => 'DOMVALUT|ACTVATD|A|0', values => 'ACTVATD|0002|X| |STATCODE|CHAR|1|1');
+            self.insert-table($tabname, key => 'DOMVALUT|VERSION|A|0', values => 'DDOVERS|0003|X| |DDICVERS|CHAR|4|4');
+            self.insert-table($tabname, key => 'DOMVALUT|DVALKEY|A|0', values => 'DVALKEY|0004|X| ||CHAR|4|4');
+            self.insert-table($tabname, key => 'DOMVALUT|LANGISO|A|0', values => 'LANGUAG|0005|X| |ISOLANGU|CHAR|1|1');
+            self.insert-table($tabname, key => 'DOMVALUT|DESCRIP|A|0', values => 'DESCRIP|0006| | ||CHAR|20|20');
+            self.insert-table($tabname, key => 'DOMVALUT|LOVALUE|A|0', values => 'LOVALUE|0007| | ||CHAR|10|10');
+            self.insert-table($tabname, key => 'DOMVALUT|HIVALUE|A|0', values => 'HIVALUE|0008| | ||CHAR|10|10');
+            self.insert-table($tabname, key => 'DOMVALUT|SLVALUE|A|0', values => 'SLVALUE|0009| | ||CHAR|10|10');
+            self.insert-table($tabname, key => 'DOMVALUT|CHANGBY|A|0', values => 'CHANGBY|0010| | |USERMSTR|CHAR|12|12');
+            self.insert-table($tabname, key => 'DOMVALUT|CHANGDT|A|0', values => 'CHANGDT|0011| | ||CHAR|8|8');
+            self.insert-table($tabname, key => 'DOMVALUT|CHANGTM|A|0', values => 'CHANGTM|0012| | ||CHAR|6|6');
+
+            # VALUTABL
+            self.insert-table($tabname, key => 'VALUETAB|DOMNAME|A|0', values => 'DOMNAME|0001|X| |DBDOMAIN|CHAR|30|30');
+            self.insert-table($tabname, key => 'VALUETAB|TABNAME|A|0', values => 'DBTABLE|0002|X| |DBTABLES|CHAR|30|30');
+            self.insert-table($tabname, key => 'VALUETAB|TXTTABL|A|0', values => 'DBTABLE|0003| | |DBTABLES|CHAR|30|30');
+            self.insert-table($tabname, key => 'VALUETAB|FLDNAME|A|0', values => 'FLDNAME|0004| | ||CHAR|30|30');
+            self.insert-table($tabname, key => 'VALUETAB|CHANGBY|A|0', values => 'CHANGBY|0005| | |USERMSTR|CHAR|12|12');
+            self.insert-table($tabname, key => 'VALUETAB|CHANGDT|A|0', values => 'CHANGDT|0006| | ||CHAR|8|8');
+            self.insert-table($tabname, key => 'VALUETAB|CHANGTM|A|0', values => 'CHANGTM|0007| | ||CHAR|6|6');
+
+            # APPLAREA
+            self.insert-table($tabname, key => 'APPLAREA|APPAREA|A|0', values => 'APPAREA|0001|X| |APPLAREA|CHAR|30|30');
+            self.insert-table($tabname, key => 'APPLAREA|LANGISO|A|0', values => 'LANGUAG|0002|X| |ISOLANGU|CHAR|1|1');
+            self.insert-table($tabname, key => 'APPLAREA|DESCRIP|A|0', values => 'LONGTXT|0003| | ||CHAR|60|60');
+            self.insert-table($tabname, key => 'APPLAREA|CREATBY|A|0', values => 'CREATBY|0004| | |USERMSTR|CHAR|12|12');
+            self.insert-table($tabname, key => 'APPLAREA|CHANGBY|A|0', values => 'CHANGBY|0005| | |USERMSTR|CHAR|12|12');
+            self.insert-table($tabname, key => 'APPLAREA|CHANGDT|A|0', values => 'CHANGDT|0006| | ||CHAR|8|8');
+            self.insert-table($tabname, key => 'APPLAREA|CHANGTM|A|0', values => 'CHANGTM|0007| | ||CHAR|6|6');
+
+            # MESGTXTS
+            self.insert-table($tabname, key => 'MESGTXTS|LANGISO|A|0', values => 'LANGUAG|0001|X| |ISOLANGU|CHAR|1|1');
+            self.insert-table($tabname, key => 'MESGTXTS|APPAREA|A|0', values => 'APPAREA|0002|X| |APPLAREA|CHAR|30|30');
+            self.insert-table($tabname, key => 'MESGTXTS|MESGNUM|A|0', values => 'MESGNUM|0003|X| ||CHAR|3|3');
+            self.insert-table($tabname, key => 'MESGTXTS|MESGTXT|A|0', values => 'MESGTXT|0004| | ||CHAR|73|73');
+            self.insert-table($tabname, key => 'MESGTXTS|CHANGBY|A|0', values => 'CHANGBY|0005| | |USERMSTR|CHAR|12|12');
+            self.insert-table($tabname, key => 'MESGTXTS|CHANGDT|A|0', values => 'CHANGDT|0006| | ||CHAR|8|8');
+            self.insert-table($tabname, key => 'MESGTXTS|CHANGTM|A|0', values => 'CHANGTM|0007| | ||CHAR|6|6');
+
+
+            # DDRELATE
+            self.insert-table($tabname, key => 'DDRELATE|TABNAME|A|0', values => 'DBTABLE|0001|X| |DBTABLES|CHAR|30|30');
+            self.insert-table($tabname, key => 'DDRELATE|FLDNAME|A|0', values => 'FLDNAME|0002|X| ||CHAR|30|30');
+            self.insert-table($tabname, key => 'DDRELATE|ACTVATD|A|0', values => 'ACTVATD|0003|X| |STATCODE|CHAR|1|1');
+            self.insert-table($tabname, key => 'DDRELATE|VERSION|A|0', values => 'DDOVERS|0004|X| |DDICVERS|CHAR|4|4');
+            self.insert-table($tabname, key => 'DDRELATE|CHKTABL|A|0', values => 'CHKTABL|0005| | |DBTABLES|CHAR|30|30');
+            self.insert-table($tabname, key => 'DDRELATE|OBJRELA|A|0', values => 'OBJRELA|0006| | ||CHAR|4|4');
+            self.insert-table($tabname, key => 'DDRELATE|LCRDNAL|A|0', values => 'LCRDNAL|0007| | ||CHAR|2|2');
+            self.insert-table($tabname, key => 'DDRELATE|RCRDNAL|A|0', values => 'RCRDNAL|0008| | ||CHAR|2|2');
+            self.insert-table($tabname, key => 'DDRELATE|APPAREA|A|0', values => 'APPAREA|0009| | |APPLAREA|CHAR|30|30');
+            self.insert-table($tabname, key => 'DDRELATE|MESGNUM|A|0', values => 'MESGNUM|0010| | ||CHAR|3|3');
+            self.insert-table($tabname, key => 'DDRELATE|CHKFLAG|A|0', values => 'RELCHKF|0011| | ||CHAR|1|1');
+            self.insert-table($tabname, key => 'DDRELATE|CHANGBY|A|0', values => 'CHANGBY|0012| | |USERMSTR|CHAR|12|12');
+            self.insert-table($tabname, key => 'DDRELATE|CHANGDT|A|0', values => 'CHANGDT|0013| | ||CHAR|8|8');
+            self.insert-table($tabname, key => 'DDRELATE|CHANGTM|A|0', values => 'CHANGTM|0014| | ||CHAR|6|6');
+
+            # DDRELATT
+            self.insert-table($tabname, key => 'DDRELATT|TABNAME|A|0', values => 'DBTABLE|0001|X| |DBTABLES|CHAR|30|30');
+            self.insert-table($tabname, key => 'DDRELATT|FLDNAME|A|0', values => 'FLDNAME|0002|X| ||CHAR|30|30');
+            self.insert-table($tabname, key => 'DDRELATT|ACTVATD|A|0', values => 'ACTVATD|0003|X| |STATCODE|CHAR|1|1');
+            self.insert-table($tabname, key => 'DDRELATT|VERSION|A|0', values => 'DDOVERS|0004|X| |DDICVERS|CHAR|4|4');
+            self.insert-table($tabname, key => 'DDRELATT|LANGISO|A|0', values => 'LANGUAG|0005|X| |ISOLANGU|CHAR|1|1');
+            self.insert-table($tabname, key => 'DDRELATT|DESCRIP|A|0', values => 'RELTEXT|0006| | ||CHAR|60|60');
+            self.insert-table($tabname, key => 'DDRELATT|MESGTXT|A|0', values => 'RELMESG|0007| | ||CHAR|73|73');
+            self.insert-table($tabname, key => 'DDRELATT|CHANGBY|A|0', values => 'CHANGBY|0008| | |USERMSTR|CHAR|12|12');
+            self.insert-table($tabname, key => 'DDRELATT|CHANGDT|A|0', values => 'CHANGDT|0009| | ||CHAR|8|8');
+            self.insert-table($tabname, key => 'DDRELATT|CHANGTM|A|0', values => 'CHANGTM|0010| | ||CHAR|6|6');
+
+            # CLNTMSTR
+            self.insert-table($tabname, key => 'CLNTMSTR|CLNTNUM|A|0', values => 'CLNTNUM|0001|X| |CLNTMSTR|CHAR|3|3');
+            self.insert-table($tabname, key => 'CLNTMSTR|ACTVATD|A|0', values => 'ACTVATD|0002|X| |STATCODE|CHAR|1|1');
+            self.insert-table($tabname, key => 'CLNTMSTR|CHANGBY|A|0', values => 'CHANGBY|0003| | |USERMSTR|CHAR|12|12');
+            self.insert-table($tabname, key => 'CLNTMSTR|CHANGDT|A|0', values => 'CHANGDT|0004| | ||CHAR|8|8');
+            self.insert-table($tabname, key => 'CLNTMSTR|CHANGTM|A|0', values => 'CHANGTM|0005| | ||CHAR|6|6');
+
+            # CLNTMSTT
+            self.insert-table($tabname, key => 'CLNTMSTT|CLNTNUM|A|0', values => 'CLNTNUM|0001|X| |CLNTMSTR|CHAR|3|3');
+            self.insert-table($tabname, key => 'CLNTMSTT|ACTVATD|A|0', values => 'ACTVATD|0002|X| |STATCODE|CHAR|1|1');
+            self.insert-table($tabname, key => 'CLNTMSTT|LANGISO|A|0', values => 'LANGUAG|0003|X| |ISOLANGU|CHAR|1|1');
+            self.insert-table($tabname, key => 'CLNTMSTT|DESCRIP|A|0', values => 'DESCRIP|0004| | ||CHAR|20|20');
+            self.insert-table($tabname, key => 'CLNTMSTT|CHANGBY|A|0', values => 'CHANGBY|0005| | |USERMSTR|CHAR|12|12');
+            self.insert-table($tabname, key => 'CLNTMSTT|CHANGDT|A|0', values => 'CHANGDT|0006| | ||CHAR|8|8');
+            self.insert-table($tabname, key => 'CLNTMSTT|CHANGTM|A|0', values => 'CHANGTM|0007| | ||CHAR|6|6');
+
+            # CLNTUSER
+            self.insert-table($tabname, key => 'CLNTUSER|CLNTNUM|A|0', values => 'CLNTNUM|0001|X| |CLNTMSTR|CHAR|3|3');
+            self.insert-table($tabname, key => 'CLNTUSER|ACTVATD|A|0', values => 'ACTVATD|0002|X| |STATCODE|CHAR|1|1');
+            self.insert-table($tabname, key => 'CLNTUSER|USERCOD|A|0', values => 'USERCOD|0003|X| |USERMSTR|CHAR|12|12');
+            self.insert-table($tabname, key => 'CLNTUSER|USRLOCK|A|0', values => 'USRLOCK|0004| | |LOGICALS|CHAR|1|1');
+            self.insert-table($tabname, key => 'CLNTUSER|LANGISO|A|0', values => 'LANGUAG|0005| | |ISOLANGU|CHAR|1|1');
+            self.insert-table($tabname, key => 'CLNTUSER|PASSWRD|A|0', values => 'PASSWRD|0006| | ||CHAR|64|64');
+            self.insert-table($tabname, key => 'CLNTUSER|CHANGBY|A|0', values => 'CHANGBY|0007| | |USERMSTR|CHAR|12|12');
+            self.insert-table($tabname, key => 'CLNTUSER|CHANGDT|A|0', values => 'CHANGDT|0008| | ||CHAR|8|8');
+            self.insert-table($tabname, key => 'CLNTUSER|CHANGTM|A|0', values => 'CHANGTM|0009| | ||CHAR|6|6');
+
+            # PROGTABL
+            self.insert-table($tabname, key => 'PROGTABL|PROGRAM|A|0', values => 'PROGRAM|0001|X| |PROGTABL|CHAR|60|60');
+            self.insert-table($tabname, key => 'PROGTABL|ACTVATD|A|0', values => 'ACTVATD|0002|X| |STATCODE|CHAR|1|1');
+            self.insert-table($tabname, key => 'PROGTABL|PROGTXT|A|0', values => 'PROGTXT|0003| | ||CHAR|2|2');
+            self.insert-table($tabname, key => 'PROGTABL|OBJTYPE|A|0', values => 'OBJTYPE|0004| | |OBJTYPES|CHAR|4|4');
+            self.insert-table($tabname, key => 'PROGTABL|CHANGBY|A|0', values => 'CHANGBY|0005| | |USERMSTR|CHAR|12|12');
+            self.insert-table($tabname, key => 'PROGTABL|CHANGDT|A|0', values => 'CHANGDT|0006| | ||CHAR|8|8');
+            self.insert-table($tabname, key => 'PROGTABL|CHANGTM|A|0', values => 'CHANGTM|0007| | ||CHAR|6|6');
+
+            # PROGTABT
+            self.insert-table($tabname, key => 'PROGTABT|PROGRAM|A|0', values => 'PROGRAM|0001|X| |PROGTABL|CHAR|60|60');
+            self.insert-table($tabname, key => 'PROGTABT|ACTVATD|A|0', values => 'ACTVATD|0002|X| |STATCODE|CHAR|1|1');
+            self.insert-table($tabname, key => 'PROGTABT|LANGISO|A|0', values => 'LANGUAG|0003|X| |ISOLANGU|CHAR|1|1');
+            self.insert-table($tabname, key => 'PROGTABT|DESCRIP|A|0', values => 'DESCRIP|0004| | ||CHAR|20|20');
+            self.insert-table($tabname, key => 'PROGTABT|CHANGBY|A|0', values => 'CHANGBY|0005| | |USERMSTR|CHAR|12|12');
+            self.insert-table($tabname, key => 'PROGTABT|CHANGDT|A|0', values => 'CHANGDT|0006| | ||CHAR|8|8');
+            self.insert-table($tabname, key => 'PROGTABT|CHANGTM|A|0', values => 'CHANGTM|0007| | ||CHAR|6|6');
+
+            # PROGTEXT
+            self.insert-table($tabname, key => 'PROGTEXT|PROGRAM|A|0', values => 'PROGRAM|0001|X| |PROGTABL|CHAR|60|60');
+            self.insert-table($tabname, key => 'PROGTEXT|PROGTXT|A|0', values => 'PROGTXT|0002|X| ||CHAR|2|2');
+            self.insert-table($tabname, key => 'PROGTEXT|LANGISO|A|0', values => 'LANGUAG|0003|X| |ISOLANGU|CHAR|1|1');
+            self.insert-table($tabname, key => 'PROGTEXT|MESSGID|A|0', values => 'MESSGID|0004|X| ||CHAR|4|4');
+            self.insert-table($tabname, key => 'PROGTEXT|MESGTXT|A|0', values => 'MESGTXT|0005| | ||CHAR|254|254');
+            self.insert-table($tabname, key => 'PROGTEXT|CHANGBY|A|0', values => 'CHANGBY|0006| | |USERMSTR|CHAR|12|12');
+            self.insert-table($tabname, key => 'PROGTEXT|CHANGDT|A|0', values => 'CHANGDT|0007| | ||CHAR|8|8');
+            self.insert-table($tabname, key => 'PROGTEXT|CHANGTM|A|0', values => 'CHANGTM|0008| | ||CHAR|6|6');
+
+            # SHORTCUT
+            self.insert-table($tabname, key => 'SHORTCUT|SHORTCT|A|0', values => 'SHORTCT|0001|X| |SHORTCUT|CHAR|20|20');
+            self.insert-table($tabname, key => 'SHORTCUT|PROGRAM|A|0', values => 'PROGRAM|0002|X| |PROGTABL|CHAR|65|65');
+            self.insert-table($tabname, key => 'SHORTCUT|ACTVATD|A|0', values => 'ACTVATD|0003|X| |STATCODE|CHAR|1|1');
+            self.insert-table($tabname, key => 'SHORTCUT|CHANGBY|A|0', values => 'CHANGBY|0004| | |USERMSTR|CHAR|12|12');
+            self.insert-table($tabname, key => 'SHORTCUT|CHANGDT|A|0', values => 'CHANGDT|0005| | ||CHAR|8|8');
+            self.insert-table($tabname, key => 'SHORTCUT|CHANGTM|A|0', values => 'CHANGTM|0006| | ||CHAR|6|6');
+          };
+
+        
+    END_OF_CODE
+      $source-code ~= $snippet;
+
+
+      $snippet = q:to/END_OF_CODE/;
+        method initialize-DBDOMAIN(Str :$tabname) {
+            self.insert-table($tabname, key => 'DOMNAME|A|0', values => 'CHAR|30|30|0| | | | |DBDOMAIN');
+            self.insert-table($tabname, key => 'DELEMNT|A|0', values => 'CHAR|30|30|0| | | | |DATAELEM');
+            self.insert-table($tabname, key => 'DDOSTAT|A|0', values => 'CHAR|1|1|0| | | | |STATCODE');
+            self.insert-table($tabname, key => 'DDOVERS|A|0', values => 'NUMR|4|4|0| | | | |DDICVERS');
+            self.insert-table($tabname, key => 'LANGUAG|A|0', values => 'CHAR|1|1|0| | | | |ISOLANGU');
+            self.insert-table($tabname, key => 'SHORTXT|A|0', values => 'CHAR|20|20|0|X| | | |');
+            self.insert-table($tabname, key => 'MEDTEXT|A|0', values => 'CHAR|30|30|0|X| | | |');
+            self.insert-table($tabname, key => 'LONGTXT|A|0', values => 'CHAR|60|60|0|X| | | |');
+            self.insert-table($tabname, key => 'PROGRAM|A|0', values => 'CHAR|60|60|0|X| | | |PROGTABL');
+            self.insert-table($tabname, key => 'SHORTCT|A|0', values => 'CHAR|20|20|0|X| | | |SHORTCUT');
+            self.insert-table($tabname, key => 'DATATYP|A|0', values => 'CHAR|4|4|0| | | | |DATATYPE');
+            self.insert-table($tabname, key => 'DBTABLE|A|0', values => 'CHAR|30|30|0| | | | |DBTABLES');
+            self.insert-table($tabname, key => 'DIGIT01|A|0', values => 'NUMR|1|1|0| | | | |');
+            self.insert-table($tabname, key => 'DIGIT02|A|0', values => 'NUMR|2|2|0| | | | |');
+            self.insert-table($tabname, key => 'DIGIT03|A|0', values => 'NUMR|3|3|0| | | | |');
+            self.insert-table($tabname, key => 'DIGIT04|A|0', values => 'NUMR|4|4|0| | | | |');
+            self.insert-table($tabname, key => 'DIGIT06|A|0', values => 'NUMR|6|6|0| | | | |');
+            self.insert-table($tabname, key => 'DIGIT10|A|0', values => 'NUMR|10|10|0| | | | |');
+            self.insert-table($tabname, key => 'ALPHA01|A|0', values => 'CHAR|1|1|0| | | | |');
+            self.insert-table($tabname, key => 'LOGICAL|A|0', values => 'CHAR|1|1|0| | | |X|LOGICALS');
+            self.insert-table($tabname, key => 'BOOLEAN|A|0', values => 'CHAR|1|1|0| | | | |LOGICALS');
+            self.insert-table($tabname, key => 'DATEYMD|A|0', values => 'DATM|8|8|0| | | | |');
+            self.insert-table($tabname, key => 'DATECYR|A|0', values => 'NUMR|4|4|0| | | | |CALYEARS');
+            self.insert-table($tabname, key => 'DAT6DMY|A|0', values => 'NUMR|6|6|0| | | | |');
+            self.insert-table($tabname, key => 'DATETIM|A|0', values => 'TIME|6|6|0| | | | |');
+            self.insert-table($tabname, key => 'TIME6HM|A|0', values => 'NUMR|4|4|0| | | | |');
+            self.insert-table($tabname, key => 'FLDNAME|A|0', values => 'CHAR|30|30|0| | | | |');
+            self.insert-table($tabname, key => 'USERCOD|A|0', values => 'CHAR|12|12|0| | | | |USERMSTR');
+            self.insert-table($tabname, key => 'CLNTNUM|A|0', values => 'NUMR|3|3|0| | | | |CLNTMSTR');
+            self.insert-table($tabname, key => 'TABLTYP|A|0', values => 'CHAR|1|1|0| | | | |TABLTYPE');
+            self.insert-table($tabname, key => 'VERSION|A|0', values => 'NUMR|4|4|0| | | | |');
+            self.insert-table($tabname, key => 'OBJTEXT|A|0', values => 'CHAR|254|254|0| | | | |');
+            self.insert-table($tabname, key => 'OBJCODE|A|0', values => 'CHAR|60|60|0| | | | |');
+            self.insert-table($tabname, key => 'PASSWRD|A|0', values => 'CHAR|64|64|0| | | | |');
+            self.insert-table($tabname, key => 'DATEHMS|A|0', values => 'NUMR|14|14|0| | | | |');
+            self.insert-table($tabname, key => 'ALPHA02|A|0', values => 'CHAR|2|2|0| | | | |');
+            self.insert-table($tabname, key => 'DOMVALU|A|0', values => 'CHAR|10|10|0| | | | |');
+            self.insert-table($tabname, key => 'APPAREA|A|0', values => 'CHAR|30|30|0| | | | |APPLAREA');
+            self.insert-table($tabname, key => 'MESGTXT|A|0', values => 'CHAR|73|73|0|X| | | |');
+            self.insert-table($tabname, key => 'DEPFCTR|A|0', values => 'NUMR|4|4|0| | | |X|');
+            self.insert-table($tabname, key => 'LCRDNAL|A|0', values => 'NUMR|2|2|0| | | |X|');
+            self.insert-table($tabname, key => 'RCRDNAL|A|0', values => 'NUMR|2|2|0| | | |X|');
+            self.insert-table($tabname, key => 'CHKFLAG|A|0', values => 'CHAR|1|1|0| | | |X|');
+            self.insert-table($tabname, key => 'CHAR060|A|0', values => 'CHAR|60|60|0| | | | |');
+            self.insert-table($tabname, key => 'OBJTYPE|A|0', values => 'CHAR|4|4|0| | | | |OBJTYPES');
+          }
+
+        
+    END_OF_CODE
+      $source-code ~= $snippet;
+
+
+      $snippet = q:to/END_OF_CODE/;
+        method initialize-DBDOMAIT(Str :$tabname) {
+            self.insert-table($tabname, key => 'DOMNAME|A|0|E', values => 'Technical domain description');
+            self.insert-table($tabname, key => 'DELEMNT|A|0|E', values => 'Data elements (semantic domain)');
+            self.insert-table($tabname, key => 'DDOSTAT|A|0|E', values => 'Data dictionary object status');
+            self.insert-table($tabname, key => 'DDOVERS|A|0|E', values => 'Data dictionary object version');
+            self.insert-table($tabname, key => 'LANGUAG|A|0|E', values => 'ISO language code');
+            self.insert-table($tabname, key => 'SHORTXT|A|0|E', values => 'Short text description');
+            self.insert-table($tabname, key => 'MEDTEXT|A|0|E', values => 'Medium text description');
+            self.insert-table($tabname, key => 'LONGTXT|A|0|E', values => 'Long text description');
+            self.insert-table($tabname, key => 'PROGRAM|A|0|E', values => 'Source code name');
+            self.insert-table($tabname, key => 'SHORTCT|A|0|E', values => 'Shortcut or transaction code');
+            self.insert-table($tabname, key => 'DATATYP|A|0|E', values => 'Data types');
+            self.insert-table($tabname, key => 'DBTABLE|A|0|E', values => 'Database tables');
+            self.insert-table($tabname, key => 'DIGIT01|A|0|E', values => 'Numeric - 1 digit');
+            self.insert-table($tabname, key => 'DIGIT02|A|0|E', values => 'Numeric - 2 digits');
+            self.insert-table($tabname, key => 'DIGIT03|A|0|E', values => 'Numeric - 3 digits');
+            self.insert-table($tabname, key => 'DIGIT04|A|0|E', values => 'Numeric - 4 digits');
+            self.insert-table($tabname, key => 'DIGIT06|A|0|E', values => 'Numeric - 6 digits');
+            self.insert-table($tabname, key => 'DIGIT10|A|0|E', values => 'Numeric - 10 digits');
+            self.insert-table($tabname, key => 'ALPHA01|A|0|E', values => 'Alphabet');
+            self.insert-table($tabname, key => 'LOGICAL|A|0|E', values => 'Logical values');
+            self.insert-table($tabname, key => 'BOOLEAN|A|0|E', values => 'Logical values');
+            self.insert-table($tabname, key => 'DATEYMD|A|0|E', values => 'Date - YYYYMMDD');
+            self.insert-table($tabname, key => 'DATECYR|A|0|E', values => 'Date calander year - YYYY');
+            self.insert-table($tabname, key => 'DAT6DMY|A|0|E', values => 'Date - DDMMYY');
+            self.insert-table($tabname, key => 'DATETIM|A|0|E', values => 'Time - HHMMSS');
+            self.insert-table($tabname, key => 'TIME6HM|A|0|E', values => 'Time - HHMM');
+            self.insert-table($tabname, key => 'FLDNAME|A|0|E', values => 'Field name');
+            self.insert-table($tabname, key => 'USERCOD|A|0|E', values => 'User master record');
+            self.insert-table($tabname, key => 'CLNTNUM|A|0|E', values => 'Client number');
+            self.insert-table($tabname, key => 'TABLTYP|A|0|E', values => 'Database table types');
+            self.insert-table($tabname, key => 'VERSION|A|0|E', values => 'Version no.');
+            self.insert-table($tabname, key => 'OBJTEXT|A|0|E', values => 'Text placeholder');
+            self.insert-table($tabname, key => 'OBJCODE|A|0|E', values => 'Object texts value');
+            self.insert-table($tabname, key => 'PASSWRD|A|0|E', values => 'Password');
+            self.insert-table($tabname, key => 'DATEHMS|A|0|E', values => 'Date - YYYYMMDDHHMMSS');
+            self.insert-table($tabname, key => 'ALPHA02|A|0|E', values => 'Alphabetic code (2 characters)');
+            self.insert-table($tabname, key => 'DOMVALU|A|0|E', values => 'Domain value');
+            self.insert-table($tabname, key => 'APPAREA|A|0|E', values => 'Application area');
+            self.insert-table($tabname, key => 'MESGTXT|A|0|E', values => 'Message text');
+            self.insert-table($tabname, key => 'DEPFCTR|A|0|E', values => 'Dependency factor');
+            self.insert-table($tabname, key => 'LCRDNAL|A|0|E', values => 'Left side cardinality of relationship');
+            self.insert-table($tabname, key => 'RCRDNAL|A|0|E', values => 'Right side cardinality of relationship');
+            self.insert-table($tabname, key => 'CHKFLAG|A|0|E', values => 'Flag ("X" or "blank")');
+            self.insert-table($tabname, key => 'CHAR060|A|0|E', values => 'String of 60 characters');
+            self.insert-table($tabname, key => 'OBJTYPE|A|0|E', values => 'Object types');
+
+          }
+
+        
+    END_OF_CODE
+      $source-code ~= $snippet;
+
+
+      $snippet = q:to/END_OF_CODE/;
+        method initialize-DATAELEM(Str :$tabname) {
+            self.insert-table($tabname, key => 'DOMNAME|A|0', values => 'DOMNAME');
+            self.insert-table($tabname, key => 'DELEMNT|A|0', values => 'DELEMNT');
+            self.insert-table($tabname, key => 'DDOSTAT|A|0', values => 'DDOSTAT');
+            self.insert-table($tabname, key => 'DDOVERS|A|0', values => 'DDOVERS');
+            self.insert-table($tabname, key => 'DDHVERS|A|0', values => 'VERSION');
+            self.insert-table($tabname, key => 'DDLVERS|A|0', values => 'VERSION');
+            self.insert-table($tabname, key => 'LANGUAG|A|0', values => 'LANGUAG');
+            self.insert-table($tabname, key => 'DESCRIP|A|0', values => 'SHORTXT');
+            self.insert-table($tabname, key => 'SHORTXT|A|0', values => 'SHORTXT');
+            self.insert-table($tabname, key => 'MEDTEXT|A|0', values => 'MEDTEXT');
+            self.insert-table($tabname, key => 'LONGTXT|A|0', values => 'LONGTXT');
+            self.insert-table($tabname, key => 'DATATYP|A|0', values => 'DATATYP');
+            self.insert-table($tabname, key => 'DBTABLE|A|0', values => 'DBTABLE');
+            self.insert-table($tabname, key => 'NUMBER6|A|0', values => 'DIGIT06');
+            self.insert-table($tabname, key => 'LOGICAL|A|0', values => 'LOGICAL');
+            self.insert-table($tabname, key => 'DATEYMD|A|0', values => 'DATEYMD');
+            self.insert-table($tabname, key => 'DATETIM|A|0', values => 'DATETIM');
+            self.insert-table($tabname, key => 'FLDNAME|A|0', values => 'FLDNAME');
+            self.insert-table($tabname, key => 'FLDLENG|A|0', values => 'DIGIT04');
+            self.insert-table($tabname, key => 'DECIMAL|A|0', values => 'DIGIT04');
+            self.insert-table($tabname, key => 'FLDSPOS|A|0', values => 'DIGIT04');
+            self.insert-table($tabname, key => 'USERCOD|A|0', values => 'USERCOD');
+            self.insert-table($tabname, key => 'CLNTNUM|A|0', values => 'CLNTNUM');
+            self.insert-table($tabname, key => 'TABLTYP|A|0', values => 'TABLTYP');
+            self.insert-table($tabname, key => 'OBJTYPE|A|0', values => 'OBJTYPE');
+            self.insert-table($tabname, key => 'BOOLEAN|A|0', values => 'BOOLEAN');
+            self.insert-table($tabname, key => 'ACTVATD|A|0', values => 'DDOSTAT');
+            self.insert-table($tabname, key => 'CHANGBY|A|0', values => 'USERCOD');
+            self.insert-table($tabname, key => 'CREATBY|A|0', values => 'USERCOD');
+            self.insert-table($tabname, key => 'CHANGDT|A|0', values => 'DATEYMD');
+            self.insert-table($tabname, key => 'CHANGTM|A|0', values => 'DATETIM');
+            self.insert-table($tabname, key => 'TABNAME|A|0', values => 'DBTABLE');
+            self.insert-table($tabname, key => 'CLNTDEP|A|0', values => 'BOOLEAN');
+            self.insert-table($tabname, key => 'LANGDEP|A|0', values => 'BOOLEAN');
+            self.insert-table($tabname, key => 'DISPLEN|A|0', values => 'DIGIT04');
+            self.insert-table($tabname, key => 'DATALEN|A|0', values => 'DIGIT04');
+            self.insert-table($tabname, key => 'LOWCASE|A|0', values => 'BOOLEAN');
+            self.insert-table($tabname, key => 'SIGNFLG|A|0', values => 'BOOLEAN');
+            self.insert-table($tabname, key => 'LANGFLG|A|0', values => 'BOOLEAN');
+            self.insert-table($tabname, key => 'VALTABL|A|0', values => 'DBTABLE');
+            self.insert-table($tabname, key => 'PRIMKEY|A|0', values => 'BOOLEAN');
+            self.insert-table($tabname, key => 'NULLFLG|A|0', values => 'BOOLEAN');
+            self.insert-table($tabname, key => 'CHKTABL|A|0', values => 'DBTABLE');
+            self.insert-table($tabname, key => 'INTTYPE|A|0', values => 'DATATYP');
+            self.insert-table($tabname, key => 'INTLENG|A|0', values => 'DIGIT06');
+            self.insert-table($tabname, key => 'DATADEC|A|0', values => 'DIGIT04');
+            self.insert-table($tabname, key => 'USRLOCK|A|0', values => 'BOOLEAN');
+            self.insert-table($tabname, key => 'CONTFLG|A|0', values => 'ALPHA01');
+            self.insert-table($tabname, key => 'FIXVALU|A|0', values => 'BOOLEAN');
+            self.insert-table($tabname, key => 'LOVALUE|A|0', values => 'DOMVALU');
+            self.insert-table($tabname, key => 'HIVALUE|A|0', values => 'DOMVALU');
+            self.insert-table($tabname, key => 'DVALKEY|A|0', values => 'DIGIT04');
+            self.insert-table($tabname, key => 'SLVALUE|A|0', values => 'DOMVALU');
+            self.insert-table($tabname, key => 'APPAREA|A|0', values => 'APPAREA');
+            self.insert-table($tabname, key => 'MESGNUM|A|0', values => 'DIGIT03');
+            self.insert-table($tabname, key => 'MESGTXT|A|0', values => 'MESGTXT');
+            self.insert-table($tabname, key => 'OBJRELA|A|0', values => 'DEPFCTR');
+            self.insert-table($tabname, key => 'LCRDNAL|A|0', values => 'LCRDNAL');
+            self.insert-table($tabname, key => 'RCRDNAL|A|0', values => 'RCRDNAL');
+            self.insert-table($tabname, key => 'RELCHKF|A|0', values => 'CHKFLAG');
+            self.insert-table($tabname, key => 'RELTEXT|A|0', values => 'CHAR060');
+            self.insert-table($tabname, key => 'RELMESG|A|0', values => 'MESGTXT');
+            self.insert-table($tabname, key => 'SHORTCT|A|0', values => 'SHORTCT');
+            self.insert-table($tabname, key => 'PROGRAM|A|0', values => 'PROGRAM');
+            self.insert-table($tabname, key => 'PROGTXT|A|0', values => 'ALPHA02');
+            self.insert-table($tabname, key => 'PASSWRD|A|0', values => 'PASSWRD');
+            self.insert-table($tabname, key => 'FIRSTNM|A|0', values => 'CHAR060');   
+            self.insert-table($tabname, key => 'LASTNAM|A|0', values => 'CHAR060');
+            self.insert-table($tabname, key => 'MESSGID|A|0', values => 'DIGIT04');
+          }
+
+        
+    END_OF_CODE
+      $source-code ~= $snippet;
+
+
+      $snippet = q:to/END_OF_CODE/;
+        method initialize-DATAELET(Str :$tabname) {
+            self.insert-table($tabname, key => 'DOMNAME|A|0|E', values => 'Domain name|Domain name|Domain name|Domain name');
+            self.insert-table($tabname, key => 'DELEMNT|A|0|E', values => 'Data element|Data element|Data element|Data element');
+            self.insert-table($tabname, key => 'DDOSTAT|A|0|E', values => 'DDO activation status|DDO activation status|DDO activation status|DDO activation status');
+            self.insert-table($tabname, key => 'DDOVERS|A|0|E', values => 'Version|Version|Version|Version');
+            self.insert-table($tabname, key => 'DDHVERS|A|0|E', values => 'Major version|Major version|Major version|Major version');
+            self.insert-table($tabname, key => 'DDLVERS|A|0|E', values => 'Minor version|Minor version|Minor version|Minor version');
+            self.insert-table($tabname, key => 'LANGUAG|A|0|E', values => 'Language|Language|Language|Language');
+            self.insert-table($tabname, key => 'DESCRIP|A|0|E', values => 'Description|Description|Description|Description');
+            self.insert-table($tabname, key => 'SHORTXT|A|0|E', values => 'Short text|Short text|Short text|Short text');
+            self.insert-table($tabname, key => 'MEDTEXT|A|0|E', values => 'Medium text|Medium text|Medium text|Medium text');
+            self.insert-table($tabname, key => 'LONGTXT|A|0|E', values => 'Long text|Long text|Long text|Long text');
+            self.insert-table($tabname, key => 'DATATYP|A|0|E', values => 'Data type|Data type|Data type|Data type');
+            self.insert-table($tabname, key => 'DBTABLE|A|0|E', values => 'Database table|Database table|Database table|Database table');
+            self.insert-table($tabname, key => 'NUMBER6|A|0|E', values => 'Length (6 digits)|Length (6 digits)|Length (6 digits)|Length (6 digits)');
+            self.insert-table($tabname, key => 'LOGICAL|A|0|E', values => 'Logical values|Logical values|Logical values|Logical values');
+            self.insert-table($tabname, key => 'DATEYMD|A|0|E', values => 'Date - YYYYMMDD|Date - YYYYMMDD|Date - YYYYMMDD|Date - YYYYMMDD');
+            self.insert-table($tabname, key => 'DATETIM|A|0|E', values => 'Time - HHMMSS|Time - HHMMSS|Time - HHMMSS|Time - HHMMSS');
+            self.insert-table($tabname, key => 'FLDNAME|A|0|E', values => 'Field name|Field name|Field name|Field name');
+            self.insert-table($tabname, key => 'FLDLENG|A|0|E', values => 'Field length|Field length|Field length|Field length');
+            self.insert-table($tabname, key => 'DECIMAL|A|0|E', values => 'Precision|Precision|Precision|Precision');
+            self.insert-table($tabname, key => 'FLDSPOS|A|0|E', values => 'Field position|Field position|Field position|Field position');
+            self.insert-table($tabname, key => 'USERCOD|A|0|E', values => 'User id|User id|User id|User id');
+            self.insert-table($tabname, key => 'CLNTNUM|A|0|E', values => 'Client number|Client number|Client number|Client number');
+            self.insert-table($tabname, key => 'TABLTYP|A|0|E', values => 'Table type|Table type|Table type|Table type');
+            self.insert-table($tabname, key => 'OBJTYPE|A|0|E', values => 'Object type|Object type|Object type|Object type');
+            self.insert-table($tabname, key => 'BOOLEAN|A|0|E', values => 'Boolean values|Boolean values|Boolean values|Boolean values');
+            self.insert-table($tabname, key => 'ACTVATD|A|0|E', values => 'Active|Active|Active|Active');
+            self.insert-table($tabname, key => 'CHANGBY|A|0|E', values => 'Last change by|Last change by|Last change by|Last change by');
+            self.insert-table($tabname, key => 'CREATBY|A|0|E', values => 'Created by|Created by|Created by|Created by');
+            self.insert-table($tabname, key => 'CHANGDT|A|0|E', values => 'Last change on|Last change on|Last change on|Last change on');
+            self.insert-table($tabname, key => 'CHANGTM|A|0|E', values => 'Last change at|Last change at|Last change at|Last change at');
+            self.insert-table($tabname, key => 'TABNAME|A|0|E', values => 'Table name|Table name|Table name|Table name');
+            self.insert-table($tabname, key => 'CLNTDEP|A|0|E', values => 'Client dependent|Client dependent|Client dependent|Client dependent');
+            self.insert-table($tabname, key => 'LANGDEP|A|0|E', values => 'Language dependent|Language dependent|Language dependent|Language dependent');
+            self.insert-table($tabname, key => 'DISPLEN|A|0|E', values => 'Display length|Display length|Display length|Display length');
+            self.insert-table($tabname, key => 'DATALEN|A|0|E', values => 'Data length|Data length|Data length|Data length');
+            self.insert-table($tabname, key => 'LOWCASE|A|0|E', values => 'Lower case|Lower case|Lower case|Lower case');
+            self.insert-table($tabname, key => 'SIGNFLG|A|0|E', values => 'Sign flag|Sign flag|Sign flag|Sign flag');
+            self.insert-table($tabname, key => 'LANGFLG|A|0|E', values => 'Language flag|Language flag|Language flag|Language flag');
+            self.insert-table($tabname, key => 'VALTABL|A|0|E', values => 'Value table|Value table|Value table|Value table');
+            self.insert-table($tabname, key => 'PRIMKEY|A|0|E', values => 'Primary key|Primary key|Primary key|Primary key');
+            self.insert-table($tabname, key => 'NULLFLG|A|0|E', values => 'Not null|Not null|Not null|Not null');
+            self.insert-table($tabname, key => 'CHKTABL|A|0|E', values => 'Check table|Check table|Check table|Check table');
+            self.insert-table($tabname, key => 'INTTYPE|A|0|E', values => 'Internal data type|Internal data type|Internal data type|Internal data type');
+            self.insert-table($tabname, key => 'INTLENG|A|0|E', values => 'Internal data length|Internal data length|Internal data length|Internal data length');
+            self.insert-table($tabname, key => 'DATADEC|A|0|E', values => 'No of decimals|No of decimals|No of decimals|No of decimals');
+            self.insert-table($tabname, key => 'USRLOCK|A|0|E', values => 'User id locked|User id locked|User id locked|User id locked');
+            self.insert-table($tabname, key => 'CONTFLG|A|0|E', values => 'Delivery class|Delivery class|Delivery class|Delivery class');
+            self.insert-table($tabname, key => 'FIXVALU|A|0|E', values => 'Fixed value exists|Fixed value exists|Fix value exists|Fix value exist');
+            self.insert-table($tabname, key => 'LOVALUE|A|0|E', values => 'Lower limit value|Lower limit value|Lower limit value|Lower limit value');
+            self.insert-table($tabname, key => 'HIVALUE|A|0|E', values => 'Higher limit value|Higher limit value|Higher limit value|Higher limit value');
+            self.insert-table($tabname, key => 'DVALKEY|A|0|E', values => 'Domain value key|Domain value key|Domain value key|Domain value key');
+            self.insert-table($tabname, key => 'SLVALUE|A|0|E', values => 'Single value|Single value|Single value|Single value');
+            self.insert-table($tabname, key => 'APPAREA|A|0|E', values => 'Application area|Application area|Application area|Application area');
+            self.insert-table($tabname, key => 'MESGNUM|A|0|E', values => 'Message number|Message number|Message number|Message number');
+            self.insert-table($tabname, key => 'MESGTXT|A|0|E', values => 'Message text|Message text|Message text|Message text');
+            self.insert-table($tabname, key => 'OBJRELA|A|0|E', values => 'Object relationship|Object relationship|Object relationship|Object relationship');
+            self.insert-table($tabname, key => 'LCRDNAL|A|0|E', values => 'Left side cardinality|Left side cardinality|Left side cardinality|Left side cardinality');
+            self.insert-table($tabname, key => 'RCRDNAL|A|0|E', values => 'Right side cardinality|Right side cardinality|Right side cardinality|Right side cardinality');
+            self.insert-table($tabname, key => 'RELCHKF|A|0|E', values => 'No relationship check|No relationship check|No relationship check|No relationship check');
+            self.insert-table($tabname, key => 'RELTEXT|A|0|E', values => 'Explanatory short text|Explanatory short text|Explanatory short text|Explanatory short text');
+            self.insert-table($tabname, key => 'RELMESG|A|0|E', values => 'Msg for failed FK check|Msg for failed FK check|Msg for failed FK check|Message for failed FK check');
+            self.insert-table($tabname, key => 'SHORTCT|A|0|E', values => 'Transaction code|Transaction code|Transaction code|Transaction code');
+            self.insert-table($tabname, key => 'PROGRAM|A|0|E', values => 'Program name|Program name|Program name|Program name');
+            self.insert-table($tabname, key => 'PROGTXT|A|0|E', values => 'Program text|Program text|Program text|Program text');
+            self.insert-table($tabname, key => 'PASSWRD|A|0|E', values => 'Password|Password|Password|Password');
+            self.insert-table($tabname, key => 'FIRSTNM|A|0|E', values => 'First name|First name|First name|First name');
+            self.insert-table($tabname, key => 'LASTNAM|A|0|E', values => 'Last name|Last name|Last name|Last name');
+            self.insert-table($tabname, key => 'MESSGID|A|0|E', values => 'Message no|Message no|Message no|Message no');
+          }
+
+        
+    END_OF_CODE
+      $source-code ~= $snippet;
+
+
+      $snippet = q:to/END_OF_CODE/;
+        method initialize-STATCODE(Str :$tabname) {
+            self.insert-table($tabname, key => 'A', values => '');
+            self.insert-table($tabname, key => 'N', values => '');
+            self.insert-table($tabname, key => 'I', values => '');
+            self.insert-table($tabname, key => 'U', values => '');
+            self.insert-table($tabname, key => 'R', values => '');
+            self.insert-table($tabname, key => 'D', values => '');
+          }
+
+        
+    END_OF_CODE
+      $source-code ~= $snippet;
+
+
+      $snippet = q:to/END_OF_CODE/;
+        method initialize-STATCODT(Str :$tabname) {
+            self.insert-table($tabname, key => 'A|E', values => 'Active');
+            self.insert-table($tabname, key => 'N|E', values => 'New');
+            self.insert-table($tabname, key => 'I|E', values => 'Inactive');
+            self.insert-table($tabname, key => 'U|E', values => 'Unknown');
+            self.insert-table($tabname, key => 'R|E', values => 'Revised');
+            self.insert-table($tabname, key => 'D|E', values => 'Deleted');
+
+          }
+
+        
+    END_OF_CODE
+      $source-code ~= $snippet;
+
+
+      $snippet = q:to/END_OF_CODE/;
+        method initialize-DDICVERS(Str :$tabname) {
+            self.insert-table($tabname, key => '0', values => '0|0');
+          }
+
+        
+    END_OF_CODE
+      $source-code ~= $snippet;
+
+
+      $snippet = q:to/END_OF_CODE/;
+        method initialize-VERSTEXT(Str :$tabname) {
+            self.insert-table($tabname, key => '0|E', values => 'Original');
+          }
+
+        
+    END_OF_CODE
+      $source-code ~= $snippet;
+
+
+      $snippet = q:to/END_OF_CODE/;
+        method initialize-ISOLANGU(Str :$tabname) {
+            self.insert-table($tabname, key => 'E', values => 'English');
+          }
+
+        
+    END_OF_CODE
+      $source-code ~= $snippet;
+
+
+      $snippet = q:to/END_OF_CODE/;
+        method initialize-LOGICALS(Str :$tabname) {
+            self.insert-table($tabname, key => 'Y', values => '');
+            self.insert-table($tabname, key => 'N', values => '');
+            self.insert-table($tabname, key => 'T', values => '');
+            self.insert-table($tabname, key => 'F', values => '');
+            self.insert-table($tabname, key => 'X', values => '');
+            self.insert-table($tabname, key => ' ', values => '');
+            self.insert-table($tabname, key => '1', values => '');
+            self.insert-table($tabname, key => '0', values => '');
+          }
+
+        
+    END_OF_CODE
+      $source-code ~= $snippet;
+
+
+      $snippet = q:to/END_OF_CODE/;
+        method initialize-BOOLEANS(Str :$tabname) {
+            self.insert-table($tabname, key => 'Y|E', values => 'Yes');
+            self.insert-table($tabname, key => 'N|E', values => 'No');
+            self.insert-table($tabname, key => 'T|E', values => 'True');
+            self.insert-table($tabname, key => 'F|E', values => 'False');
+            self.insert-table($tabname, key => 'X|E', values => 'True');
+            self.insert-table($tabname, key => ' |E', values => 'False');
+            self.insert-table($tabname, key => '1|E', values => 'Logical True');
+            self.insert-table($tabname, key => '0|E', values => 'Logical False');
+
+          }
+
+        
+    END_OF_CODE
+      $source-code ~= $snippet;
+
+
+      $snippet = q:to/END_OF_CODE/;
+        method initialize-DATATYPE(Str :$tabname) {
+            self.insert-table($tabname, key => 'CHAR', values => 'Character');
+            self.insert-table($tabname, key => 'NUMR', values => 'Numeric');
+            self.insert-table($tabname, key => 'DECI', values => 'Decimals');
+            self.insert-table($tabname, key => 'CURR', values => 'Currency');
+            self.insert-table($tabname, key => 'BOOL', values => 'Boolean');
+            self.insert-table($tabname, key => 'DATM', values => 'Date as YYYYMMDD');
+            self.insert-table($tabname, key => 'TIME', values => 'Time as HHMMSS');
+
+          }
+
+        
+    END_OF_CODE
+      $source-code ~= $snippet;
+
+
+      $snippet = q:to/END_OF_CODE/;
+        method initialize-TABLTYPE(Str :$tabname) {
+            self.insert-table($tabname, key => 'T', values => '');
+            self.insert-table($tabname, key => 'I', values => '');
+          }
+
+        
+    END_OF_CODE
+      $source-code ~= $snippet;
+
+
+      $snippet = q:to/END_OF_CODE/;
+        method initialize-TABLTYPT(Str :$tabname) {
+            self.insert-table($tabname, key => 'T|E', values => 'Table');
+            self.insert-table($tabname, key => 'I|E', values => 'Index');
+          }
+
+        
+    END_OF_CODE
+      $source-code ~= $snippet;
+
+
+      $snippet = q:to/END_OF_CODE/;
+        method initialize-OBJTYPES(Str :$tabname) {
+            self.insert-table($tabname, key => 'WEBA', values => '');
+            self.insert-table($tabname, key => 'WEBC', values => '');
+          }
+
+        
+    END_OF_CODE
+      $source-code ~= $snippet;
+
+
+      $snippet = q:to/END_OF_CODE/;
+        method initialize-OBJTYPET(Str :$tabname) {
+            self.insert-table($tabname, key => 'WEBA|E', values => 'Web app - generic application');
+            self.insert-table($tabname, key => 'WEBC|E', values => 'Web app with form control');
+          }
+
+        
+    END_OF_CODE
+      $source-code ~= $snippet;
+
+
+      $snippet = q:to/END_OF_CODE/;
+        method initialize-USERMSTR(Str :$tabname) {
+            self.insert-table($tabname, key => 'SYSTEM|A', values => 'System|System');
+          }
+
+        
+    END_OF_CODE
+      $source-code ~= $snippet;
+
+
+      $snippet = q:to/END_OF_CODE/;
+        method initialize-CLNTMSTR(Str :$tabname) {
+            self.insert-table($tabname, key => '000|A', values => '');
+          }
+
+        
+    END_OF_CODE
+      $source-code ~= $snippet;
+
+
+      $snippet = q:to/END_OF_CODE/;
+        method initialize-CLNTMSTT(Str :$tabname) {
+            self.insert-table($tabname, key => '000|A|E', values => 'Template client');
+          }
+
+        
+    END_OF_CODE
+      $source-code ~= $snippet;
+
+
+      $snippet = q:to/END_OF_CODE/;
+        method initialize-CLNTUSER(Str :$tabname) {
+            self.insert-table($tabname, key => '000|A|SYSTEM', values => '0|E|1a1dc91c907325c69271ddf0c944bc72');
+          }
+
+        
+    END_OF_CODE
+      $source-code ~= $snippet;
+
+
+      $snippet = q:to/END_OF_CODE/;
+        method initialize-APPLAREA(Str :$tabname) {
+            self.insert-table($tabname, key => 'SY|E', values => 'System - Core Components|SYSTEM');
+            self.insert-table($tabname, key => 'SY-DDIC|E', values => 'System - Data dictionary|SYSTEM');
+          }
+
+        
+    END_OF_CODE
+      $source-code ~= $snippet;
+
+
+      $snippet = q:to/END_OF_CODE/;
+        method initialize-PROGTABL(Str :$tabname) {
+            self.insert-table($tabname, key => 'DataBrowser|A', values => 'D1|WEBC'); 
+            self.insert-table($tabname, key => 'TestProgram|A', values => 'T9|WEBC'); 
+            self.insert-table($tabname, key => 'UserSession|A', values => 'U1|WEBC');
+            self.insert-table($tabname, key => 'HomePage|A', values => 'S2|WEBC'); 
+            self.insert-table($tabname, key => 'WikiPage|A', values => 'W1|WEBC'); 
+            self.insert-table($tabname, key => 'Shortcut|A', values => 'S3|WEBC'); 
+            self.insert-table($tabname, key => 'HelloWorld|A', values => 'H1|WEBA'); 
+          }
+
+        
+    END_OF_CODE
+      $source-code ~= $snippet;
+
+
+      $snippet = q:to/END_OF_CODE/;
+        method initialize-PROGTABT(Str :$tabname) {
+            self.insert-table($tabname, key => 'DataBrowser|A|E', values => 'Database table browser');
+            self.insert-table($tabname, key => 'TestProgram|A|E', values => 'Test program - safe to delete');
+            self.insert-table($tabname, key => 'UserSession|A|E', values => 'User Login Session'); 
+            self.insert-table($tabname, key => 'HomePage|A|E', values => 'Default front page');
+            self.insert-table($tabname, key => 'WikiPage|A|E', values => 'Wiki page application');
+            self.insert-table($tabname, key => 'Shortcut|A|E', values => 'Program shortcuts');
+            self.insert-table($tabname, key => 'HelloWorld|A|E', values => 'Demo program');
+          }
+
+        
+    END_OF_CODE
+      $source-code ~= $snippet;
+
+
+      $snippet = q:to/END_OF_CODE/;
+        method initialize-SHORTCUT(Str :$tabname) {
+            self.insert-table($tabname, key => 'SCUT|Shortcut|A', values => 'Shortcut module');
+            self.insert-table($tabname, key => 'HELO|HelloWorld|A', values => 'Test program - Hello world');
+            self.insert-table($tabname, key => 'DATA|DataBrowser|A', values => 'Database table browser');
+            self.insert-table($tabname, key => 'TEST|TestProgram|A', values => 'Testing program - safe to delete');
+            self.insert-table($tabname, key => 'LOGIN|UserSession|A', values => 'User login manager');
+            self.insert-table($tabname, key => 'HOME|HomePage|A', values => 'Home front page');
+            self.insert-table($tabname, key => 'WIKI|WikiPage|A', values => 'Wiki page application');
+          }
+
+        
+    END_OF_CODE
+      $source-code ~= $snippet;
+
+
+      $snippet = q:to/END_OF_CODE/;
+        method initialize-DDRELATE(Str :$tabname) {
+
+          self.insert-table($tabname, key => 'DBTABLET|TABNAME|A|0', values => 'DBTABLES|KEY|1|CN|SY_DDIC| |');
+          self.insert-table($tabname, key => 'STATCODT|STATCOD|A|0', values => 'STATCODE|KEY|1|CN|SY_DDIC| |');
+          self.insert-table($tabname, key => 'VERSTEXT|VERSION|A|0', values => 'DDICVERS|KEY|1|CN|SY_DDIC| |');
+          self.insert-table($tabname, key => 'TABLTYPT|TABLTYP|A|0', values => 'TABLTYPE|KEY|1|CN|SY_DDIC| |');
+          self.insert-table($tabname, key => 'DBDOMAIT|DOMNAME|A|0', values => 'DBDOMAIN|KEY|1|CN|SY_DDIC| |');
+          self.insert-table($tabname, key => 'DATAELET|DELEMNT|A|0', values => 'DATAELEM|KEY|1|CN|SY_DDIC| |');
+          self.insert-table($tabname, key => 'DDRELATT|FLDNAME|A|0', values => 'DDRELATE|KEY|1|CN|SY_DDIC| |');
+          self.insert-table($tabname, key => 'CLNTMSTT|CLNTNUM|A|0', values => 'CLNTMSTR|KEY|1|CN|SY_DDIC| |');
+
+          # DBTABLES-key
+          self.insert-table($tabname, key => 'DBTABLES|ACTVATD|A|0', values => 'STATCODE|REF|1|CN|SY_DDIC| |');
+          self.insert-table($tabname, key => 'DBTABLES|VERSION|A|0', values => 'DDICVERS|REF|1|CN|SY_DDIC| |');
+          self.insert-table($tabname, key => 'DBTABLES|TABLTYP|A|0', values => 'TABLTYPE|REF|1|CN|SY_DDIC| |');
+          self.insert-table($tabname, key => 'DBTABLES|CLNTDEP|A|0', values => 'LOGICALS|REF|1|CN|SY_DDIC| |');
+          self.insert-table($tabname, key => 'DBTABLES|LANGDEP|A|0', values => 'LOGICALS|REF|1|CN|SY_DDIC| |');
+          self.insert-table($tabname, key => 'DBTABLES|CONTFLG|A|0', values => 'LOGICALS|REF|1|CN|SY_DDIC| |');
+          self.insert-table($tabname, key => 'DBTABLES|CHANGBY|A|0', values => 'USERMSTR|REF|1|CN|SY_DDIC| |');
+
+          # DBTABLET-key
+          self.insert-table($tabname, key => 'DBTABLET|ACTVATD|A|0', values => 'STATCODE|REF|1|CN|SY_DDIC| |');
+          self.insert-table($tabname, key => 'DBTABLET|VERSION|A|0', values => 'DDICVERS|REF|1|CN|SY_DDIC| |');
+          self.insert-table($tabname, key => 'DBTABLET|LANGISO|A|0', values => 'ISOLANGU|REF|1|CN|SY_DDIC| |');
+          self.insert-table($tabname, key => 'DBTABLET|CHANGBY|A|0', values => 'USERMSTR|REF|1|CN|SY_DDIC| |');
+
+          # ISOLANGU-key
+          self.insert-table($tabname, key => 'ISOLANGU|CHANGBY|A|0', values => 'USERMSTR|REF|1|CN|SY_DDIC| |');
+
+          # DDICTEXT-key
+          self.insert-table($tabname, key => 'DDICTEXT|LANGISO|A|0', values => 'ISOLANGU|REF|1|CN|SY_DDIC| |');
+          self.insert-table($tabname, key => 'DDICTEXT|CHANGBY|A|0', values => 'USERMSTR|REF|1|CN|SY_DDIC| |');
+
+          # TABLETYPE-key
+          self.insert-table($tabname, key => 'TABLTYPE|CHANGBY|A|0', values => 'USERMSTR|REF|1|CN|SY_DDIC| |');
+
+          # TABLETYPT-key
+          self.insert-table($tabname, key => 'TABLTYPT|LANGISO|A|0', values => 'ISOLANGU|REF|1|CN|SY_DDIC| |');
+          self.insert-table($tabname, key => 'TABLTYPT|CHANGBY|A|0', values => 'USERMSTR|REF|1|CN|SY_DDIC| |');
+
+          # LOGICALS-key
+          self.insert-table($tabname, key => 'LOGICALS|CHANGBY|A|0', values => 'USERMSTR|REF|1|CN|SY_DDIC| |');
+
+          # BOOLEANS-key
+          self.insert-table($tabname, key => 'BOOLEANS|CODENAM|A|0', values => 'LOGICALS|REF|1|CN|SY_DDIC| |');
+          self.insert-table($tabname, key => 'BOOLEANS|LANGISO|A|0', values => 'ISOLANGU|REF|1|CN|SY_DDIC| |');
+          self.insert-table($tabname, key => 'BOOLEANS|CHANGBY|A|0', values => 'USERMSTR|REF|1|CN|SY_DDIC| |');
+
+          # VERSTEXT-key
+          self.insert-table($tabname, key => 'VERSTEXT|LANGISO|A|0', values => 'ISOLANGU|REF|1|CN|SY_DDIC| |');
+          self.insert-table($tabname, key => 'VERSTEXT|CHANGBY|A|0', values => 'USERMSTR|REF|1|CN|SY_DDIC| |');
+
+          # DDICVERS-key
+          self.insert-table($tabname, key => 'DDICVERS|CHANGBY|A|0', values => 'USERMSTR|REF|1|CN|SY_DDIC| |');
+
+          # STATCODE-key
+          self.insert-table($tabname, key => 'STATCODE|CHANGBY|A|0', values => 'USERMSTR|REF|1|CN|SY_DDIC| |');
+
+          # STATCODT-key
+          self.insert-table($tabname, key => 'STATCODT|CHANGBY|A|0', values => 'USERMSTR|REF|1|CN|SY_DDIC| |');
+
+          # USERMSTR-key
+          self.insert-table($tabname, key => 'USERMSTR|ACTVATD|A|0', values => 'STATCODE|REF|1|CN|SY_DDIC| |');
+
+          # DBDOMAIN-key
+          self.insert-table($tabname, key => 'DBDOMAIN|ACTVATD|A|0', values => 'STATCODE|REF|1|CN|SY_DDIC| |');
+          self.insert-table($tabname, key => 'DBDOMAIN|VERSION|A|0', values => 'DDICVERS|REF|1|CN|SY_DDIC| |');
+          self.insert-table($tabname, key => 'DBDOMAIN|DATATYP|A|0', values => 'DATATYPE|REF|1|CN|SY_DDIC| |');
+          self.insert-table($tabname, key => 'DBDOMAIN|LOWCASE|A|0', values => 'LOGICALS|REF|1|CN|SY_DDIC| |');
+          self.insert-table($tabname, key => 'DBDOMAIN|SIGNFLG|A|0', values => 'LOGICALS|REF|1|CN|SY_DDIC| |');
+          self.insert-table($tabname, key => 'DBDOMAIN|LANGFLG|A|0', values => 'LOGICALS|REF|1|CN|SY_DDIC| |');
+          self.insert-table($tabname, key => 'DBDOMAIN|FIXVALU|A|0', values => 'LOGICALS|REF|1|CN|SY_DDIC| |');
+          self.insert-table($tabname, key => 'DBDOMAIN|VALTABL|A|0', values => 'DBTABLES|REF|1|CN|SY_DDIC| |');
+          self.insert-table($tabname, key => 'DBDOMAIN|CHANGBY|A|0', values => 'USERMSTR|REF|1|CN|SY_DDIC| |');
+
+          # DBDOMAIT-key
+          self.insert-table($tabname, key => 'DBDOMAIT|ACTVATD|A|0', values => 'STATCODE|REF|1|CN|SY_DDIC| |');
+          self.insert-table($tabname, key => 'DBDOMAIT|VERSION|A|0', values => 'DDICVERS|REF|1|CN|SY_DDIC| |');
+          self.insert-table($tabname, key => 'DBDOMAIT|LANGISO|A|0', values => 'ISOLANGU|REF|1|CN|SY_DDIC| |');
+          self.insert-table($tabname, key => 'DBDOMAIT|CHANGBY|A|0', values => 'USERMSTR|REF|1|CN|SY_DDIC| |');
+
+          # DATAELEM-key
+          self.insert-table($tabname, key => 'DATAELEM|ACTVATD|A|0', values => 'STATCODE|REF|1|CN|SY_DDIC| |');
+          self.insert-table($tabname, key => 'DATAELEM|VERSION|A|0', values => 'DDICVERS|REF|1|CN|SY_DDIC| |');
+          self.insert-table($tabname, key => 'DATAELEM|DOMNAME|A|0', values => 'DBDOMAIN|REF|1|CN|SY_DDIC| |');
+          self.insert-table($tabname, key => 'DATAELEM|CHANGBY|A|0', values => 'USERMSTR|REF|1|CN|SY_DDIC| |');
+
+          # DATAELET-key
+          self.insert-table($tabname, key => 'DATAELET|ACTVATD|A|0', values => 'STATCODE|REF|1|CN|SY_DDIC| |');
+          self.insert-table($tabname, key => 'DATAELET|VERSION|A|0', values => 'DDICVERS|REF|1|CN|SY_DDIC| |');
+          self.insert-table($tabname, key => 'DATAELET|LANGISO|A|0', values => 'ISOLANGU|REF|1|CN|SY_DDIC| |');
+          self.insert-table($tabname, key => 'DATAELET|CHANGBY|A|0', values => 'USERMSTR|REF|1|CN|SY_DDIC| |');
+
+          # DATATYPE-key
+          self.insert-table($tabname, key => 'DATATYPE|CHANGBY|A|0', values => 'USERMSTR|REF|1|CN|SY_DDIC| |');
+
+          # TABLFLDS-key
+          self.insert-table($tabname, key => 'TABLFLDS|TABNAME|A|0', values => 'DBTABLES|REF|1|CN|SY_DDIC| |');
+          self.insert-table($tabname, key => 'TABLFLDS|ACTVATD|A|0', values => 'STATCODE|REF|1|CN|SY_DDIC| |');
+          self.insert-table($tabname, key => 'TABLFLDS|DELEMNT|A|0', values => 'DATAELEM|REF|1|CN|SY_DDIC| |');
+          self.insert-table($tabname, key => 'TABLFLDS|PRIMKEY|A|0', values => 'LOGICALS|REF|1|CN|SY_DDIC| |');
+          self.insert-table($tabname, key => 'TABLFLDS|NULLFLG|A|0', values => 'LOGICALS|REF|1|CN|SY_DDIC| |');
+          self.insert-table($tabname, key => 'TABLFLDS|CHKTABL|A|0', values => 'DBTABLES|REF|1|CN|SY_DDIC| |');
+          self.insert-table($tabname, key => 'TABLFLDS|INTTYPE|A|0', values => 'DATATYPE|REF|1|CN|SY_DDIC| |');
+          self.insert-table($tabname, key => 'TABLFLDS|CHANGBY|A|0', values => 'USERMSTR|REF|1|CN|SY_DDIC| |');
+
+          # APPLAREA-key
+          self.insert-table($tabname, key => 'APPLAREA|LANGISO|A|0', values => 'ISOLANGU|REF|1|CN|SY_DDIC| |');
+          self.insert-table($tabname, key => 'APPLAREA|CREATBY|A|0', values => 'USERMSTR|REF|1|CN|SY_DDIC| |');
+          self.insert-table($tabname, key => 'APPLAREA|CHANGBY|A|0', values => 'USERMSTR|REF|1|CN|SY_DDIC| |');
+
+          # MESGTXTS-key
+          self.insert-table($tabname, key => 'MESGTXTS|LANGISO|A|0', values => 'ISOLANGU|REF|1|CN|SY_DDIC| |');
+          self.insert-table($tabname, key => 'MESGTXTS|APPAREA|A|0', values => 'APPLAREA|REF|1|CN|SY_DDIC| |');
+          self.insert-table($tabname, key => 'MESGTXTS|CHANGBY|A|0', values => 'USERMSTR|REF|1|CN|SY_DDIC| |');
+
+          # CLNTMSTR-key
+          self.insert-table($tabname, key => 'CLNTMSTR|ACTVATD|A|0', values => 'STATCODE|REF|1|CN|SY_DDIC| |');
+          self.insert-table($tabname, key => 'CLNTMSTR|CHANGBY|A|0', values => 'USERMSTR|REF|1|CN|SY_DDIC| |');
+
+          # CLNTMSTT-key
+          self.insert-table($tabname, key => 'CLNTMSTT|ACTVATD|A|0', values => 'STATCODE|REF|1|CN|SY_DDIC| |');
+          self.insert-table($tabname, key => 'CLNTMSTT|LANGISO|A|0', values => 'ISOLANGU|REF|1|CN|SY_DDIC| |');
+          self.insert-table($tabname, key => 'CLNTMSTT|CHANGBY|A|0', values => 'USERMSTR|REF|1|CN|SY_DDIC| |');
+
+          # CLNTUSER-key
+          self.insert-table($tabname, key => 'CLNTUSER|CLNTNUM|A|0', values => 'CLNTMSTR|REF|1|CN|SY_DDIC| |');
+          self.insert-table($tabname, key => 'CLNTUSER|ACTVATD|A|0', values => 'STATCODE|REF|1|CN|SY_DDIC| |');
+          self.insert-table($tabname, key => 'CLNTUSER|USERCOD|A|0', values => 'USERMSTR|REF|1|CN|SY_DDIC| |');
+          self.insert-table($tabname, key => 'CLNTUSER|USRLOCK|A|0', values => 'LOGICALS|REF|1|CN|SY_DDIC| |');
+          self.insert-table($tabname, key => 'CLNTUSER|LANGUAG|A|0', values => 'ISOLANGU|REF|1|CN|SY_DDIC| |');
+
+          # DOMVALUE-key
+          self.insert-table($tabname, key => 'DOMVALUE|DOMNAME|A|0', values => 'DBDOMAIN|REF|1|CN|SY_DDIC| |');
+          self.insert-table($tabname, key => 'DOMVALUE|ACTVATD|A|0', values => 'STATCODE|REF|1|CN|SY_DDIC| |');
+          self.insert-table($tabname, key => 'DOMVALUE|VERSION|A|0', values => 'DDICVERS|REF|1|CN|SY_DDIC| |');
+          self.insert-table($tabname, key => 'DOMVALUE|CHANGBY|A|0', values => 'USERMSTR|REF|1|CN|SY_DDIC| |');
+
+          # DOMVALUT-key
+          self.insert-table($tabname, key => 'DOMVALUT|DOMNAME|A|0', values => 'DOMVALUE|KEY|1|CN|SY_DDIC| |');
+          self.insert-table($tabname, key => 'DOMVALUT|ACTVATD|A|0', values => 'STATCODE|REF|1|CN|SY_DDIC| |');
+          self.insert-table($tabname, key => 'DOMVALUT|VERSION|A|0', values => 'DDICVERS|REF|1|CN|SY_DDIC| |');
+          self.insert-table($tabname, key => 'DOMVALUT|CHANGBY|A|0', values => 'USERMSTR|REF|1|CN|SY_DDIC| |');
+          self.insert-table($tabname, key => 'DOMVALUT|LANGISO|A|0', values => 'ISOLANGU|REF|1|CN|SY_DDIC| |');
+
+
+          # DDRELATE-key
+          self.insert-table($tabname, key => 'DDRELATE|TABNAME|A|0', values => 'DBTABLES|REF|1|CN|SY_DDIC| |');
+          self.insert-table($tabname, key => 'DDRELATE|ACTVATD|A|0', values => 'STATCODE|REF|1|CN|SY_DDIC| |');
+          self.insert-table($tabname, key => 'DDRELATE|VERSION|A|0', values => 'DDICVERS|REF|1|CN|SY_DDIC| |');
+          self.insert-table($tabname, key => 'DDRELATE|CHKTABL|A|0', values => 'DBTABLES|REF|1|CN|SY_DDIC| |');
+          self.insert-table($tabname, key => 'DDRELATE|APPAREA|A|0', values => 'APPLAREA|REF|1|CN|SY_DDIC| |');
+          self.insert-table($tabname, key => 'DDRELATE|CHANGBY|A|0', values => 'USERMSTR|REF|1|CN|SY_DDIC| |');
+
+          # DDRELATT-key
+          self.insert-table($tabname, key => 'DDRELATT|TABNAME|A|0', values => 'DBTABLES|REF|1|CN|SY_DDIC| |');
+          self.insert-table($tabname, key => 'DDRELATT|ACTVATD|A|0', values => 'STATCODE|REF|1|CN|SY_DDIC| |');
+          self.insert-table($tabname, key => 'DDRELATT|VERSION|A|0', values => 'DDICVERS|REF|1|CN|SY_DDIC| |');
+          self.insert-table($tabname, key => 'DDRELATT|LANGISO|A|0', values => 'ISOLANGU|REF|1|CN|SY_DDIC| |');
+          self.insert-table($tabname, key => 'DDRELATT|CHANGBY|A|0', values => 'USERMSTR|REF|1|CN|SY_DDIC| |');
+
+
+        }
+
+        
+    END_OF_CODE
+      $source-code ~= $snippet;
+
+
+      $snippet = q:to/END_OF_CODE/;
+        method initialize-DDRELATT(Str :$tabname) {
+                
+            self.insert-table($tabname, key => 'DBTABLET|TABNAME|A|0|E', values => 'Text for table headers|');
+            self.insert-table($tabname, key => 'STATCODT|STATCOD|A|0|E', values => 'Text for status codes|');
+            self.insert-table($tabname, key => 'VERSTEXT|VERSION|A|0|E', values => 'Text for version numbers|');
+            self.insert-table($tabname, key => 'TABLTYPT|TABLTYP|A|0|E', values => 'Text for table types|');
+            self.insert-table($tabname, key => 'DBDOMAIT|DOMNAME|A|0|E', values => 'Text for domains|');
+            self.insert-table($tabname, key => 'DATAELET|DELEMNT|A|0|E', values => 'Text for data elements|');
+            self.insert-table($tabname, key => 'DDRELATT|FLDNAME|A|0|E', values => 'Text for relationships|');
+            self.insert-table($tabname, key => 'CLNTMSTT|CLNTNUM|A|0|E', values => 'Text for clients|');
+
+            # DBTABLES-text
+            self.insert-table($tabname, key => 'DBTABLES|ACTVATD|A|0|E', values => 'table - activation status|');
+            self.insert-table($tabname, key => 'DBTABLES|VERSION|A|0|E', values => 'table - version|');
+            self.insert-table($tabname, key => 'DBTABLES|TABLTYP|A|0|E', values => 'table - table type|');
+            self.insert-table($tabname, key => 'DBTABLES|CLNTDEP|A|0|E', values => 'table - client dependent|');
+            self.insert-table($tabname, key => 'DBTABLES|LANGDEP|A|0|E', values => 'table - language dependent|');
+            self.insert-table($tabname, key => 'DBTABLES|CONTFLG|A|0|E', values => 'table - content flag|');
+            self.insert-table($tabname, key => 'DBTABLES|CHANGBY|A|0|E', values => 'table - user (change by)|');
+
+            # DBTABLET-text
+            self.insert-table($tabname, key => 'DBTABLET|ACTVATD|A|0|E', values => 'table text - activation status|');
+            self.insert-table($tabname, key => 'DBTABLET|VERSION|A|0|E', values => 'table text - version|');
+            self.insert-table($tabname, key => 'DBTABLET|LANGISO|A|0|E', values => 'table text - language|');
+            self.insert-table($tabname, key => 'DBTABLET|CHANGBY|A|0|E', values => 'table text - user (change by)|');
+
+            # ISOLANGU-text
+            self.insert-table($tabname, key => 'ISOLANGU|CHANGBY|A|0|E', values => 'language - user (change by)|');
+
+            # DDICTEXT-text
+            self.insert-table($tabname, key => 'DDICTEXT|LANGISO|A|0|E', values => 'string text - language|');
+            self.insert-table($tabname, key => 'DDICTEXT|CHANGBY|A|0|E', values => 'string text - user (change by)|');
+
+            # TABLETYPE-text
+            self.insert-table($tabname, key => 'TABLTYPE|CHANGBY|A|0|E', values => 'table type - user (change by)|');
+
+            # TABLETYPT-text
+            self.insert-table($tabname, key => 'TABLTYPT|LANGISO|A|0|E', values => 'table type text - language|');
+            self.insert-table($tabname, key => 'TABLTYPT|CHANGBY|A|0|E', values => 'table type text - user (change by)|');
+
+            # LOGICALS-text
+            self.insert-table($tabname, key => 'LOGICALS|CHANGBY|A|0|E', values => 'table:logical- user (change by)|');
+
+            # BOOLEANS-text
+            self.insert-table($tabname, key => 'BOOLEANS|CODENAM|A|0|E', values => 'Logical values|');
+            self.insert-table($tabname, key => 'BOOLEANS|LANGISO|A|0|E', values => 'boolean text - language|');
+            self.insert-table($tabname, key => 'BOOLEANS|CHANGBY|A|0|E', values => 'boolean text - user (change by)|');
+
+            # VERSTEXT-text
+            self.insert-table($tabname, key => 'VERSTEXT|LANGISO|A|0|E', values => 'version text - language|');
+            self.insert-table($tabname, key => 'VERSTEXT|CHANGBY|A|0|E', values => 'version text - user (change by)|');
+
+            # DDICVERS-text
+            self.insert-table($tabname, key => 'DDICVERS|CHANGBY|A|0|E', values => 'version - user (change by)|');
+
+            # STATCODE-text
+            self.insert-table($tabname, key => 'STATCODE|CHANGBY|A|0|E', values => 'status code - user (change by)|');
+
+            # STATCODT-text
+            self.insert-table($tabname, key => 'STATCODT|CHANGBY|A|0|E', values => 'status code text - user (change by)|');
+
+            # USERMSTR-text
+            self.insert-table($tabname, key => 'USERMSTR|ACTVATD|A|0|E', values => 'user master - activation status|');
+
+            # DBDOMAIN-text
+            self.insert-table($tabname, key => 'DBDOMAIN|ACTVATD|A|0|E', values => 'domain - activation status|');
+            self.insert-table($tabname, key => 'DBDOMAIN|VERSION|A|0|E', values => 'domain - version|');
+            self.insert-table($tabname, key => 'DBDOMAIN|DATATYP|A|0|E', values => 'domain - version|');
+            self.insert-table($tabname, key => 'DBDOMAIN|LOWCASE|A|0|E', values => 'domain - lowcase flag|');
+            self.insert-table($tabname, key => 'DBDOMAIN|SIGNFLG|A|0|E', values => 'domain - sign flag|');
+            self.insert-table($tabname, key => 'DBDOMAIN|LANGFLG|A|0|E', values => 'domain - language flag|');
+            self.insert-table($tabname, key => 'DBDOMAIN|FIXVALU|A|0|E', values => 'domain - fix values flag|');
+            self.insert-table($tabname, key => 'DBDOMAIN|VALTABL|A|0|E', values => 'domain - check table|');
+            self.insert-table($tabname, key => 'DBDOMAIN|CHANGBY|A|0|E', values => 'domain - user (change by)|');
+
+            # DBDOMAIT-text
+            self.insert-table($tabname, key => 'DBDOMAIT|ACTVATD|A|0|E', values => 'domain text - activation status|');
+            self.insert-table($tabname, key => 'DBDOMAIT|VERSION|A|0|E', values => 'domain text - version|');
+            self.insert-table($tabname, key => 'DBDOMAIT|LANGISO|A|0|E', values => 'domain text - language|');
+            self.insert-table($tabname, key => 'DBDOMAIT|CHANGBY|A|0|E', values => 'domain text - user (change by)|');
+
+            # DATAELEM-text
+            self.insert-table($tabname, key => 'DATAELEM|ACTVATD|A|0|E', values => 'data element - activation status|');
+            self.insert-table($tabname, key => 'DATAELEM|VERSION|A|0|E', values => 'data element - version|');
+            self.insert-table($tabname, key => 'DATAELEM|DOMNAME|A|0|E', values => 'data element - domain|');
+            self.insert-table($tabname, key => 'DATAELEM|CHANGBY|A|0|E', values => 'data element - user (change by)|');
+
+            # DATAELET-text
+            self.insert-table($tabname, key => 'DATAELET|ACTVATD|A|0|E', values => 'data element text - activation status|');
+            self.insert-table($tabname, key => 'DATAELET|VERSION|A|0|E', values => 'data element text - version|');
+            self.insert-table($tabname, key => 'DATAELET|LANGISO|A|0|E', values => 'data element text - language|');
+            self.insert-table($tabname, key => 'DATAELET|CHANGBY|A|0|E', values => 'data element text - user (change by)|');
+
+            # DATATYPE-text
+            self.insert-table($tabname, key => 'DATATYPE|CHANGBY|A|0|E', values => 'data type - user (change by)|');
+
+            # TABLFLDS-text
+            self.insert-table($tabname, key => 'TABLFLDS|TABNAME|A|0|E', values => 'table field - tables|');
+            self.insert-table($tabname, key => 'TABLFLDS|ACTVATD|A|0|E', values => 'table field - activation status|');
+            self.insert-table($tabname, key => 'TABLFLDS|DELEMNT|A|0|E', values => 'table field - version|');
+            self.insert-table($tabname, key => 'TABLFLDS|PRIMKEY|A|0|E', values => 'table field pkey - logical|');
+            self.insert-table($tabname, key => 'TABLFLDS|NULLFLG|A|0|E', values => 'table field null - logical|');
+            self.insert-table($tabname, key => 'TABLFLDS|CHKTABL|A|0|E', values => 'table field chk table - tables|');
+            self.insert-table($tabname, key => 'TABLFLDS|INTTYPE|A|0|E', values => 'table field - data type|');
+            self.insert-table($tabname, key => 'TABLFLDS|CHANGBY|A|0|E', values => 'table field - user (change by)|');
+
+            # APPLAREA-text
+            self.insert-table($tabname, key => 'APPLAREA|LANGISO|A|0|E', values => 'app area  - language|');
+            self.insert-table($tabname, key => 'APPLAREA|CREATBY|A|0|E', values => 'app area - create by|');
+            self.insert-table($tabname, key => 'APPLAREA|CHANGBY|A|0|E', values => 'app area - user (create by)|');
+
+            # MESGTXTS-text
+            self.insert-table($tabname, key => 'MESGTXTS|LANGISO|A|0|E', values => 'mesg text - language|');
+            self.insert-table($tabname, key => 'MESGTXTS|APPAREA|A|0|E', values => 'mesg text - app area|');
+            self.insert-table($tabname, key => 'MESGTXTS|CHANGBY|A|0|E', values => 'mesg text - user (change by)|');
+
+            # CLNTMSTR-text
+            self.insert-table($tabname, key => 'CLNTMSTR|ACTVATD|A|0|E', values => 'client - activation status|');
+            self.insert-table($tabname, key => 'CLNTMSTR|CHANGBY|A|0|E', values => 'client - user (change by)|');
+
+            # CLNTMSTT-text
+            self.insert-table($tabname, key => 'CLNTMSTT|ACTVATD|A|0|E', values => 'client text - activation status|');
+            self.insert-table($tabname, key => 'CLNTMSTT|LANGISO|A|0|E', values => 'client text - language|');
+            self.insert-table($tabname, key => 'CLNTMSTT|CHANGBY|A|0|E', values => 'client text - user (change by)|');
+
+            # CLNTUSER-text
+            self.insert-table($tabname, key => 'CLNTUSER|CLNTNUM|A|0|E', values => 'client users - client master|');
+            self.insert-table($tabname, key => 'CLNTUSER|ACTVATD|A|0|E', values => 'client users - activation status|');
+            self.insert-table($tabname, key => 'CLNTUSER|USERCOD|A|0|E', values => 'client users - user (change by)|');
+            self.insert-table($tabname, key => 'CLNTUSER|USRLOCK|A|0|E', values => 'client users - lock status|');
+            self.insert-table($tabname, key => 'CLNTUSER|LANGUAG|A|0|E', values => 'client users - language|');
+
+            # DOMVALUE-text
+            self.insert-table($tabname, key => 'DOMVALUE|DOMNAME|A|0|E', values => 'domain values - domain|');
+            self.insert-table($tabname, key => 'DOMVALUE|ACTVATD|A|0|E', values => 'domain values - activation status|');
+            self.insert-table($tabname, key => 'DOMVALUE|VERSION|A|0|E', values => 'domain values - version table|');
+            self.insert-table($tabname, key => 'DOMVALUE|CHANGBY|A|0|E', values => 'domain values - user (change by)|');
+
+            # DOMVALUT-text
+            self.insert-table($tabname, key => 'DOMVALUT|DOMNAME|A|0|E', values => 'domain values text - domain|');
+            self.insert-table($tabname, key => 'DOMVALUT|ACTVATD|A|0|E', values => 'domain values text - activation status|');
+            self.insert-table($tabname, key => 'DOMVALUT|VERSION|A|0|E', values => 'domain values text - version table|');
+            self.insert-table($tabname, key => 'DOMVALUT|CHANGBY|A|0|E', values => 'domain values text - user (change by)|');
+            self.insert-table($tabname, key => 'DOMVALUT|LANGISO|A|0|E', values => 'domain values text - language|');
+
+            # DDRELATE-text
+            self.insert-table($tabname, key => 'DDRELATE|TABNAME|A|0|E', values => 'relationship - table|');
+            self.insert-table($tabname, key => 'DDRELATE|ACTVATD|A|0|E', values => 'relationship - activation status|');
+            self.insert-table($tabname, key => 'DDRELATE|VERSION|A|0|E', values => 'relationship - version table|');
+            self.insert-table($tabname, key => 'DDRELATE|CHKTABL|A|0|E', values => 'relationship - check table|');
+            self.insert-table($tabname, key => 'DDRELATE|APPAREA|A|0|E', values => 'relationship - app area|');
+            self.insert-table($tabname, key => 'DDRELATE|CHANGBY|A|0|E', values => 'relationship - user (change by)|');
+
+            # DDRELATT-text
+            self.insert-table($tabname, key => 'DDRELATT|TABNAME|A|0|E', values => 'relationship text - table|');
+            self.insert-table($tabname, key => 'DDRELATT|ACTVATD|A|0|E', values => 'relationship text - activation status|');
+            self.insert-table($tabname, key => 'DDRELATT|VERSION|A|0|E', values => 'relationship text - version table|');
+            self.insert-table($tabname, key => 'DDRELATT|LANGISO|A|0|E', values => 'relationship text - language|');
+            self.insert-table($tabname, key => 'DDRELATT|CHANGBY|A|0|E', values => 'relationship text - user (change by)|');
+
+          }
+
+        
+    END_OF_CODE
+      $source-code ~= $snippet;
+
+
+      $snippet = q:to/END_OF_CODE/;
+        method initialize-MESGTXTS(Str :$tabname) {
+            self.insert-table($tabname, key => 'E|SY|001', values => 'This is sample message &1.');     
+          }
+
+        
+    END_OF_CODE
+      $source-code ~= $snippet;
+
+
+      $snippet = q:to/END_OF_CODE/;
+        #-------- BEGIN: DATABASE utilities (not auto-generated)  
+
+        
+    END_OF_CODE
+      $source-code ~= $snippet;
+
+
+      $snippet = q:to/END_OF_CODE/;
+        method db-connect(Str :$dbtype, :$dbname) {
+            my Str $db-path = '';
+            my $db-file = '';
+            $db-file = $dbname.IO.resolve;
+            $db-path = self.get(key => 'DATA_DIR')
+                      ~ '/' 
+                      ~ self.get(key => 'SID')
+                      ~ self.get(key => 'SID_NR')
+                      ~ '/' 
+                      ~ self.get(key => 'SID')
+                      ~ self.get(key => 'SID_NR')
+                      ~ '.db';
+
+            self.create-directory(path => $db-path);
+
+            my $dbh = DBIish.connect($dbtype, database => $db-file); 
+            return $dbh;
+          }
+
+        
+    END_OF_CODE
+      $source-code ~= $snippet;
+
+
+      $snippet = q:to/END_OF_CODE/;
+        method create-directory(Str :$path) {
+            my Str @FilePath = $path.split('/');
+            my Str $directory = '.';
+            for @FilePath -> $dir {
+              next if $dir ~~ /\./;
+              next if $dir ~~ /^.*\\(.*)$/;
+              $directory ~= '/' ~ $dir;
+              unless $directory.IO ~~ :d {
+                $directory.IO.mkdir;
+              }
+            }
+          }
+
+        
+    END_OF_CODE
+      $source-code ~= $snippet;
+
+
+      $snippet = q:to/END_OF_CODE/;
+        method db-create-table(Str :$tabname, Str :$descrip, Str :$sql, Str :$language = 'E') {
+            
+            my Str $db-file = self.db-filename(dbtype => $C_DBTYPE_SQLITE);
+            #self.TRACE: $db-file;
+            #self.TRACE: $sql;
+            
+            my $dbh = self.db-connect(dbtype => $C_DBTYPE_SQLITE, dbname => $db-file);
+            if defined $dbh {
+              #-- query SQLITE_MASTER for table DBTABLES
+              my $sth = $dbh.prepare(qq:to/SQL/);
+                SELECT name FROM SQLITE_MASTER WHERE name = 'DBTABLES'
+              SQL
+              $sth.execute;
+              
+              my @iTable = $sth.fetchall-AoH;
+
+              if (@iTable.elems) {
+                #self.TRACE: 'Table ' ~ $tabname.uc ~ ' already exists';
+                
+                #-- Query DBTABLES if tabname is registered
+                $sth = $dbh.prepare(qq:to/SQL/);
+                  SELECT tabname
+                  FROM dbtables
+                  WHERE tabname = '$tabname' AND
+                        actvatd = 'A' AND
+                        tabltyp = 'T'
+                  SQL
+
+                $sth.execute;
+                @iTable = $sth.fetchall-AoH;
+                
+                $sth.finish;
+
+                if (@iTable.elems) {
+                  #-- Table already registered in DBTABLES, then DO NOTHING
+                  #self.TRACE: $tabname ~ ' alreay exists, do nothing';
+                }
+                else {
+                  if $tabname eq 'DBTABLET' {
+
+                    #-- Create DBTABLET
+                    #self.TRACE: $sql;
+                    $dbh.do($sql);
+
+                    #-- Register DBTABLES into DBTABLET
+
+                    my Str $date = self.system-date();
+                    my Str $time = self.system-time();
+
+                    my %wDBTABLET = ();
+                    my @iDBTABLET = ();
+
+                    %wDBTABLET = self.structure( fields => [
+                            'tabname', 'actvatd', 'version', 'langiso', 'shortxt',
+                            'changby', 'changdt', 'changtm'  
+                            ]);
+
+                    %wDBTABLET<tabname> = 'DBTABLES';
+                    %wDBTABLET<actvatd> = 'A';
+                    %wDBTABLET<version> = '0';
+                    %wDBTABLET<langiso> = 'E';
+                    %wDBTABLET<shortxt> = 'Database table';
+                    %wDBTABLET<changby> = 'SYSTEM';
+                    %wDBTABLET<changdt> = $date;
+                    %wDBTABLET<changtm> = $time;
+
+                    self.append-table(@iDBTABLET, %wDBTABLET);
+                    my Str $sql-insert = self.db-insert(table => $tabname, data => @iDBTABLET);
+
+                    $dbh.do($sql-insert);
+
+                    
+                    #-- Register DBTABLET into DBTABLES
+
+
+                    my %wDBTABLES = ();
+                    my @iDBTABLES = ();
+
+                    %wDBTABLES = self.structure( fields => [
+                            'tabname', 'actvatd', 'version', 'tabltyp', 'clntdep',
+                            'langdep', 'contflg', 'changby', 'changdt', 'changtm'  
+                            ]);
+
+                    %wDBTABLES<tabname> = 'DBTABLET';
+                    %wDBTABLES<actvatd> = 'A';
+                    %wDBTABLES<version> = '0';
+                    %wDBTABLES<tabltyp> = 'T';
+                    %wDBTABLES<clntdep> = '';
+                    %wDBTABLES<langdep> = '';
+                    %wDBTABLES<contflg> = 'S';
+                    %wDBTABLES<changby> = 'SYSTEM';
+                    %wDBTABLES<changdt> = $date;
+                    %wDBTABLES<changtm> = $time;
+
+                    self.append-table(@iDBTABLES, %wDBTABLES);
+                    $sql-insert = self.db-insert(table => 'DBTABLES', data => @iDBTABLES);
+                    #self.TRACE: $sql-insert;
+                    $dbh.do($sql-insert);
+
+                    #-- Register DBTABLET into DBTABLET
+
+
+                    %wDBTABLET = ();
+                    @iDBTABLET = ();
+
+                    %wDBTABLET = self.structure( fields => [
+                            'tabname', 'actvatd', 'version', 'langiso', 'shortxt',
+                            'changby', 'changdt', 'changtm'  
+                            ]);
+
+                    %wDBTABLET<tabname> = 'DBTABLET';
+                    %wDBTABLET<actvatd> = 'A';
+                    %wDBTABLET<version> = '0';
+                    %wDBTABLET<langiso> = 'E';
+                    %wDBTABLET<shortxt> = 'Database table description';
+                    %wDBTABLET<changby> = 'SYSTEM';
+                    %wDBTABLET<changdt> = $date;
+                    %wDBTABLET<changtm> = $time;
+
+                    self.append-table(@iDBTABLET, %wDBTABLET);
+                    $sql-insert = self.db-insert(table => $tabname, data => @iDBTABLET);
+                    $dbh.do($sql-insert);
+
+                  }
+                  else {
+                    #-- Table is not DBTABLET
+                    $dbh.do($sql);
+                    #self.TRACE: $sql;
+
+                    #-- Register <TABNAME> into DBTABLES
+                    my Str $date = self.system-date();
+                    my Str $time = self.system-time();
+
+                    my %wDBTABLES = ();
+                    my @iDBTABLES = ();
+
+                    %wDBTABLES = self.structure( fields => [
+                            'tabname', 'actvatd', 'version', 'tabltyp', 'clntdep',
+                            'langdep', 'contflg', 'changby', 'changdt', 'changtm'  
+                            ]);
+
+                    %wDBTABLES<tabname> = $tabname;
+                    %wDBTABLES<actvatd> = 'A';
+                    %wDBTABLES<version> = '0';
+                    %wDBTABLES<tabltyp> = 'T';
+                    %wDBTABLES<clntdep> = '';
+                    %wDBTABLES<langdep> = '';
+                    %wDBTABLES<contflg> = 'S';
+                    %wDBTABLES<changby> = 'SYSTEM';
+                    %wDBTABLES<changdt> = $date;
+                    %wDBTABLES<changtm> = $time;
+
+                    self.append-table(@iDBTABLES, %wDBTABLES);
+                    my $sql-insert = self.db-insert(table => 'DBTABLES', data => @iDBTABLES);
+                    #self.TRACE: $sql-insert;
+                    $dbh.do($sql-insert);
+
+                    #-- Register <TABNAME> into DBTABLET
+
+
+                    my %wDBTABLET = ();
+                    my @iDBTABLET = ();
+
+                    %wDBTABLET = self.structure( fields => [
+                            'tabname', 'actvatd', 'version', 'langiso', 'shortxt',
+                            'changby', 'changdt', 'changtm'  
+                            ]);
+
+                    %wDBTABLET<tabname> = $tabname;
+                    %wDBTABLET<actvatd> = 'A';
+                    %wDBTABLET<version> = '0';
+                    %wDBTABLET<langiso> = 'E';
+                    %wDBTABLET<shortxt> = $descrip;
+                    %wDBTABLET<changby> = 'SYSTEM';
+                    %wDBTABLET<changdt> = $date;
+                    %wDBTABLET<changtm> = $time;
+
+                    self.append-table(@iDBTABLET, %wDBTABLET);
+                    $sql-insert = self.db-insert(table => 'DBTABLET', data => @iDBTABLET);
+                    $dbh.do($sql-insert);
+
+                  }
+                }
+              }
+              else {
+                #self.TRACE: 'Table ' ~ $tabname.uc ~ ' NOT FOUND';
+                my Str $date = self.system-date();
+                my Str $time = self.system-time();
+
+                my %wDBTABLES = ();
+                my @iDBTABLES = ();
+
+                %wDBTABLES = self.structure( fields => [
+                        'tabname', 'actvatd', 'version', 'tabltyp', 'clntdep',
+                        'langdep', 'contflg', 'changby', 'changdt', 'changtm'  
+                        ]);
+
+                %wDBTABLES<tabname> = $tabname;
+                %wDBTABLES<actvatd> = 'A';
+                %wDBTABLES<version> = '0';
+                %wDBTABLES<tabltyp> = 'T';
+                %wDBTABLES<clntdep> = '';
+                %wDBTABLES<langdep> = '';
+                %wDBTABLES<contflg> = 'S';
+                %wDBTABLES<changby> = 'SYSTEM';
+                %wDBTABLES<changdt> = $date;
+                %wDBTABLES<changtm> = $time;
+
+                self.append-table(@iDBTABLES, %wDBTABLES);
+                my Str $sql-insert = self.db-insert(table => $tabname, data => @iDBTABLES);
+                
+                $dbh.do($sql); #-- Create table DBTABLES
+
+                $dbh.do($sql-insert); #-- Register DBTABLES in DBTABLES
+
+              }
+              $dbh.dispose;
+            } #defined dbh
+          };
+
+        
+    END_OF_CODE
+      $source-code ~= $snippet;
+
+
+      $snippet = q:to/END_OF_CODE/;
+        method db-filename(Str :$dbtype = $C_DBTYPE_SQLITE) {
+            my Str $file-name = '';
+            $file-name = self.get(key => 'DATA_DIR') 
+                      ~ '/'
+                      ~ self.get(key => 'SID') 
+                      ~ self.get(key => 'SID_NR')
+                      ~ '/' 
+                      ~ self.get(key => 'SID') 
+                      ~ self.get(key => 'SID_NR') 
+                      ~ '.db';
+            return $file-name;
+          }
+
+        
+    END_OF_CODE
+      $source-code ~= $snippet;
+
+
+      $snippet = q:to/END_OF_CODE/;
+        method system-date() {
+            my $YYYYMMDD = { sprintf "%04d%02d%02d", .year, .month, .day };
+            return Date.new(DateTime.now, formatter => $YYYYMMDD).Str;
+          }
+
+        
+    END_OF_CODE
+      $source-code ~= $snippet;
+
+
+      $snippet = q:to/END_OF_CODE/;
+        method system-time() {
+            my $HHMMSS = { sprintf "%02d%02d%02d", .hour, .minute, .second };
+            return DateTime.now(formatter => $HHMMSS).Str;
+          }
+
+        
+    END_OF_CODE
+      $source-code ~= $snippet;
+
+
+      $snippet = q:to/END_OF_CODE/;
+        method structure(Str :@iFieldlist) {
+            my Str %wFieldStructure = ();
+            for @iFieldlist -> $fldname {
+              %wFieldStructure{"$fldname"} = '';
+            }
+            return %wFieldStructure; 
+          }
+
+        
+    END_OF_CODE
+      $source-code ~= $snippet;
+
+
+
+      $snippet = q:to/END_OF_CODE/;
+        method table-query(Str :$tabname, :%fields, :%where) {
+            my @iTableRecords = ();
+            my Int $index = 0;
+            my Str $fldname-list = '';
+            my Str $where-list = '';
+            my Str $db-file = '';
+            my Bool $continue = True;
+            for %fields.sort({.key}) -> $field {
+              my $fldname = $field.key;
+              if self.is-field(tabname => $tabname,
+                              fldname => $fldname) {
+                $index++;
+                $fldname-list ~= $fldname;
+                $fldname-list ~= ', ' if $index < %fields.elems;
+              }
+              else {
+                $continue = False;
+              }
+            }
+            if $continue {
+              $index = 0;
+              for %where -> $condition {
+                my $fldname = $condition.key;
+                if self.is-field(tabname => $tabname,
+                                fldname => $fldname) { 
+                  $index++;
+                  $where-list ~= $fldname ~ '=' ~ '"' ~ $condition.value ~ '"';
+                  $where-list ~= ' AND ' if $index < %where.elems;
+                }
+                else {
+                  $continue = False;
+                }
+              }
+            }
+
+            if $continue {
+              $db-file =  self.db-filename(dbtype => $C_DBTYPE_SQLITE);
+              my $dbh = self.db-connect(dbtype => $C_DBTYPE_SQLITE, dbname => $db-file);
+              if defined $dbh {
+                my $sth = $dbh.prepare(qq:to/SQL/);
+                  SELECT $fldname-list
+                  FROM $tabname
+                  WHERE $where-list
+                SQL
+                $sth.execute;
+                @iTableRecords = $sth.fetchall-AoH;
+                $dbh.dispose;
+              }
+            }
+            return @iTableRecords;
+          }
+
+        
+    END_OF_CODE
+      $source-code ~= $snippet;
+
+
+
+
+
+      $snippet = q:to/END_OF_CODE/;
+        method table-structure(Str :$tabname = '', Bool :$keyonly = True) {
+            my Str %wTableStructure = ();
+            if $tabname ne '' {
+              if self.is-table(tabname => $tabname) {
+                #-- Query TABLFLDS for fldname, fldspos
+                my %wFields = self.structure( fields => ['fldname', 'fldspos'] );
+                %wFields<fldname> = 'fldname';
+                %wFields<fldspos> = 'fldspos';
+                my %wWhere = ();
+                if $keyonly {
+                  %wWhere = self.structure( fields => ['tabname', 'actvatd', 'version', 'primkey'] );
+                  %wWhere<tabname> = $tabname;
+                  %wWhere<actvatd> = 'A';
+                  %wWhere<version> = '0';
+                  %wWhere<primkey> = 'X';
+                }
+                else {
+                  %wWhere = self.structue( fields => ['tabname', 'acvtatd', 'version'] );
+                  %wWhere<tabname> = $tabname;
+                  %wWhere<actvatd> = 'A';
+                  %wWhere<version> = '0';
+                }
+                my @iTABLFLDS = self.table-query(tabname => 'TABLFLDS', 
+                                                fields => %wFields,
+                                                where => %wWhere);
+                if (@iTABLFLDS.elems) {
+                  for @iTABLFLDS -> $fldname {
+                    my $field-name = $fldname<fldname>.lc;
+                    if $field-name ne '' {
+                      %wTableStructure{$field-name} = '';  #-- set initial blank value, we only need fields
+                    }
+                  }
+                }
+              }
+            }
+            return %wTableStructure;
+          }
+
+        
+    END_OF_CODE
+      $source-code ~= $snippet;
+
+
+
+
+
+      $snippet = q:to/END_OF_CODE/;
+        method field-info(Str :$field, Str :$language = 'E') {
+            my Str ($tab, $fld) = $field.split(/\-/);
+            my Str $tabname = $tab.uc;
+            my Str $fldname = $fld.uc;
+
+            my %wFieldInfo = ();
+            if self.is-field(tabname => $tabname.uc, fldname => $fldname.uc) {
+              my Str $db-file = ''; 
+              my Str $active-flag = 'A';
+              my Str $table-name = $tabname.uc;
+              my Str $field-name = $fldname.uc;
+
+              $db-file = self.db-filename();
+              my $dbh = self.db-connect(dbtype => $C_DBTYPE_SQLITE, dbname => $db-file);
+              if defined $dbh {  
+                #-- Table fields
+                my $sth = $dbh.prepare(qq:to/SQL/);        
+                  SELECT tabname, fldname, delemnt, fldspos, primkey,
+                        chktabl, inttype, intleng, datadec
+                  FROM TABLFLDS
+                  WHERE tabname = '$table-name' AND
+                        fldname = '$field-name' and
+                        actvatd = '$active-flag' AND
+                        version = '0'
+                SQL
+                $sth.execute;
+                my %wTABLFLDS = $sth.fetchall-hash;
+                for %wTABLFLDS -> $fld {
+                  my $fldvalu = $fld.value;
+                  %wFieldInfo{$fld.key} = $fldvalu.Str;
+                }
+                
+                %wFieldInfo{'tablfld'} = %wTABLFLDS<tabname>.Str ~ '-' ~ %wTABLFLDS<fldname>.Str;
+                my Str $data-element = %wFieldInfo<delemnt>.Str;
+
+                #-- Text elements
+                $sth = $dbh.prepare(qq:to/SQL/);
+                  SELECT descrip, shortxt, medtext, longtxt
+                  FROM DATAELET
+                  WHERE delemnt = '$data-element' AND
+                        actvatd = '$active-flag' AND
+                        version = '0' AND
+                        langiso = '$language'
+                SQL
+                $sth.execute;
+                my %wDATAELET = $sth.fetchall-hash;
+                for %wDATAELET -> $fld {
+                  my $fldvalu = $fld.value;
+                  %wFieldInfo{$fld.key} = $fldvalu.Str;
+                }
+              
+                #-- Data domain 
+                $sth = $dbh.prepare(qq:to/SQL/);
+                  SELECT domname
+                  FROM DATAELEM
+                  WHERE delemnt = '$data-element' AND
+                        actvatd = '$active-flag' AND
+                        version = '0'
+                SQL
+                $sth.execute;
+                my %wDATAELEM = $sth.fetchall-hash;
+                for %wDATAELEM -> $fld {
+                  my $fldvalu = $fld.value;
+                  %wFieldInfo{$fld.key} = $fldvalu.Str;
+                }
+                my Str $data-domain = %wDATAELEM<domname>.Str;
+
+              #-- Data type
+                $sth = $dbh.prepare(qq:to/SQL/); 
+                  SELECT datatyp, datalen, displen, datadec, lowcase,
+                        signflg, langflg, fixvalu, valtabl
+                  FROM DBDOMAIN
+                  WHERE domname = '$data-domain' AND
+                        actvatd = '$active-flag' AND
+                        version = '0'
+                SQL
+                $sth.execute;
+                my %wDBDOMAIN = $sth.fetchall-hash;
+                for %wDBDOMAIN -> $fld {
+                  my $fldvalu = $fld.value;
+                  %wFieldInfo{$fld.key} = $fldvalu.Str;
+                }
+                $dbh.dispose;
+              }
+            }
+            return %wFieldInfo;
+          }
+
+        
+    END_OF_CODE
+      $source-code ~= $snippet;
+
+
+
+
+
+      $snippet = q:to/END_OF_CODE/;
+        method field-text(Str :$field, Str :$type = 'D', Str :$language = 'E') {
+            my Str ($tab, $fld) = $field.split(/\-/);
+            my Str $tabname = $tab.uc;
+            my Str $fldname = $fld.uc;
+            my Str $text-element = '';
+            my %wFieldInfo = ();
+            if self.is-field(tabname => $tabname, fldname => $fldname) {
+              my Str $db-file = ''; 
+              my Str $active-flag = 'A';
+              my Str $table-name = $tabname.uc;
+              my Str $field-name = $fldname.uc;
+
+              $db-file = self.db-filename();
+              my $dbh = self.db-connect(dbtype => $C_DBTYPE_SQLITE, dbname => $db-file);
+              if defined $dbh {  
+                #-- Table fields
+                my $sth = $dbh.prepare(qq:to/SQL/);        
+                  SELECT delemnt
+                  FROM TABLFLDS
+                  WHERE tabname = '$table-name' AND
+                        fldname = '$field-name' and
+                        actvatd = '$active-flag' AND
+                        version = '0'
+                SQL
+                $sth.execute;
+                my %wTABLFLDS = $sth.fetchall-hash;
+                for %wTABLFLDS -> $fldname {
+                  my $fldvalu = $fldname.value;
+                  %wFieldInfo{$fldname.key} = $fldvalu.Str;
+                }
+                my Str $data-element = %wFieldInfo<delemnt>.Str;
+
+                #-- Text eleemnts
+                $sth = $dbh.prepare(qq:to/SQL/);
+                  SELECT descrip, shortxt, medtext, longtxt
+                  FROM DATAELET
+                  WHERE delemnt = '$data-element' AND
+                        actvatd = '$active-flag' AND
+                        version = '0' AND
+                        langiso = '$language'
+                SQL
+                $sth.execute;
+                my %wDATAELET = $sth.fetchall-hash;
+                for %wDATAELET -> $fldname {
+                  my $fldvalu = $fldname.value;
+                  %wFieldInfo{$fldname.key} = $fldvalu.Str;
+                }
+              
+                $dbh.dispose;
+              }
+            }
+            given $type {
+              when 'D' { #description
+                $text-element = %wFieldInfo<descrip>;
+              }
+              when 'S' { #short text
+                $text-element = %wFieldInfo<shortxt>;
+              }
+              when 'M' { #medium text
+                $text-element = %wFieldInfo<medtext>;
+              }
+              when 'L' { #long text
+                $text-element = %wFieldInfo<longtxt>;
+              }
+            }
+            return $text-element;
+          }
+
+        
+    END_OF_CODE
+      $source-code ~= $snippet;
+
+
+
+
+
+      $snippet = q:to/END_OF_CODE/;
+        method append-table(@iTable, %wRecord) {
+            @iTable.push(%wRecord.list.hash);
+          }
+
+        
+    END_OF_CODE
+      $source-code ~= $snippet;
+
+
+
+
+
+      $snippet = q:to/END_OF_CODE/;
+        method db-insert(Str :$table, :@data) {
+            my Str $tabname = $table;
+            my @iRecords = @data;
+            my Str $sql = '';
+            my Int $index = 0;
+            my Str $record-lines = '';
+            my Str $header = '';
+            for @iRecords -> $record {
+              $index++;
+              $header = '';
+              my $data = '';
+              my %wFields = $record;
+              for %wFields -> $field {
+                #self.TRACE: 'Field key/value: ' ~ $field.key ~ '/' ~ $field.value;
+                $header ~= $field.key ~ ',' if $index == 1;
+                $data ~= '"' ~ $field.value ~ '",';
+              }
+              $header ~~ s:g/\,$$// if $index == 1;
+              $data ~~ s:g/\,$$//;
+              #self.TRACE: 'HEADER: ' ~ $header if $index == 1;
+              $record-lines ~= '(' ~ $data ~ '),';
+            }
+            $record-lines ~~ s:g/\,$$//;
+            
+            $sql = qq:to/SQL/;
+            INSERT INTO $tabname ($header)
+            VALUES $record-lines
+            SQL
+
+            #self.TRACE: $sql;
+            return $sql;
+          }
+
+        
+    END_OF_CODE
+      $source-code ~= $snippet;
+
+
+
+
+
+      $snippet = q:to/END_OF_CODE/;
+        method is-table(Str :$tabname, Bool :$active = True, Str :$tabltyp = 'T') {
+            my Str $db-file = ''; 
+            $db-file = self.db-filename();
+            my Str $actvatd = 'I'; 
+            $actvatd = 'A' if $active eq True;
+            my Bool $table-exists = False; 
+            my Str $table-type = 'T'; 
+            $table-type = $tabltyp if defined $tabltyp;
+            my $dbh = self.db-connect(dbtype => $C_DBTYPE_SQLITE, dbname => $db-file);
+            if defined $dbh {
+              my $sth = $dbh.prepare(qq:to/SQL/);
+                SELECT tabname
+                FROM DBTABLES
+                WHERE tabname = '$tabname' AND
+                      actvatd = '$actvatd' AND
+                      tabltyp = '$table-type'
+                SQL
+              $sth.execute;
+              my @table = $sth.fetchall-AoH;
+              $table-exists = True if (@table.elems); # > 0;
+              $dbh.dispose;
+            }
+            return $table-exists;
+          }
+
+        
+    END_OF_CODE
+      $source-code ~= $snippet;
+
+
+
+
+
+      $snippet = q:to/END_OF_CODE/;
+        method is-field(Str :$tabname = '', Str :$fldname = '', Bool :$active = True) {
+            my Bool $field-exists = False;
+            my Str $active-flag = 'I';
+            my Str $db-file = '';
+            my Str $table-name = $tabname.uc;
+            my Str $field-name = $fldname.uc;
+            $db-file = self.db-filename();
+            $active-flag = 'A' if $active;
+            my $dbh = self.db-connect(dbtype => $C_DBTYPE_SQLITE, dbname => $db-file);
+            if defined $dbh {
+              my $sth = $dbh.prepare(qq:to/SQL/);
+                SELECT fldname
+                FROM TABLFLDS
+                WHERE tabname = '$table-name' AND
+                      fldname = '$field-name' AND
+                      actvatd = '$active-flag' AND
+                      version = '0'
+              SQL
+              $sth.execute;
+              my @iFields = $sth.fetchall-AoH;
+              $field-exists = True if (@iFields.elems);
+              $dbh.dispose;
+            }
+            return $field-exists;
+          }
+
+        
+    END_OF_CODE
+      $source-code ~= $snippet;
+
+
+
+
+
+      $snippet = q:to/END_OF_CODE/;
+        method insert-table(Str $tabname, Str :$key, Str :$values) {
+            if self.is-table(tabname => $tabname) { #- table exists?
+              #self.TRACE: 'Table ' ~ $tabname ~ ' exists';
+
+              my Str $date = self.system-date();
+              my Str $time = self.system-time();
+
+              if $tabname.uc eq 'TABLFLDS' {
+                my %wTABLFLDS_k = self.structure( fields => [
+                  'tabname', 'fldname', 'actvatd', 'version'
+                ]);
+                my %wTABLFLDS_v = self.structure( fields => [
+                  'delemnt', 'fldspos', 'primkey', 'nullflg', 'chktabl',
+                  'inttype', 'intleng', 'datadec', 'changby', 'changdt', 'changtm'
+                ]);
+
+                my @pkeys = $key.split(/\|/);
+                %wTABLFLDS_k<tabname> = @pkeys[0]; 
+                %wTABLFLDS_k<fldname> = @pkeys[1]; 
+                %wTABLFLDS_k<actvatd> = @pkeys[2];
+                %wTABLFLDS_k<version> = @pkeys[3];
+
+                my @values = $values.split(/\|/);
+                %wTABLFLDS_v<delemnt> = @values[0];
+                %wTABLFLDS_v<fldspos> = @values[1];
+                %wTABLFLDS_v<primkey> = @values[2];
+                %wTABLFLDS_v<nullflg> = @values[3];
+                %wTABLFLDS_v<chktabl> = @values[4];
+                %wTABLFLDS_v<inttype> = @values[5];
+                %wTABLFLDS_v<intleng> = @values[6];
+                %wTABLFLDS_v<datadec> = @values[7];
+                %wTABLFLDS_v<changby> = 'SYSTEM';
+                %wTABLFLDS_v<changdt> = $date;
+                %wTABLFLDS_v<changtm> = $time;
+
+                #-- Remove existing record (if already exists)
+
+                #--- look for primary keys
+                my $db-file = self.db-filename();
+                my $dbh = self.db-connect(dbtype => $C_DBTYPE_SQLITE, dbname => $db-file);
+
+                if defined $dbh {
+
+                  my $sth = $dbh.prepare(qq:to/SQL/);
+                    SELECT fldname
+                    FROM TABLFLDS
+                    WHERE tabname = '%wTABLFLDS_k<tabname>' AND
+                          fldname = '%wTABLFLDS_k<fldname>' AND
+                          actvatd = '%wTABLFLDS_k<actvatd>' AND
+                          version = '%wTABLFLDS_k<version>'
+                  SQL
+
+                  $sth.execute;
+                  
+                  my @iTABLFLDS-fldname = $sth.fetchall-AoH;
+                  if (@iTABLFLDS-fldname.elems) {
+
+                    #-- Existing record found, then remove it
+                    $sth = $dbh.prepare(qq:to/SQL/);
+                      DELETE FROM TABLFLDS
+                      WHERE tabname = '%wTABLFLDS_k<tabname>' AND
+                            fldname = '%wTABLFLDS_k<fldname>' AND
+                            actvatd = '%wTABLFLDS_k<actvatd>' AND
+                            version = '%wTABLFLDS_k<version>'
+                    SQL
+                    $sth.execute;
+                  }
+
+                  #-- if given values are not blank
+                  if $values ne '' {
+
+                    #-- insert the record into TABLFLDS            
+                    $sth = $dbh.prepare(qq:to/SQL/);
+                      INSERT INTO TABLFLDS
+                      (
+                        tabname, fldname, actvatd, version,
+                        delemnt, fldspos, primkey, nullflg,
+                        chktabl, inttype, intleng, datadec,
+                        changby, changdt, changtm
+                      )
+                      VALUES (
+                        '%wTABLFLDS_k<tabname>', 
+                        '%wTABLFLDS_k<fldname>', 
+                        '%wTABLFLDS_k<actvatd>', 
+                        '%wTABLFLDS_k<version>',
+                        '%wTABLFLDS_v<delemnt>', 
+                        '%wTABLFLDS_v<fldspos>', 
+                        '%wTABLFLDS_v<primkey>', 
+                        '%wTABLFLDS_v<nullflg>',
+                        '%wTABLFLDS_v<chktabl>', 
+                        '%wTABLFLDS_v<inttype>', 
+                        '%wTABLFLDS_v<intleng>', 
+                        '%wTABLFLDS_v<datadec>',
+                        '%wTABLFLDS_v<changby>', 
+                        '%wTABLFLDS_v<changdt>', 
+                        '%wTABLFLDS_v<changtm>'
+                      )
+                      SQL
+                      $sth.execute;
+                  
+                  }
+
+                  $sth.finish;
+                  
+                  $dbh.dispose;
+
+                } #defined $dbh
+
+              } #- tabname eq TABLFLDS
+              else {
+                #-- Check if table definition already exists
+                #self.TRACE: 'TABLE NAME = ' ~ $tabname;
+
+                my $db-file = self.db-filename();
+                
+                my $dbh = self.db-connect(dbtype => $C_DBTYPE_SQLITE, dbname => $db-file);
+                
+                if defined $dbh {
+                  #-- Query TABLFLDS for primary keys
+                  my $sth = $dbh.prepare(qq:to/SQL/);
+                    SELECT fldname
+                    FROM TABLFLDS
+                    WHERE tabname = '$tabname' AND
+                          actvatd = 'A' AND
+                          primkey = 'X'
+                    ORDER BY fldspos
+                    SQL
+                  $sth.execute;
+
+                  my @iTABLFLDS-fldname = $sth.fetchall-AoH;
+                  if (@iTABLFLDS-fldname.elems) {
+                    my @iPKeys = $key.split(/\|/);
+                    my %wPKeys = ();
+                    my Int $index = 0;
+                    my Str $fldname = '';
+                    my Str $condition = '';
+                    for @iTABLFLDS-fldname -> $fld {
+                      %wPKeys{$fldname.lc} = @iPKeys[$index];
+                      $fldname ~= $fld<fldname>.lc;
+                      $condition ~= $fld<fldname>.lc ~ '=' ~ "'" ~ @iPKeys[$index] ~ "'";
+                      $index++;
+                      $fldname ~= ', ' if $index < @iPKeys.elems;
+                      $condition ~= ' AND ' if $index < @iPKeys.elems;
+                    }
+                    #self.TRACE: 'fldname = ' ~ $fldname;
+                    #self.TRACE: 'condition = ' ~ $condition;
+
+                    $sth = $dbh.prepare(qq:to/SQL/);
+                      SELECT $fldname
+                      FROM $tabname
+                      WHERE $condition
+                    SQL
+                    $sth.execute;
+
+                    my @iTABLE-primkey = $sth.fetchall-AoH;
+                    if (@iTABLE-primkey.elems) {
+                      #-- remove existing record if keys found
+                      $sth = $dbh.prepare(qq:to/SQL/);
+                        DELETE FROM $fldname
+                        WHERE $condition
+                      SQL
+                      $sth.execute;
+                    }
+
+                    #-- get the fieldnames for non-primary keys 
+                    #--   to be populated with values
+                    $sth = $dbh.prepare(qq:to/SQL/);
+                      SELECT fldname
+                      FROM TABLFLDS
+                      WHERE tabname = '$tabname' AND
+                            actvatd = 'A' AND
+                            primkey = ' '
+                      ORDER BY fldspos
+                    SQL
+                    $sth.execute;
+
+                    #-- collect the value fields
+                    my @iTABFLDS-values = $sth.fetchall-AoH;
+
+                    #-- Assemble INSERT SQL statement
+                    #--- PRIMARY keys
+                    my Str $key-fields = '';
+                    my Str $key-values = '';
+                    $index = 0;
+                    for @iPKeys -> $primkey {
+                      #self.TRACE: $index.Str ~ ': ' ~ @iTABLFLDS-fldname[$index]<fldname>  ~ ' = ' ~ $primkey;
+                      $key-fields ~= @iTABLFLDS-fldname[$index]<fldname>.lc;
+                      $key-values ~= "'" ~ $primkey ~ "'";
+                      $index++;
+                      $key-fields ~= ', ' if $index < @iPKeys.elems;
+                      $key-values ~= ', ' if $index < @iPKeys.elems;
+                      
+                    }
+                    #self.TRACE: 'key fields = ' ~ $key-fields;
+                    #self.TRACE: 'key values = ' ~ $key-values;
+
+                    #--- NON-PRIMARY fields
+                    my @iValues = $values.split(/\|/);
+                    my Str $val-fields = '';
+                    my Str $val-values = '';
+                    $index = 0;
+                    for @iTABFLDS-values -> $values {
+                      my $fldname = @iTABFLDS-values[$index]<fldname>;
+                      $val-fields ~= $fldname.lc;
+                      given $fldname {
+                        when 'CHANGBY' {
+                          $val-values ~= "'SYSTEM'";
+                        }
+                        when 'CHANGDT' {
+                          $val-values ~= "'" ~ $date ~ "'";
+                        }
+                        when 'CHANGTM' {
+                          $val-values ~= "'" ~ $time ~ "'";
+                        }
+                        default {
+                          $val-values ~= "'" ~ @iValues[$index] ~ "'";
+                        }
+                      }            
+                      $index++;
+                      $val-fields ~= ', ' if $index < @iTABFLDS-values.elems;
+                      $val-values ~= ', ' if $index < @iTABFLDS-values.elems;
+
+                    }
+                    #self.TRACE: 'val fields = ' ~ $val-fields;
+                    #self.TRACE: 'val values = ' ~ $val-values;
+
+                    $sth = $dbh.prepare(qq:to/SQL/);
+                      INSERT INTO $tabname ( $key-fields, $val-fields )
+                      VALUES ( $key-values, $val-values )
+                    SQL
+
+                    $sth.execute;
+
+                    $sth.finish;
+
+                    $dbh.dispose;
+                  }
+                } #defined $dbh
+              }
+            }
+          }
+
+        
+    END_OF_CODE
+      $source-code ~= $snippet;
+
+
+
+
+
+      $snippet = q:to/END_OF_CODE/;
+        method db-execute(Str :$sql) {
+            my Str $db-file = '';
+            $db-file = self.db-filename();
+            my $dbh = self.db-connect(dbtype => $C_DBTYPE_SQLITE, dbname => $db-file);
+            if defined $dbh {
+              my $sth = $dbh.prepare($sql);
+              $sth.execute;
+              $sth.finish;
+              $dbh.dispose;
+            }
+          }
+
+        
+    END_OF_CODE
+      $source-code ~= $snippet;
+
+
+
+
+
+      $snippet = q:to/END_OF_CODE/;
+        method create-table-index(Str :$tabname, Bool :$reindex = True) {
+            if self.is-table(tabname => $tabname, tabletyp => 'T') {
+              my Str $index-name = $tabname ~ '~0';
+              if $reindex {
+                #-- remove existing index if exists
+                if self.is-table(tabname => $index-name, tabletyp => 'I') {
+                  # DROP INDEX <indexname>
+                  my $db-file = self.db-filename();
+                  my $dbh = self.db-connect(dbtype => $C_DBTYPE_SQLITE, dbname => $db-file);
+                  if defined $dbh {
+                    my $sql = qq:to/SQL/;
+                      DROP INDEX '$index-name'
+                    SQL
+                    
+                    $dbh.do($sql);  
+                    
+                    my $sth = $dbh.prepare(qq:to/SQL/);
+                      DELETE FROM DBTABLES
+                      WHERE tabname = '$index-name' AND
+                            actvatd = 'A' AND
+                            version = '0' AND
+                            tabltyp = 'I'
+                    SQL
+                    
+                    $sth.execute;
+                    $sth.finish;
+                    
+                    $dbh.dispose;
+                  }
+                }
+              } #- reindex = True
+              
+              #self.TRACE: 'TODO: reindex - ' ~ $tabname;
+
+              if self.is-table(tabname => $index-name, tabltype => 'I') {
+                #-- index exists, do nothing
+              }
+              else {
+                #-- get primary keys of the table to be reindex
+                my $db-file = self.db-filename();
+                my $dbh = self.db-connect(dbtype => $C_DBTYPE_SQLITE, dbname => $db-file);
+                if defined $dbh {
+                
+                  my $sth = $dbh.prepare(qq:to/SQL/);
+                    SELECT fldname
+                    FROM TABLFLDS
+                    WHERE tabname = '$tabname' AND
+                          actvatd = 'A' AND
+                          primkey = 'X'
+                    ORDER BY fldspos
+                  SQL
+                  $sth.execute;
+                  
+                  my @iTABLFLDS-primkeys = $sth.fetchall-AoH;
+                  if @iTABLFLDS-primkeys.elems {
+                    my Str $primary-keys = '';
+                    my Int $index = 0;
+                    
+                    for @iTABLFLDS-primkeys -> $primkey {
+                      $primary-keys ~= "'" ~ $primkey<fldname>.lc ~ "'";
+                      $index++;
+                      $primary-keys ~= ', ' if $index < @iTABLFLDS-primkeys.elems;
+                    }
+                    #self.TRACE: 'INDEX ' ~ $index-name;
+
+                    $sth = $dbh.prepare(qq:to/SQL/);
+                      CREATE UNIQUE INDEX '$index-name'
+                      ON '$tabname' ( $primary-keys )
+                    SQL
+                    $sth.execute;
+
+                    my Str $date = self.system-date();
+                    my Str $time = self.system-time();
+
+                    my %wDBTABLES = ();
+                    my @iDBTABLES = ();
+
+                    %wDBTABLES = self.structure(fields => [
+                      'tabname', 'actvatd', 'version', 'tabltyp', 'clntdep',
+                      'langdep', 'contflg', 'changby', 'changdt', 'changtm'
+                    ]);
+                    
+                    %wDBTABLES<tabname> = $index-name;
+                    %wDBTABLES<actvatd> = 'A';
+                    %wDBTABLES<version> = '0';
+                    %wDBTABLES<tabltyp> = 'I';
+                    %wDBTABLES<clntdep> = '';
+                    %wDBTABLES<langdep> = '';
+                    %wDBTABLES<contflg> = 'S';
+                    %wDBTABLES<changby> = 'SYSTEM';
+                    %wDBTABLES<changdt> = $date;
+                    %wDBTABLES<changtm> = $time;
+                    
+                    self.append-table(@iDBTABLES, %wDBTABLES);
+                    my Str $sql-insert = self.db-insert(table => 'DBTABLES', data => @iDBTABLES);
+                    $dbh.do($sql-insert);
+
+                  }
+                  $dbh.dispose;
+                }  
+              }
+            }
+          };
+
+        
+    END_OF_CODE
+      $source-code ~= $snippet;
+
+
+
+
+
+      $snippet = q:to/END_OF_CODE/;
+        method is-shortcut(Str :$shortcut = '') {
+            my Str $program = '';
+            my Str $progtxt = '';
+            my Str $progtyp = '';
+            
+            my $db-file = self.db-filename();
+            my $dbh = self.db-connect(dbtype => $C_DBTYPE_SQLITE, dbname => $db-file);
+            if defined $dbh {
+            
+              my $sth = $dbh.prepare(qq:to/SQL/);
+                SELECT program
+                FROM SHORTCUT
+                WHERE shortct = '$shortcut' AND
+                      actvatd = 'A'
+              SQL
+
+              $sth.execute;
+              my @iSHORTCUT = $sth.fetchall-AoH;
+              if (@iSHORTCUT.elems) {
+                $program = @iSHORTCUT[0]<program>.Str;
+
+                my $sth = $dbh.prepare(qq:to/SQL/);
+                  SELECT progtxt, objtype
+                  FROM PROGTABL
+                  WHERE program = '$program' AND
+                        actvatd = 'A' 
+                SQL
+
+                $sth.execute;
+                my @iPROGTABL = $sth.fetchall-AoH;
+                if (@iPROGTABL.elems) {
+                  $progtxt = @iPROGTABL[0]<progtxt>.Str;
+                  $progtyp = @iPROGTABL[0]<objtype>.Str;
+                }
+                else { #-- program text, and program type not found
+                  $program = '';
+                  $progtxt = '';
+                  $progtyp = '';
+                }
+                $sth.finish;
+              } 
+
+              $sth.finish;
+              $dbh.dispose;
+              
+            }
+            return ($program, $progtxt, $progtyp);
+          }
+
+        
+    END_OF_CODE
+      $source-code ~= $snippet;
+
+
+
+
+
+      $snippet = q:to/END_OF_CODE/;
+
+        #-------- END: DATABASE utilities
+
+        };
+
+        
+    END_OF_CODE
+      $source-code ~= $snippet;
+
+
+
+
       self.write-string-to-file(file-name => $file,
                                   data => $source-code);
+
+  }
+
+  ##################################################################
+  ################## GENERATE SYSTEM MODULE ########################
+  ##################################################################
+
+
+  method generate-system-module(Str :$shortcut,
+                                Str :$module,
+                                Str :$file,
+                                Str :$text) {
+
+    my Str $module-name = $C_NAMESPACE ~ '::' ~ $module;
+    my $source-code = '';
+    my $snippet = '';
+    my $exception-text = 'S1';
+
+
+
+    #-------------------------------------------------------------
+    #-- BEGIN --------------- AUTO-GENERATED SYSTEM CODE ---------
+    #-------------------------------------------------------------
+    
+    $snippet = "\n" 
+    ~ "\n" ~ 'unit module ' ~ $C_NAMESPACE ~ '::' ~ $module ~ ':ver<' ~ $C_VERSION ~ '>:auth<' ~ $C_AUTHOR ~ '>;'
+    ~ "\n"
+    ~ "\n";
+    $source-code ~= $snippet;
+
+
+
+
+    $snippet = q:to/END_OF_CODE/;
+    use Sys::Database;
+    use Template::Mustache;
+END_OF_CODE
+    $source-code ~= $snippet;
+
+
+
+
+    $snippet = "\n"
+    ~ "\n" ~ '  class X::' ~ $C_NAMESPACE ~ '::' ~ $module ~ ' is Exception {'
+    ~ "\n";
+    $source-code ~= $snippet;
+
+
+
+
+    $snippet = q:to/END_OF_CODE/;
+        has $.msg-id; #message class
+        has $.msg-no; #message number
+        has $.msg-ty; #message type = [A, E, I, S, W]
+        has $.msg-t1; #message text 1
+        has $.msg-t2; #message text 2
+        has $.msg-t3; #message text 3
+        has $.msg-t4; #message text 4
+
+        method message() {
+          #-- TODO: Get the message from the data dictionary
+
+          "$.msg-id" ~ "-" ~ $.msg-no ~ " " ~
+          "$.msg-ty " ~
+          "$.msg-t1 $.msg-t2 $.msg-t3 $.msg-t4"; # Generic error
+        }
+      }
+END_OF_CODE
+    $source-code ~= $snippet;
+
+
+
+
+    $snippet = q:to/END_OF_CODE/;
+       class App is export {
+        constant $C_NAMESPACE = 'Sys';
+        constant $C_LIBPATH = './lib';
+        constant $C_WEBFORM = 'WEBC';
+        constant $C_DBTYPE_SQLITE = 'SQLite';
+        constant $C_OK = 'OK';
+        constant $C_ICON_OK = 'themes/img/icons/tick.png';
+        constant $C_INIT = 'INIT';
+
+        has %.params = ();
+        has $.DebugInfo is rw = "";
+        has $.FORM is rw = '';
+        has $.App is rw =  '';
+        has $.Dbu is rw = '';
+        has %.Config is rw;
+        has $.UserID is rw;
+        has $.UserCommand is rw;
+        has $.AllowShortcut is rw = 'X';
+        has Str %.CMD = (
+            "init" => $C_INIT
+        );
+
+        #-- BEGIN - While DATBAE  NOT YET EXISTING
+        #-- Temporary query this for testing modules
+        has Str %.APPTABLE = ( #-- Autogenerated modules
+          'DB00' => 'Database',
+        );
+        has Str %.APPGROUP = (
+          'DB00' => 'WEBA', #-- Utilities (Web interface) - WEBA does not have form control
+        );
+        #has Str %.APPTEXTS = ( #-- for the Exception
+        #  'DB00' => 'D0',
+        #  'SCUT' => 'S2',
+        #  'TEST' => 'T1',
+        #);
+        #-- BEGIN - While DATBAE  NOT YET EXISTING
+
+
+        has %.PAGEVARS = #-- Page variable for Template::Mustache
+        ( POPUP_MENU      => '{{POPUP_MENU}}',
+          PAGE_TITLE      => '{{PAGE_TITLE}}',
+          SITE_TITLE      => '{{SITE_TITLE}}',
+          SUB_PAGE_TITLE  => '{{SUB_PAGE_TITLE}}',
+          SITE_LOGO       => '{{SITE_LOGO}}',
+          MENU_BAR        => '{{MENU_BAR}}',
+          MESSAGE_BAR     => '{{MESSAGE_BAR}}',
+          WIKIMENU_BAR    => '{{WIKIMENU_BAR}}',
+          PAGE_EDITOR     => '{{PAGE_EDITOR}}',
+          DATE_TODAY      => '{{DATE_TODAY}}',
+          MENU_SECTION    => '{{MENU_SECTION}}',
+          SIDE_BAR        => '{{SIDE_BAR}}',
+          PAGE_CONTENTS   => '{{PAGE_CONTENTS}}',
+          SCRUM_PROJECT   => '{{SCRUM_PROJECT}}',
+          PAGE_FOOTER     => '{{PAGE_FOOTER}}',
+          FOOT_NOTES      => '{{FOOT_NOTES}}',
+          FOOTER_MENU_BAR => '{{FOOTER_MENU_BAR}}',
+          SEARCH_BOX      => '{{SEARCH_BOX}}',
+          JAVASCRIPT      => '{{JAVASCRIPT}}',
+          STYLESHEET      => '{{STYLESHEET}}',
+          DEBUGINFO       => '{{DEBUGINFO}}',
+          JSCRIPT_DIR     => '{{JSCRIPT_DIR}}',
+          CSS_DIR         => '{{CSS_DIR}}',
+        );
+
+        my Str $STYLESHEET = q:to/DEFAULT_PAGE_STYLE/;
+        <link rel="stylesheet" type="text/css" href="{{{CSS_DIR}}}">
+        DEFAULT_PAGE_STYLE
+        my Str $JAVASCRIPT = q:to/DEFAULT_JAVASCRIPT/;
+        <script language="JavaScript" src="{{{JSCRIPT_DIR}}}" type="text/javascript"></script>{{{JAVASCRIPT}}}
+        DEFAULT_JAVASCRIPT
+
+        my Str $PAGETMPL = q:to/DEFAULT_PAGE_TEMPLATE/;
+        <tt>{{{DEBUGINFO}}}</tt><table border="0" cellspacing="0" width="100%" cellpadding="0">
+        <tr><td bgcolor="#cccccc"><table border="0" width="100%" cellspacing="0" cellpadding="0">
+        <tr><td align="left" valign="bottom">{{{POPUP_MENU}}}</td></tr>
+        <tr><td align="left" valign="top">&nbsp;&nbsp;<span class="page_title">{{{PAGE_TITLE}}}</span>&nbsp;<span class="subpage_title">{{{SUB_PAGE_TITLE}}}</span></td></tr>
+        </table>
+        </td><td align="right" valign="bottom" bgcolor="#cccccc">{{{PAGE_EDITOR}}}&nbsp;&nbsp;{{{SITE_LOGO}}}&nbsp;&nbsp;</td></tr>
+        </table>
+        <table cellspacing="0" cellpadding="2" width="100%" border="0"><tbody><tr><td valign="center" align="left" width="70%"  bgcolor="#000000"></td><td valign="center" align="right" width="70%"  bgcolor="#000000"></td></tr></tbody></table>
+        <table border="0" cellspacing="0" width="100%" cellpadding="0">
+        <tr><td colspan="2" bgcolor="#cccccc">&nbsp;&nbsp;{{{MENU_BAR}}}</td><td bgcolor="#cccccc" align="right">{{{WIKIMENU_BAR}}}&nbsp;&nbsp;<span class="pagemenu">&nbsp;&nbsp;{{{DATE_TODAY}}}&nbsp;&nbsp;</span></td></tr>
+        </table>
+        <table border="0" cellspacing="1" width="100%" cellpadding="2">
+        <tr><td colspan="2"><div id="navcontainer">&nbsp;&nbsp;{{{MENU_SECTION}}}&nbsp;{{{SIDE_BAR}}}</div>{{{PAGE_CONTENTS}}}{{{SCRUM_PROJECT}}}</td><td></td></tr>
+        <tr><td colspan="2"><br/><br/>&nbsp;&nbsp;{{{PAGE_FOOTER}}}&nbsp;&nbsp;{{{FOOT_NOTES}}}</td><td bgcolor="#cccccc"></td></tr>
+        <tr><td colspan="2">{{{MESSAGE_BAR}}}&nbsp;&nbsp;{{{SEARCH_BOX}}}</td><td></td></tr>
+        <tr><td colspan="2" bgcolor="#cccccc">&nbsp;&nbsp;{{{PAGE_EDITOR}}}&nbsp;&nbsp;{{{FOOTER_MENU_BAR}}}&nbsp;{{{WIKIMENU_BAR}}}</td><td bgcolor="#cccccc"></td></tr>
+        </table>
+        DEFAULT_PAGE_TEMPLATE
+
+        has $.SCREEN is rw = "";
+        has %.SCREEN_TITLE is rw = (
+          1000 => "TESTING_1000";
+        );
+END_OF_CODE
+    $source-code ~= $snippet;
+
+
+
+
+    $snippet = q:to/END_OF_CODE/;
+        method main($App, Str :$userid, Str :$ucomm, :%params) {
+          
+          $.UserCommand = $ucomm; #-- the pressed button will be the user command
+
+          if $ucomm ne $C_INIT {
+            %params<BUTTON> = $ucomm.Str;
+          }
+
+          self.TRACE: 'Program = ' ~ $App ~ '; ' 
+                    ~ ' $ucomm = ' ~ $ucomm ~ '; ' 
+                    ~ ' UserID = ' ~ $userid;
+          my $kv = '';
+          for %params.sort -> (:$key, :$value) {
+            given $key.lc {
+              when 'text' {
+                $kv ~= '<b>text' ~ '</b>=' ~ '...[skiptext]; ';
+              }
+              default {
+              $kv ~= '<b>' ~ $key ~ '</b>=' ~ $value ~ '; '; 
+              }
+            }
+          }
+          self.TRACE: 'Parameters: ' ~ $kv;
+    
+          $.UserID = $userid;
+          
+          if defined %params<OKCODE> {
+            %params<OKCODE>:delete if %params<BUTTON> ne $C_OK; #- remove OKCODE if NOT BUTTON<OK>
+          }
+
+          %.params = %params;
+          my Str $application-id = 'SY00';
+          my Str $ok-code = '';
+
+          $application-id = %params<APP> if defined %params<APP> && %params<APP> ne '';          
+          if defined %.params<OKCODE> && %.params<OKCODE> ne '' {
+            $ok-code = %.params<OKCODE> if defined %params<BUTTON> && %.params<BUTTON> eq $C_OK;                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      
+          }
+          if $ok-code ne 'SY00' && $ok-code ne '' {
+              $application-id = $ok-code;
+          }
+          $.App = $application-id.uc; #-- this is the transaction code corresponding to application
+          given $application-id {
+            when 'SY00' { #-- System module
+              #-- NOTE: Use the Default user interface
+              given $ucomm {
+                when %.CMD<init> {
+                  #self.initialize-db();
+                  $.SCREEN = '1000';
+                }
+              }
+            }
+            default { #-- switch to other module
+              #-- NOTE: EACH APPLICATION HANDLES ITS OWN USER INTERFACE
+              $.SCREEN = '2000';
+            }
+          }
+          self.goto-screen(screen => $.SCREEN);
+        }
+END_OF_CODE
+    $source-code ~= $snippet;
+
+
+
+
+    $snippet = q:to/END_OF_CODE/;
+        method allow-shortcut(Bool :$flag = False) {
+          if $flag {
+                self.FORM-IMG-BUTTON(key => 'OK',
+                                    src => $C_ICON_OK,
+                                    alt => 'Enter');
+                self.FORM-SPACE();
+                self.FORM-TEXT(key => 'OKCODE',
+                              value => '',
+                              size => '10', #%shortcut<intleng>',
+                              length => '10',
+                              );
+            $.AllowShortcut = 'X';
+          }
+          else {
+            $.AllowShortcut = '';
+          }
+        }
+END_OF_CODE
+    $source-code ~= $snippet;
+
+
+
+
+    $snippet = q:to/END_OF_CODE/;
+        method message(Str $info, Str :$type = 'I') {
+          my Str $icon = '';
+          given $type {
+            when 'I' {
+              $icon = '<img src="themes/img/icons/info.png"/>';
+            }
+            when 'A' {
+              $icon = '<img src="themes/img/icons/cancel.png"/>';
+            }
+            when 'E' {
+              $icon = '<img src="themes/img/icons/error.png"/>';
+            }
+            when 'W' {
+              $icon = '<img src="themes/img/icons/alert.png"/>';
+            }
+          }
+          self.FT(tag => 'MESSAGE_BAR', text => $icon ~ '&nbsp;' ~ $info) if $info ne '';
+        }
+END_OF_CODE
+    $source-code ~= $snippet;
+
+
+
+
+    $snippet = q:to/END_OF_CODE/;
+        method goto-screen(Str :$screen) {
+          my Str $sNextScreen = 'screen_' ~ $screen;
+          if self.can($sNextScreen) {
+            self."$sNextScreen"();
+          }
+        }
+END_OF_CODE
+    $source-code ~= $snippet;
+
+
+
+
+    $snippet = q:to/END_OF_CODE/;
+        method screen_1000 { #-- System Module
+          my Str $tcode = $.App;
+          #- default tcode is SY00
+          #- determine if shortcut is given
+          #--- the shortcust is taken from parameter "OKCODE"
+          my Str $button-clicked = '';
+          my Str $ok-code = ''; 
+          my Str $function-code = '';
+          $function-code = $.UserCommand;
+          #self.TRACE: 'SYSTEM 1000';
+
+          $button-clicked = %.params<BUTTON> if defined %.params<BUTTON> && %.params<BUTTON> ne '';
+          if defined %.params<OKCODE> && %.params<OKCODE> ne '' {
+            $ok-code = %.params<OKCODE> if defined %.params<BUTTON> && %.params<BUTTON> eq $C_OK;
+          }
+          if $ok-code ne '' {
+            #-- This is a transaction code
+            $tcode = $ok-code.uc if $ok-code ne '';
+          }
+          else {
+            #-- Button is for the function code
+            $function-code = %.params<BUTTON> if defined %.params<BUTTON> &&  %.params<BUTTON> ne '';
+            $.UserCommand = $function-code;
+          }
+          #-- BEGIN -- APPLICATION FORM 
+          self.BEGIN-FORM(appgroup => $C_WEBFORM);
+          self.FORM-BREAK();
+          self.FORM-BREAK();      
+          self.END-FORM(tcode => $tcode, appgroup => $C_WEBFORM);
+
+          my Str $login-link = '';
+          my Str $logout-link = '';
+          my Str $wiki-link = '';
+          $wiki-link = '<a href="/wiki">' ~ self.get(key => 'WIKI_NAME') ~ '</a>';
+          $login-link = '<a href="/login">Login</a>';
+          $logout-link = '<a href="/logout">Logout</a>';
+
+          #-- BEGIN -- PAGE FRAME
+          self.FT(tag => 'PAGE_TITLE', text => 'app: System');
+          self.FT(tag => 'SITE_LOGO', text => self.site-logo());
+          #self.FT(tag => 'PAGE_EDITOR', text => $login-link);
+          if $.UserID ne '' {
+            self.FT(tag => 'PAGE_EDITOR', text => $.UserID);
+            self.FT(tag => 'MENU_BAR', text => $wiki-link);
+            self.FT(tag => 'PAGE_EDITOR', text => $logout-link);
+          }
+          else {
+            self.FT(tag => 'PAGE_EDITOR', text => $login-link);
+          }
+          self.FT(tag => 'WIKIMENU_BAR', text => $tcode);
+          self.FT(tag => 'MENU_BAR', text => $wiki-link);
+          #self.FT(tag => 'MESSAGE_BAR', text => 'i: Transaction <b>' ~ $tcode ~ '</b>; Function <b>' ~ $function-code ~ '</b>');
+          #-- END -- PAGE FRAME
+          return True;
+        }
+END_OF_CODE
+    $source-code ~= $snippet;
+
+
+
+
+    $snippet = q:to/END_OF_CODE/;
+        method screen_2000 { #-- other Application Module
+          my Str $tcode = $.App;
+          my Str $module-name = '';
+          my $AppModule = '';
+          my Str $app-group = '';
+
+          #self.TRACE: 'SYSTEM 2000; user command = ' ~ $.UserCommand ~ '; tcode = ' ~ $tcode;
+          #-- BEGIN -- PAGE FRAME 
+          #-- END -- PAGE FRAME
+
+          #self.FT(text => 'Let us attempt to load an application');
+
+          if defined %.APPTABLE{$tcode} {
+            $module-name = %.APPTABLE{$tcode};
+            $app-group = %.APPGROUP{$tcode};
+
+            #self.FT(text => '<br>Found this application: ' ~ $module-name);
+            #self.TRACE: 'Found application :' ~ $module-name;
+
+            if self.load-module($AppModule, module => $module-name) {
+              #self.BEGIN-FORM(appgroup => $app-group);
+              #self.TRACE: 'Try appmodule; ucomm = ' ~ $.UserCommand;
+
+              try $AppModule.main(self, userid => $.UserID, 
+                                        ucomm => $.UserCommand, 
+                                        params => %.params);
+              if ($!) {
+                self.TRACE: 'Error occured on module ' ~ $module-name ~ '; ' ~ $!.message ~ '; ' ~ $!.gist;
+              }
+              else {
+                self.FT(tag => 'MESSAGE_BAR', text => 'i: Module <b>' ~ $module-name ~ '</b> was loaded successfully', last => 1);
+                #self.TRACE: 'Module ' ~ $module-name ~ ' was loaded successully';
+                $.DebugInfo ~= $AppModule.DebugInfo if $AppModule.DebugInfo ne '';
+              }
+              self.END-FORM(tcode => $tcode, appgroup => $app-group);
+            }
+          }
+          else {    
+            given $tcode.uc {
+              when 'SY00' {
+                self.FT(tag => 'MESSAGE_BAR', text => 'i: Transaction <b>' ~ $tcode ~ '</b> not found. TODO: Query database for tcode.');
+                #- DO NOTHING
+              }
+              when 'DB00' {
+                self.FT(tag => 'MESSAGE_BAR', text => 'i: Transaction <b>' ~ $tcode ~ '</b> not found. TODO: Query database for tcode.');
+                #- DO NOTHING
+              }
+              default {
+                $module-name = $C_NAMESPACE ~ '::Database';
+                try require ::($module-name);
+                if ::($module-name) ~~ Failure {
+                  #-- generate module
+                  self.TRACE: 'Failed loading ' ~ $module-name ~ ', ' ~ $!.message;
+                }
+                else {
+                  #-- TEST BEGIN
+                  #-- create an instance of $sModuleName
+                  $.Dbu = ::($module-name)::Database.new;
+                  $.Dbu.initialize-config(cfg => %.Config);
+
+                  #self.TRACE: 'Loading ' ~ $module-name;        
+                  #self.TRACE: 'Calling is-shortcut with ' ~ $tcode;     
+
+                  my Str $program = '',
+                  my Str $progtxt = '';
+                  my Str $app-group = '';
+  
+                  #self.TRACE: 'We try calling the database utility';
+
+                  ($program, $progtxt, $app-group) = $.Dbu.is-shortcut(shortcut => $tcode);
+
+                  #self.TRACE: 'FOUND program ' ~ $program ~ '; text ' ~ $progtxt ~ '; group = ' ~ $app-group;
+                  if $program ne '' {
+                    if self.load-module($AppModule, module => $program) {
+                      #-- $app-group = 'WEBC'; #- TODO get application group
+                      self.BEGIN-FORM(appgroup => $app-group);
+                      #self.TRACE: '$.UserComand = ' ~ $.UserCommand; 
+                      try $AppModule.main(self, userid => $.UserID, 
+                                              ucomm => $.UserCommand, 
+                                              params => %.params);
+                      if ($!) {
+                        self.TRACE: 'Error occured on module ' ~ $module-name ~ '; ' ~ $!.message ~ '; ' ~ $!.gist;
+                      }
+                      else {
+                        #self.FT(tag => 'MESSAGE_BAR', text => 'i: Module <b>' ~ $module-name ~ '</b> was loaded successfully', last => 1);
+                        #self.TRACE: 'Module ' ~ $module-name ~ ' was loaded successully';
+                        $.DebugInfo ~= $AppModule.DebugInfo if $AppModule.DebugInfo ne '';
+                      }
+                      self.END-FORM(tcode => $tcode, appgroup => $app-group);
+                    }
+                  }
+                  else {
+                    my Str $home = '<a href="/home">home</a>';
+                    my Str $alert-icon = '<img src="themes/img/icons/alert.png"/>';
+                    #self.TRACE: 'TCODE NOT EXISTS';
+                    #-- BEGIN -- PAGE FRAME
+                    self.FT(tag => 'PAGE_TITLE', text => 'app: System');
+                    self.FT(tag => 'SITE_LOGO', text => self.site-logo());
+                    #self.FT(tag => 'PAGE_EDITOR', text => $login-link);
+                    self.FT(tag => 'MENU_BAR', text => $home);
+                    self.FT(tag => 'MESSAGE_BAR', text => $alert-icon ~ self.FORM-SPACE() ~ 'Program assigned to shortcut "<b>' ~ $tcode.uc ~ '</b>" not found');
+                    if $.UserID ne '' {
+                      self.FT(tag => 'PAGE_EDITOR', text => $.UserID);
+                    }
+                    #-- BEGIN -- APPLICATION FORM 
+                    self.BEGIN-FORM(appgroup => $C_WEBFORM);
+                    self.allow-shortcut(flag => True);
+                    self.FORM-BREAK();
+                    self.FORM-BREAK();
+                    self.END-FORM(tcode => $tcode, appgroup => $C_WEBFORM);
+                              
+                  }
+                }
+              }
+              #-- TEST END
+            }
+          }
+          return True;
+        }
+END_OF_CODE
+    $source-code ~= $snippet;
+
+
+
+
+    $snippet = q:to/END_OF_CODE/;
+        method BEGIN-FORM(Str :$appgroup = '') {
+          given $appgroup {
+            when $C_WEBFORM { #- form based screeen
+              self.FORM-OPEN();
+              if $.UserID eq '' && %.params<OKCODE> eq 'login' {
+                  #-- hide OKCODE
+              }
+              else {
+                #self.FORM-IMG-BUTTON(key => 'OK',
+                #                    src => $C_ICON_OK,
+                #                    alt => 'Enter');
+                #self.FORM-SPACE();
+              }
+              if $.UserID eq '' && %.params<OKCODE> eq 'login' {
+                   #-- hide OKCODE
+              }
+              else {
+                #self.FORM-STRING(text => $.AllowShortcut);
+                #self.FORM-TEXT(key => 'OKCODE',
+                #              value => '',
+                #              size => '10', #%shortcut<intleng>',
+                #              length => '10',
+                #              );
+              }
+            }
+          }
+        }
+END_OF_CODE
+    $source-code ~= $snippet;
+
+
+
+
+    $snippet = q:to/END_OF_CODE/;
+      method END-FORM(Str :$tcode = '', Str :$appgroup = '') {
+          given $appgroup {
+            when $C_WEBFORM {
+              self.FORM-CLOSE(app => $tcode);
+            }
+          }
+        }
+END_OF_CODE
+    $source-code ~= $snippet;
+
+
+
+
+    $snippet = q:to/END_OF_CODE/;
+        method load-module($AppModule is rw, Str :$module) {
+          my Bool $return-code = True;
+          my Str $module-name = '';
+          my Str $module-path = '';
+          my Str $module-directory = $module.substr(0,1).uc;
+          $module-name = $C_NAMESPACE ~ '::' ~ $module-directory ~ '::' ~ $module;
+          $module-path = $C_LIBPATH ~ '/' 
+                       ~ $C_NAMESPACE 
+                       ~ '/' 
+                       ~ $module-directory
+                       ~ '/'
+                       ~ $module ~ '.pm6';
+
+          #self.TRACE: 'Module name: ' ~ $module-name ~ '; ModulePath = ' ~ $module-path;
+          #-- Attempt to load module:
+          if $module-path.IO.e {
+            try require ::($module-name);
+            if ::($module-name) ~~ Failure {
+              #-- generate module
+              self.TRACE: 'Failed loading ' ~ $module-name ~ ', ' ~ $!.message;
+              $return-code = False;
+            }
+            else {
+              #-- create an instance of $sModuleName
+              $AppModule = ::($module-name)::App.new;
+              #self.TRACE: 'Loading ' ~ $sModuleName ~ '::App ...' ~ $AppModule.OK;
+              $return-code = True;
+            }
+          }
+          else {
+            #self.TRACE: 'Generate module ' ~ $module-path;
+            $return-code = False;
+          }
+          return $return-code;
+        }
+END_OF_CODE
+    $source-code ~= $snippet;
+
+
+
+
+    $snippet = q:to/END_OF_CODE/;
+      method get(Str :$key) {
+                my $sVar = '';
+                $sVar = %.PAGEVARS{$key} if defined %.PAGEVARS{$key};
+                $sVar ~~ s:g/\{\{$key\}\}//;
+                if $sVar eq '' {
+                  #-- get $sVar from config file
+                  $sVar = %.Config{$key} if defined %.Config{$key};
+                  $sVar ~~ s:g/\{(.*?)\}/{ #-- Convert embedded variables
+                    self.get(key => $0.Str);    #-- for example: data_dir = ./{SID}{SID_NR}/some_value
+                  }/;                      #--    translates to:        ./DEV00/some_value
+                }
+              return $sVar;
+              }
+END_OF_CODE
+    $source-code ~= $snippet;
+
+
+
+
+
+    $snippet = q:to/END_OF_CODE/;
+      method getenv(Str :$key) {
+                my $sVar =  '';
+                $sVar = %*ENV{$key.uc} if defined %*ENV{$key};
+                return $sVar;
+              }
+END_OF_CODE
+    $source-code ~= $snippet;
+
+
+
+
+
+    $snippet = q:to/END_OF_CODE/;
+      method getparam(Str :$key = '') {
+                my $parameter-value = '';
+                if %.params{"$key"}:exists {
+                  $parameter-value = %.params{"$key"};
+                }
+                return $parameter-value;
+              }
+END_OF_CODE
+    $source-code ~= $snippet;
+
+
+
+
+    $snippet = "\n"
+    ~ "\n" ~ '    method TRACE(Str $msg, :$id = "' ~ $exception-text ~ '", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = "", :$t3 = "", :$t4 = "" ) {' 
+    ~ "\n";
+
+    $source-code ~= $snippet;
+
+    $snippet = q:to/END_OF_CODE/;
+          my Str $sInfo = "";
+
+          $sInfo = $t1;
+          $sInfo = $t1 ~ $msg.Str if $msg ne "";
+
+          $.DebugInfo ~= $id ~ "-" ~ $no ~ " " ~ $ty ~ " ";
+          $.DebugInfo ~= $msg ~ "<br/>" if $msg ne "";
+END_OF_CODE
+    $source-code ~= $snippet;
+
+
+
+
+    $snippet = "\n" 
+    ~ "\n" ~ '      my $e = X::' ~ $C_NAMESPACE ~ '::' ~ $module ~ '.new('
+    ~ "\n";
+    $source-code ~= $snippet;
+
+
+
+
+    $snippet = q:to/END_OF_CODE/;
+            msg-id => $id, msg-no => $no, msg-ty => $ty,
+            msg-t1 => $sInfo, msg-t2 => $t2, msg-t3 => $t3,msg-t4 => $t4);
+            note $e.message;
+        }
+END_OF_CODE
+    $source-code ~= $snippet;
+
+
+
+
+    $snippet = q:to/END_OF_CODE/;
+      method FT(Str :$tag, Str :$text, Int :$last) { #-- FILL-TEMPLATE
+          #method FT(Str $sTag?, Str $sText?, Int $iLast?) {
+          my Str $sWebPart = $tag;
+          my Str $sData = $text;
+          my Bool $bClearVariables = False;
+          my %PageVars = ();
+          $bClearVariables = True if (defined $last && $last > 0);
+          %PageVars = %.PAGEVARS; #-- Set rendered variables locally
+          if $bClearVariables { #-- clear all {{{VARIABLE}}} place holders
+            for %PageVars -> $sVars {
+              %PageVars{$sVars.key} = '';
+              my $txt = %.PAGEVARS{$sVars.key};
+              my $key = $sVars.key;
+              $txt ~~ s:g/\{\{$key\}\}//;
+              %.PAGEVARS{$sVars.key} = $txt;
+            }
+          }
+          $sWebPart = 'PAGE_CONTENTS' if $tag eq '';
+          my Str $sWPart = '';
+          $sWPart = %.PAGEVARS{$sWebPart} if defined %.PAGEVARS{$sWebPart};
+          $sWPart  ~~ s:g/\{\{$sWebPart\}\}// if !$bClearVariables;
+          $sData = $sWPart ~ $sData ~ '{{' ~ $sWebPart.uc ~ '}}' if !$bClearVariables;
+          #-- fill up page variable (append)
+          %.PAGEVARS{$sWebPart} = $sData if !$bClearVariables;
+          return True;
+        };
+END_OF_CODE
+    $source-code ~= $snippet;
+
+
+
+
+    $snippet = q:to/END_OF_CODE/;
+multi method render(Str :$web-part) {
+          my Str $sPage = '';
+          given $web-part {
+            when 'BODY' {
+              self.FT(tag => '', text => '', last => 1);
+              $sPage = Template::Mustache.render($PAGETMPL, %.PAGEVARS);
+              %.PAGEVARS = ();
+            }
+            when 'STYLE' {
+              self.FT(tag => 'CSS_DIR', text => '/styles/' ~ self.get(key => 'CSS_DEFAULT_DIR') ~ '/' ~ self.get(key => 'CSS_DEFAULT_FILE'));
+              self.FT(tag => 'CSS_DIR', text => '', last => 1);
+              $sPage = Template::Mustache.render($STYLESHEET, %.PAGEVARS);
+            }
+            when 'JSCRIPT' {
+              self.FT(tag => 'JSCRIPT_DIR', text => '/jscript/' ~ self.get(key => 'JS_DEFAULT_DIR') ~ '/' ~ self.get(key =>'JS_DEFAULT_FILE'));
+              self.FT(tag => 'JSCRIPT_DIR', text => '', last => 1);
+              $sPage = Template::Mustache.render($JAVASCRIPT, %.PAGEVARS);
+            }
+          }
+          return $sPage;
+        }
+END_OF_CODE
+    $source-code ~= $snippet;
+
+
+
+
+    $snippet = q:to/END_OF_CODE/;
+    method FORM-OPEN(Bool :$multipart) {
+          $.FORM = ''; #reset form
+          if defined $multipart {
+            if $multipart {
+              $.FORM ~= '<form method="POST" '
+                      ~ 'enctype="multipart/form-data">';
+            }
+            else {
+              $.FORM ~= '<form method="POST" '
+                      ~ 'enctype="application/x-www-form-url-encoded">';
+            }
+          }
+          else {
+            $.FORM ~= '<form method="POST" '
+                    ~ 'enctype="application/x-www-form-url-encoded">';
+          }
+        }
+END_OF_CODE
+    $source-code ~= $snippet;
+
+
+
+
+    $snippet = q:to/END_OF_CODE/;
+        method FORM-TABLE(Str :$tag) {
+          $.FORM ~= $tag;
+        }
+END_OF_CODE
+    $source-code ~= $snippet;
+
+
+
+
+    $snippet = q:to/END_OF_CODE/;
+        method FORM-LINE() {
+          $.FORM ~= '<hr/>';
+        }
+END_OF_CODE
+    $source-code ~= $snippet;
+
+
+
+
+    $snippet = q:to/END_OF_CODE/;
+        method FORM-BREAK() {
+          $.FORM ~= '<br/>';
+        }
+END_OF_CODE
+    $source-code ~= $snippet;
+
+
+
+
+    $snippet = q:to/END_OF_CODE/;
+        method FORM-SKIP() {
+          $.FORM ~= '<br/><br/>';
+        }
+END_OF_CODE
+    $source-code ~= $snippet;
+
+
+
+
+    $snippet = q:to/END_OF_CODE/;
+        method FORM-SPACE(Int :$length) {
+          if defined $length {
+            if $length > 0 {
+              for 1..$length {
+                $.FORM ~= self.space;
+              }
+            }
+            else {
+              $.FORM ~= self.space;
+            }
+          }
+          else {
+            $.FORM ~= self.space;
+          }
+        }
+END_OF_CODE
+    $source-code ~= $snippet;
+
+
+
+
+    $snippet = q:to/END_OF_CODE/;
+        method FORM-FILE(:$file) {
+          $.FORM ~= '<input type="file" '
+                  ~  'name="' ~ $file ~ '"/>';
+        }
+END_OF_CODE
+    $source-code ~= $snippet;
+
+
+
+
+    $snippet = q:to/END_OF_CODE/;
+        method FORM-HIDDEN(Str :$key, Str :$value) {
+          $.FORM ~= '<input type="hidden" '
+                  ~ 'name="' ~ $key ~ '" '
+                  ~ 'value="' ~ $value ~ '"/>';
+        }
+END_OF_CODE
+    $source-code ~= $snippet;
+
+
+
+
+    $snippet = q:to/END_OF_CODE/;
+        method FORM-LABEL(Str :$key, Str :$value) {
+          $.FORM ~= '<label for="' ~ $key ~ '">'
+                  ~ $value ~ '<label/>' ~ self.space;
+        }
+END_OF_CODE
+    $source-code ~= $snippet;
+
+
+
+
+    $snippet = q:to/END_OF_CODE/;
+        method FORM-TEXT(Str :$key, Str :$value, Str :$size, Str :$length, Bool :$hide = False) {
+          my Str $sShortText = '';
+          #self.TRACE: 'form-text.key = ' ~ $key ~ '; value = ' ~ $value;
+          #-- TODO: validate value as per domain
+
+          $.FORM ~= '<input type="text" '
+                  ~ 'name="' ~ $key ~ '" '
+                  ~ 'value="' ~ $value ~ '" '
+                  ~ 'size="' ~ $size ~ '" '
+                  ~ 'maxlength="' ~ $length ~ '"/>';
+        }
+END_OF_CODE
+    $source-code ~= $snippet;
+
+
+
+
+    $snippet = q:to/END_OF_CODE/;
+        method FORM-STRING(Str :$text = '') {
+          $.FORM ~= $text if $text ne '';
+        }
+END_OF_CODE
+    $source-code ~= $snippet;
+
+
+
+
+    $snippet = q:to/END_OF_CODE/;
+        method FORM-TEXTAREA(Str :$key, Str :$value, Int :$rows, Int :$cols) {
+          $.FORM ~= '<textarea '
+                  ~ 'name="' ~ $key ~ '" '
+                  ~ 'rows="' ~ $rows.Str ~ '" '
+                  ~ 'cols="' ~ $cols.Str ~ '" '
+                  ~ 'wrap="virtual" '
+                  ~ 'style="font-family: Courier New, Verdana, Arial, Helvetica, '
+                  ~ 'sans-seif; font-size: 1em;">'
+                  ~ $value
+                  ~ '</textarea>';
+        }
+END_OF_CODE
+    $source-code ~= $snippet;
+
+
+
+
+    $snippet = q:to/END_OF_CODE/;
+        method FORM-PASSWORD(Str :$key, Str :$value, Str :$size, Str :$length, Str :$event, Str :$action) {
+          $.FORM ~= '<input type="password" '
+                  ~ 'name="' ~ $key ~ '" '
+                  ~ 'value="' ~ $value ~ '" '
+                  ~ 'size="' ~ $size ~ '" '
+                  ~ 'maxlength="' ~ $length ~ '" ';
+          if defined $event && defined $action {
+            $.FORM ~= ' ' ~ $event ~ '="' ~ $action ~ '"';
+          }
+          $.FORM ~= '/>';
+        }
+END_OF_CODE
+    $source-code ~= $snippet;
+
+
+
+
+    $snippet = q:to/END_OF_CODE/;
+        method FORM-IMG-BUTTON(Str :$key, Str :$src, Str :$alt, Str :$event, Str :$action, Str :$type = 'image') {
+          $.FORM ~= '<input type="' ~ $type ~ '" '
+                  ~ 'name="' ~ $key ~ '" '
+                  ~ 'src="' ~ $src ~ '" '
+                  ~ 'alt="' ~ $alt ~ '"';
+          if defined $event && defined $action {
+            $.FORM ~= ' ' ~ $event ~ '="' ~ $action ~ '"';
+          }
+          $.FORM ~= '/>';
+          $.FORM ~= '&nbsp;' ~ $alt if $alt ne '';
+        }
+END_OF_CODE
+    $source-code ~= $snippet;
+
+
+
+
+
+    $snippet = q:to/END_OF_CODE/;
+        method FORM-BUTTON(Str :$key, Str :$value, Str :$event, Str :$action, Str :$type = 'submit') {
+          $.FORM ~= '<input type="' ~ $type ~ '" '
+                  ~ 'name="' ~ $key ~ '" '
+                  ~ 'value="' ~ $value ~ '"';
+          if defined $event && defined $action {
+            $.FORM ~= ' ' ~ $event ~ '="' ~ $action ~ '"';
+          }
+          $.FORM ~= '/>';
+        }
+END_OF_CODE
+    $source-code ~= $snippet;
+
+
+
+
+
+    $snippet = q:to/END_OF_CODE/;
+      method FORM-CHECKBOX(Str :$key, Str :$value, Str :$label) {
+          my $checked = '';
+          $checked = 'checked="checked"' if $value.Int > 0;
+          $.FORM ~= '<label><input type="checkbox" '
+                  ~ 'name="' ~ $key ~ '" '
+                  ~ $checked ~ '/>'
+                  ~ self.space ~ $label ~ '</label>';
+        }
+END_OF_CODE
+    $source-code ~= $snippet;
+
+
+
+
+
+    $snippet = q:to/END_OF_CODE/;
+        method FORM-OPTION(Str :$key, Str :$value, :%options, Str :$label) {
+          $.FORM ~= '<label>' ~ $label ~ '</label>' ~ self.space(2);
+          for %options.sort -> $option {
+            $.FORM ~= '<input type="radio" name="' ~ $key
+                    ~ '" value="' ~ $option.key
+                    ~ '"><label>' ~ $option.value ~ self.space(2)
+                    ~ '</label>' if $value ne $option.key;
+          }
+          my $k = %options{$value}:k;
+          my $v = %options{$value}:v;
+          $.FORM ~= '<input type="radio" name="' ~ $key
+                  ~ '" value="' ~ $k ~ '" checked="checked">'
+                  ~ '<label>' ~ $v ~ self.space(2) ~ '</label>';
+
+        }
+END_OF_CODE
+    $source-code ~= $snippet;
+
+
+    $snippet = q:to/END_OF_CODE/;
+        method FORM-SELECT(Str :$key, Str :$value, :%options, Str :$label) {
+          my Str ($table, $field) = $key.split(/\-/);
+          my Str $tabname = $table.uc;
+          my Str $fldname = $field.uc;
+          my Str $db-file = '';
+          my Str $table-field = $tabname ~ '-' ~ $fldname;
+          if $.Dbu.is-field(tabname => $tabname, fldname => $fldname) {
+            my %wFieldInfo = $.Dbu.field-info(field => $table-field);
+            my $value-table = %wFieldInfo{'valtabl'}; 
+            if $value-table ne '' {
+              $db-file = $.Dbu.db-filename();
+              my $dbh = $.Dbu.db-connect(dbtype => $C_DBTYPE_SQLITE, dbname => $db-file);
+              if defined $dbh {
+                my $sth = $dbh.prepare(qq:to/SQL/);
+                  SELECT $fldname
+                  FROM $value-table
+                  ORDER by $fldname
+                SQL
+                $sth.execute;
+                my @iRecords = $sth.fetchall-AoH;
+                for @iRecords -> $fld {
+                  my $fldvalu = $fld{$fldname.lc};
+                  %options{"$fldvalu"} = $fldvalu;
+                }
+                $dbh.dispose;
+              }
+            }
+          }
+          $.FORM ~= '<select name="' ~ $key ~ '"> ';
+          for %options -> $option {
+            $.FORM ~= '<option value="' ~ $option.key ~ '">'
+                    ~ $option.value ~ '</option>' if $value ne $option.key;
+          }
+          $.FORM ~= '<option selected="selected" value="' ~ $value ~ '">'
+                  ~ %options{$value} ~ '</option>';
+          $.FORM ~= '</select>';
+        }
+END_OF_CODE
+    $source-code ~= $snippet;
+
+
+    $snippet = q:to/END_OF_CODE/;
+        method FORM-CLOSE(Str :$section, Str :$app = '') {
+          my Str $application-id = '';
+          if $app ne '' {
+            $application-id = '<input type="hidden" '
+                  ~ 'name="APP" '
+                  ~ 'value="' ~ $app ~ '"/>';
+            $.FORM ~= $application-id;
+          }
+          $.FORM ~= '</form>';
+          if defined $section && $section ne '' {
+            self.FT(tag => $section, text => $.FORM);
+          }
+          else {
+            self.FT(tag => '', text => $.FORM);
+          }
+        }
+END_OF_CODE
+    $source-code ~= $snippet;
+
+
+    $snippet = q:to/END_OF_CODE/;
+        method space(Int :$length) {
+          my Str $sBlank = '';
+          if defined $length && $length > 0 {
+            for 0..$length {
+              $sBlank ~= '&nbsp;';
+            }
+          }
+          else {
+            $sBlank = '&nbsp;';
+          }
+          return $sBlank;
+        }
+END_OF_CODE
+    $source-code ~= $snippet;
+
+
+
+    $snippet = q:to/END_OF_CODE/;
+        #--- begin: JAVASCRIPT - MD5
+        method encrypt-field(Str $sFieldName) {
+        my Str $sJavascript = '';
+
+        $sJavascript ~= "\n" 
+        ~ 'function sayAlert' ~ '_' ~ $sFieldName ~ '() {alert("Say something!!!");'
+        ~ '}'
+        ~ "\n" 
+        ~ "\n"
+        ~ 'function encryptPassword' ~ '_' ~ $sFieldName ~ '() {'
+        #~ 'alert(' ~ 'document.forms[0].' ~ $sFieldName ~ '.value' ~ ');' 
+        ~ 'if (document.forms[0].' ~ $sFieldName ~ '.value != "*") {'
+        ~     'document.forms[0].' ~ $sFieldName ~ '.value = ' 
+        ~       'hex_md5(document.forms[0].' ~ $sFieldName ~ '.value);' 
+        ~  '}'
+        ~ 'return true;'
+        ~ '}'
+        ~ "\n" 
+        ~ "\n"
+        ~ 'function GetRandomPassword' ~ '_' ~ $sFieldName ~ '(){' 
+        ~ 'document.forms[0].' ~ $sFieldName ~ '.value=getRandomText();' 
+        ~ '}'
+        ~ "\n" 
+        ~ "\n"
+        ~ 'function str2hex_md5' ~ '_' ~ $sFieldName ~ '() {'
+        ~ '	document.forms[0].' ~ $sFieldName ~ '.value = hex_md5(document.forms[0].' 
+        ~ $sFieldName ~ '.value);'
+        ~	'return true; }'
+        ~ "\n" 
+        ~ "\n"
+        ~ 'function str2b64_md5' ~ '_' ~ $sFieldName ~ '() {'
+        ~	'document.forms[0].' ~ $sFieldName ~ '.value = b64_md5(document.forms[0].' 
+        ~ $sFieldName ~ '.value); return true;}'
+        ~ 'function str2str_md5' ~ '_' ~ $sFieldName ~ '() {'
+        ~ '	document.forms[0].' ~ $sFieldName ~ '.value = str_md5(document.forms[0].'
+        ~ $sFieldName ~ '.value); return true;}';
+        #~ 'function no_enter {'
+        #~ '  if (event.keyCode==13){ return false; }'
+        #~ '}';
+        
+        return $sJavascript;
+      }
+END_OF_CODE
+    $source-code ~= $snippet;
+
+
+
+
+
+    $snippet = q:to/END_OF_CODE/;
+      method encrypt-md5 {
+        my Str $sJavascript = '';
+        $sJavascript = q:to/END_OF_SCRIPT/;
+
+      /*
+      * A JavaScript implementation of the RSA Data Security, Inc. MD5 Message
+      * Digest Algorithm, as defined in RFC 1321.
+      * Version 2.1 Copyright (C) Paul Johnston 1999 - 2002.
+      * Other contributors: Greg Holt, Andrew Kepert, Ydnar, Lostinet
+      * Distributed under the BSD License
+      * See http://pajhome.org.uk/crypt/md5 for more info.
+      * Patch by Ron Savage 2004-04-27:
+      * o Add the 3 functions str2hex_md5, str2b64_md5 and str2str_md5().
+      *	Note: In V 1.02 of this module, the first function was called
+      *	RetMD5 because that's what the Yahoo! programmers called it.
+      */
+
+      function getRandomText() {
+        var rs=""; var Charstring="23456789ABCDEFGHJKMNPQRSTUVWXYZ"; 
+        for (i=0;i<=12; i++) {
+          var RandomNumber=Math.floor(Math.random()*34);
+          rs = rs + Charstring.substring(RandomNumber, RandomNumber + 1);
+        } return rs;
+      }
+
+      /*
+      * Configurable variables. You may need to tweak these to be compatible with
+      * the server-side, but the defaults work in most cases.
+      */
+      var hexcase = 0;  /* hex output format. 0 - lowercase; 1 - uppercase        */
+      var b64pad  = ""; /* base-64 pad character. "=" for strict RFC compliance   */
+      var chrsz   = 8;  /* bits per input character. 8 - ASCII; 16 - Unicode      */
+
+      /*
+      * These are the functions you'll usually want to call
+      * They take string arguments and return either hex or base-64 encoded strings
+      */
+
+      function hex_md5(s) { return binl2hex(core_md5(str2binl(s), s.length * chrsz));}
+
+      function b64_md5(s) { return binl2b64(core_md5(str2binl(s), s.length * chrsz));}
+
+      function str_md5(s) { return binl2str(core_md5(str2binl(s), s.length * chrsz));}
+
+      function hex_hmac_md5(key, data) { return binl2hex(core_hmac_md5(key, data)); }
+
+      function b64_hmac_md5(key, data) { return binl2b64(core_hmac_md5(key, data)); }
+
+      function str_hmac_md5(key, data) { return binl2str(core_hmac_md5(key, data)); }
+
+      /*
+      * Perform a simple self-test to see if the VM is working
+      */
+      function md5_vm_test() {
+        return hex_md5("abc") == "900150983cd24fb0d6963f7d28e17f72";
+      }
+
+      /*
+      * Calculate the MD5 of an array of little-endian words, and a bit length
+      */
+      function core_md5(x, len) {
+        /* append padding */
+        x[len >> 5] |= 0x80 << ((len) % 32);
+        x[(((len + 64) >>> 9) << 4) + 14] = len;
+
+        var a =  1732584193;
+        var b = -271733879;
+        var c = -1732584194;
+        var d =  271733878;
+
+        for(var i = 0; i < x.length; i += 16)
+        {
+          var olda = a;
+          var oldb = b;
+          var oldc = c;
+          var oldd = d;
+
+          a = md5_ff(a, b, c, d, x[i+ 0], 7 , -680876936);
+          d = md5_ff(d, a, b, c, x[i+ 1], 12, -389564586);
+          c = md5_ff(c, d, a, b, x[i+ 2], 17,  606105819);
+          b = md5_ff(b, c, d, a, x[i+ 3], 22, -1044525330);
+          a = md5_ff(a, b, c, d, x[i+ 4], 7 , -176418897);
+          d = md5_ff(d, a, b, c, x[i+ 5], 12,  1200080426);
+          c = md5_ff(c, d, a, b, x[i+ 6], 17, -1473231341);
+          b = md5_ff(b, c, d, a, x[i+ 7], 22, -45705983);
+          a = md5_ff(a, b, c, d, x[i+ 8], 7 ,  1770035416);
+          d = md5_ff(d, a, b, c, x[i+ 9], 12, -1958414417);
+          c = md5_ff(c, d, a, b, x[i+10], 17, -42063);
+          b = md5_ff(b, c, d, a, x[i+11], 22, -1990404162);
+          a = md5_ff(a, b, c, d, x[i+12], 7 ,  1804603682);
+          d = md5_ff(d, a, b, c, x[i+13], 12, -40341101);
+          c = md5_ff(c, d, a, b, x[i+14], 17, -1502002290);
+          b = md5_ff(b, c, d, a, x[i+15], 22,  1236535329);
+
+          a = md5_gg(a, b, c, d, x[i+ 1], 5 , -165796510);
+          d = md5_gg(d, a, b, c, x[i+ 6], 9 , -1069501632);
+          c = md5_gg(c, d, a, b, x[i+11], 14,  643717713);
+          b = md5_gg(b, c, d, a, x[i+ 0], 20, -373897302);
+          a = md5_gg(a, b, c, d, x[i+ 5], 5 , -701558691);
+          d = md5_gg(d, a, b, c, x[i+10], 9 ,  38016083);
+          c = md5_gg(c, d, a, b, x[i+15], 14, -660478335);
+          b = md5_gg(b, c, d, a, x[i+ 4], 20, -405537848);
+          a = md5_gg(a, b, c, d, x[i+ 9], 5 ,  568446438);
+          d = md5_gg(d, a, b, c, x[i+14], 9 , -1019803690);
+          c = md5_gg(c, d, a, b, x[i+ 3], 14, -187363961);
+          b = md5_gg(b, c, d, a, x[i+ 8], 20,  1163531501);
+          a = md5_gg(a, b, c, d, x[i+13], 5 , -1444681467);
+          d = md5_gg(d, a, b, c, x[i+ 2], 9 , -51403784);
+          c = md5_gg(c, d, a, b, x[i+ 7], 14,  1735328473);
+          b = md5_gg(b, c, d, a, x[i+12], 20, -1926607734);
+
+          a = md5_hh(a, b, c, d, x[i+ 5], 4 , -378558);
+          d = md5_hh(d, a, b, c, x[i+ 8], 11, -2022574463);
+          c = md5_hh(c, d, a, b, x[i+11], 16,  1839030562);
+          b = md5_hh(b, c, d, a, x[i+14], 23, -35309556);
+          a = md5_hh(a, b, c, d, x[i+ 1], 4 , -1530992060);
+          d = md5_hh(d, a, b, c, x[i+ 4], 11,  1272893353);
+          c = md5_hh(c, d, a, b, x[i+ 7], 16, -155497632);
+          b = md5_hh(b, c, d, a, x[i+10], 23, -1094730640);
+          a = md5_hh(a, b, c, d, x[i+13], 4 ,  681279174);
+          d = md5_hh(d, a, b, c, x[i+ 0], 11, -358537222);
+          c = md5_hh(c, d, a, b, x[i+ 3], 16, -722521979);
+          b = md5_hh(b, c, d, a, x[i+ 6], 23,  76029189);
+          a = md5_hh(a, b, c, d, x[i+ 9], 4 , -640364487);
+          d = md5_hh(d, a, b, c, x[i+12], 11, -421815835);
+          c = md5_hh(c, d, a, b, x[i+15], 16,  530742520);
+          b = md5_hh(b, c, d, a, x[i+ 2], 23, -995338651);
+
+          a = md5_ii(a, b, c, d, x[i+ 0], 6 , -198630844);
+          d = md5_ii(d, a, b, c, x[i+ 7], 10,  1126891415);
+          c = md5_ii(c, d, a, b, x[i+14], 15, -1416354905);
+          b = md5_ii(b, c, d, a, x[i+ 5], 21, -57434055);
+          a = md5_ii(a, b, c, d, x[i+12], 6 ,  1700485571);
+          d = md5_ii(d, a, b, c, x[i+ 3], 10, -1894986606);
+          c = md5_ii(c, d, a, b, x[i+10], 15, -1051523);
+          b = md5_ii(b, c, d, a, x[i+ 1], 21, -2054922799);
+          a = md5_ii(a, b, c, d, x[i+ 8], 6 ,  1873313359);
+          d = md5_ii(d, a, b, c, x[i+15], 10, -30611744);
+          c = md5_ii(c, d, a, b, x[i+ 6], 15, -1560198380);
+          b = md5_ii(b, c, d, a, x[i+13], 21,  1309151649);
+          a = md5_ii(a, b, c, d, x[i+ 4], 6 , -145523070);
+          d = md5_ii(d, a, b, c, x[i+11], 10, -1120210379);
+          c = md5_ii(c, d, a, b, x[i+ 2], 15,  718787259);
+          b = md5_ii(b, c, d, a, x[i+ 9], 21, -343485551);
+
+          a = safe_add(a, olda);
+          b = safe_add(b, oldb);
+          c = safe_add(c, oldc);
+          d = safe_add(d, oldd);
+        }
+        return Array(a, b, c, d);
+      }
+
+      /*
+      * These functions implement the four basic operations the algorithm uses.
+      */
+      function md5_cmn(q, a, b, x, s, t) {
+        return safe_add(bit_rol(safe_add(safe_add(a, q), safe_add(x, t)), s),b);
+      }
+
+      function md5_ff(a, b, c, d, x, s, t) {
+        return md5_cmn((b & c) | ((~b) & d), a, b, x, s, t);
+      }
+
+      function md5_gg(a, b, c, d, x, s, t) {
+        return md5_cmn((b & d) | (c & (~d)), a, b, x, s, t);
+      }
+
+      function md5_hh(a, b, c, d, x, s, t) {
+        return md5_cmn(b ^ c ^ d, a, b, x, s, t);
+      }
+
+      function md5_ii(a, b, c, d, x, s, t) {
+        return md5_cmn(c ^ (b | (~d)), a, b, x, s, t);
+      }
+
+      /*
+      * Calculate the HMAC-MD5, of a key and some data
+      */
+      function core_hmac_md5(key, data) {
+        var bkey = str2binl(key);
+        if(bkey.length > 16) bkey = core_md5(bkey, key.length * chrsz);
+
+        var ipad = Array(16), opad = Array(16);
+        for(var i = 0; i < 16; i++) {
+          ipad[i] = bkey[i] ^ 0x36363636;
+          opad[i] = bkey[i] ^ 0x5C5C5C5C;
+        }
+
+        var hash = core_md5(ipad.concat(str2binl(data)), 512 + data.length * chrsz);
+        return core_md5(opad.concat(hash), 512 + 128);
+      }
+
+      /*
+      * Add integers, wrapping at 2^32. This uses 16-bit operations internally
+      * to work around bugs in some JS interpreters.
+      */
+      function safe_add(x, y)
+      {
+        var lsw = (x & 0xFFFF) + (y & 0xFFFF);
+        var msw = (x >> 16) + (y >> 16) + (lsw >> 16);
+        return (msw << 16) | (lsw & 0xFFFF);
+      }
+
+      /*
+      * Bitwise rotate a 32-bit number to the left.
+      */
+      function bit_rol(num, cnt)
+      {
+        return (num << cnt) | (num >>> (32 - cnt));
+      }
+
+      /*
+      * Convert a string to an array of little-endian words
+      * If chrsz is ASCII, characters >255 have their hi-byte silently ignored.
+      */
+      function str2binl(str)
+      {
+        var bin = Array();
+        var mask = (1 << chrsz) - 1;
+        for(var i = 0; i < str.length * chrsz; i += chrsz)
+          bin[i>>5] |= (str.charCodeAt(i / chrsz) & mask) << (i%32);
+        return bin;
+      }
+
+      /*
+      * Convert an array of little-endian words to a string
+      */
+      function binl2str(bin)
+      {
+        var str = "";
+        var mask = (1 << chrsz) - 1;
+        for(var i = 0; i < bin.length * 32; i += chrsz)
+          str += String.fromCharCode((bin[i>>5] >>> (i % 32)) & mask);
+        return str;
+      }
+
+      /*
+      * Convert an array of little-endian words to a hex string.
+      */
+      function binl2hex(binarray)
+      {
+        var hex_tab = hexcase ? "0123456789ABCDEF" : "0123456789abcdef";
+        var str = "";
+        for(var i = 0; i < binarray.length * 4; i++)
+        {
+          str += hex_tab.charAt((binarray[i>>2] >> ((i%4)*8+4)) & 0xF) +
+                hex_tab.charAt((binarray[i>>2] >> ((i%4)*8  )) & 0xF);
+        }
+        return str;
+      }
+
+      /*
+      * Convert an array of little-endian words to a base-64 string
+      */
+      function binl2b64(binarray)
+      {
+        var tab = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+        var str = "";
+        for(var i = 0; i < binarray.length * 4; i += 3)
+        {
+          var triplet = (((binarray[i   >> 2] >> 8 * ( i   %4)) & 0xFF) << 16)
+                      | (((binarray[i+1 >> 2] >> 8 * ((i+1)%4)) & 0xFF) << 8 )
+                      |  ((binarray[i+2 >> 2] >> 8 * ((i+2)%4)) & 0xFF);
+          for(var j = 0; j < 4; j++)
+          {
+            if(i * 8 + j * 6 > binarray.length * 32) str += b64pad;
+            else str += tab.charAt((triplet >> 6*(3-j)) & 0x3F);
+          }
+        }
+        return str;
+      }
+
+      END_OF_SCRIPT
+        return $sJavascript;
+      }
+
+        #-- end: JAVASCRIPT - MD5
+END_OF_CODE
+    $source-code ~= $snippet;
+
+
+
+
+
+    $snippet = q:to/END_OF_CODE/;
+    };
+END_OF_CODE
+    $source-code ~= $snippet;
+
+
+
+
+    #-------------------------------------------------------------
+    #-- END ----------------- AUTO-GENERATED SYSTEM CODE ---------
+    #-------------------------------------------------------------
+
+
+
+    self.write-string-to-file(file-name => $file,
+                               data => $source-code);
 
   }
 
