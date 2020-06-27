@@ -83,79 +83,36 @@ class Runtime is export {
     return self.bless(:%Config);
   }
 
-  method TWEAK() { #-- last method called to intialize instance variables 
-  }
+  multi method run(Str :$signature,
+                  Str :$app,
+                  Str :$cmd,
+                  Str :$userid,
+                  :%params) {
 
-  submethod DESTROY { #-- called when instance is garbage collected
-  }
+    my Str $sy-application = 'SY00';
+    my Str $db-utility = 'DB00';
+    my Str $module-name = '';
 
-  multi method TRACE(Str $msg, 
-                     Str :$id = 'R1', Str :$no = '001', 
-                     Str :$ty = 'I', Str :$t1 = '', 
-                     Str :$t2 = '', Str :$t3 = '', 
-                     Str :$t4 = '' ) {
-		# T1 - Generic or general text
-		my Str $info = '';
-		$info = $t1;
-		$info = $t1 ~ $msg.Str if defined $msg && $msg ne '';
-		$.DebugInfo ~= $id ~ '-' ~ $no ~ ' ' ~ $ty ~ ' ';
-		$.DebugInfo ~= $msg ~ '<br/>' if $msg ne '';
-		my $e = X::Runtime.new(
-						msg-id => $id, msg-no => $no, 
-            msg-ty => $ty, msg-t1 => $info, 
-            msg-t2 => $t2, msg-t3 => $t3,
-            msg-t4 => $t4);
-		note $e.message;
-	}
-
-	method set-page-heading() {
-		my Str $html-heading = '';
-		my Str $style-sheet = '';
-    my Str $javascript = '';
-    #$style-sheet = $.Sys.render(web-part => 'STYLE');
-		#$javascript = $.Sys.render(web-part => 'JSCRIPT');
-		$html-heading = $style-sheet
-       	  				~ $javascript
-			      			~ $.HtmlHeaderBegin
-	  				      ~ self.set-page-title(title => $.AppTitle)
-						      ~ $.HtmlHeaderEnd;
-		return $html-heading;
-	}
+    self.TRACE: 'runtime.RUN: ' 
+              ~ 'signature = ' ~ $signature ~ '; '
+              ~ '<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;app = ' ~ $app ~ '; '
+              ~ 'cmd = ' ~ $cmd ~ '; '
+              ~ 'userid = ' ~ $userid ~ '; '
+              ~ '<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;params = ' ~ %params.Str;
 
 
-	method set-page-title(Str :$title) {
-		my Str $page-title = '';
-    #$.AppTitle = $.Sys.get(key => 'PAGE_TITLE');
-    #self.TRACE: $.Sys.Config.Str;
-		$page-title = $.HtmlTitleBegin
-                ~ $.AppTitle
-						    ~ $.HtmlTitleEnd if $title ne '';
-		return $page-title;
-	}
+    #-- run System module to display default user interface
+    try $.Sys.main($app, userid => $userid, ucomm => $cmd, :%params);
+    if ($!) {
+      self.TRACE: 'Error calling application ' ~ $app ~ '; ' ~ $!.message ~ '; ' ~ $!.gist;
+    }
+    else {
+    
+    }
 
 
-	method set-page-body(Str :$text = '') {
-		my Str $html-body = '';
-		#$.Page = $.Sys.render(web-part => 'BODY');
-		$html-body = $.HtmlBodyBegin;
-		$html-body ~= '<tt>' ~ $.DebugInfo ~ '</tt><hr/>' if $.DebugInfo ne '';
-    $html-body ~= $text;
-		$html-body ~= $.Page;
-		$html-body ~= $.HtmlBodyEnd;
-		return $html-body;
-	}
 
-  multi method build-html-page(Str :$text = '') {
-    my Str $html-page = '';
-    $html-page = $.HtmlBegin
-               ~ self.set-page-heading()
-               ~ self.set-page-body(text => $text)
-               ~ $.HtmlEnd;
-    return $html-page;
-  }
-
-  method load-config-file(Str :$file) {
-    %.Config = from-json(slurp($file));
+    return True;
   }
 
   multi method dispatch(Str :$app, 
@@ -164,7 +121,7 @@ class Runtime is export {
                         :%params) {
     self.detect-button(:%params);
     self.initialize();
-    self.TRACE: 'Parameters: ' ~ %.Params;
+    #self.TRACE: 'Parameters: ' ~ %.Params;
 
     try self.run(signature => '1',
                  app => $app,
@@ -242,6 +199,82 @@ class Runtime is export {
     return self.build-html-page(text => $text); #$text;
   }
 
+  method TWEAK() { #-- last method called to intialize instance variables 
+  }
+
+  submethod DESTROY { #-- called when instance is garbage collected
+  }
+
+  multi method TRACE(Str $msg, 
+                     Str :$id = 'R1', Str :$no = '001', 
+                     Str :$ty = 'I', Str :$t1 = '', 
+                     Str :$t2 = '', Str :$t3 = '', 
+                     Str :$t4 = '' ) {
+		# T1 - Generic or general text
+		my Str $info = '';
+		$info = $t1;
+		$info = $t1 ~ $msg.Str if defined $msg && $msg ne '';
+		$.DebugInfo ~= $id ~ '-' ~ $no ~ ' ' ~ $ty ~ ' ';
+		$.DebugInfo ~= $msg ~ '<br/>' if $msg ne '';
+		my $e = X::Runtime.new(
+						msg-id => $id, msg-no => $no, 
+            msg-ty => $ty, msg-t1 => $info, 
+            msg-t2 => $t2, msg-t3 => $t3,
+            msg-t4 => $t4);
+		note $e.message;
+	}
+
+	method set-page-heading() {
+		my Str $html-heading = '';
+		my Str $style-sheet = '';
+    my Str $javascript = '';
+    $style-sheet = $.Sys.render(web-part => 'STYLE');
+		$javascript = $.Sys.render(web-part => 'JSCRIPT');
+		$html-heading = $style-sheet
+       	  				~ $javascript
+			      			~ $.HtmlHeaderBegin
+	  				      ~ self.set-page-title(title => $.AppTitle)
+						      ~ $.HtmlHeaderEnd;
+		return $html-heading;
+	}
+
+
+	method set-page-title(Str :$title) {
+		my Str $page-title = '';
+    $.AppTitle = $.Sys.get(key => 'PAGE_TITLE');
+    #self.TRACE: $.Sys.Config.Str;
+		$page-title = $.HtmlTitleBegin
+                ~ $.AppTitle
+						    ~ $.HtmlTitleEnd if $title ne '';
+		return $page-title;
+	}
+
+
+	method set-page-body(Str :$text = '') {
+		my Str $html-body = '';
+		$.Page = $.Sys.render(web-part => 'BODY');
+		$html-body = $.HtmlBodyBegin;
+		$html-body ~= '<tt>' ~ $.DebugInfo ~ '</tt><hr/>' if $.DebugInfo ne '';
+    $html-body ~= $text;
+		$html-body ~= $.Page;
+		$html-body ~= $.HtmlBodyEnd;
+		return $html-body;
+	}
+
+  multi method build-html-page(Str :$text = '') {
+    my Str $html-page = '';
+    $html-page = $.HtmlBegin
+               ~ self.set-page-heading()
+               ~ self.set-page-body(text => $text)
+               ~ $.HtmlEnd;
+    return $html-page;
+  }
+
+  method load-config-file(Str :$file) {
+    %.Config = from-json(slurp($file));
+  }
+
+
   method initialize() {
     $.Page = '';
     $.DebugInfo = '';
@@ -251,6 +284,9 @@ class Runtime is export {
 
     #-- generate system module
     self.generate-default-modules();
+
+    #-- load default modules
+    self.load-default-modules();
   }
 
   method generate-default-modules() {
@@ -299,10 +335,10 @@ class Runtime is export {
     #self.TRACE: 'module-path = ' ~ $path;
     if $path.IO.e {
       #-- do nothing
-      self.TRACE: 'Module file ' ~ $path ~ ' already exists';
+      #self.TRACE: 'Module file ' ~ $path ~ ' already exists';
     }
     else {
-      self.TRACE: 'TODO: Create module file ' ~ $path;
+      #self.TRACE: 'TODO: Create module file ' ~ $path;
 
       my Str $text = %.APPTEXTS{"$module"};
 
@@ -323,6 +359,52 @@ class Runtime is export {
 
     }
   } 
+
+  method load-default-modules() {
+    #-- load database utility
+    my Str $module-id = '';
+    my Str $module = '';
+    my Str $module-name = '';
+    my Str $module-path = '';
+    ($module-id, $module, $module-name, $module-path) = self.get-module-name(module-id => 'DB00');
+    #self.TRACE: 'module-id = ' ~ $module-id;
+    #self.TRACE: 'module = ' ~ $module;
+    #self.TRACE: 'module-name = ' ~ $module-name;
+    #self.TRACE: 'module-path = ' ~ $module-path;
+
+    #-- $.Dbu
+    if $module-path.IO.e {
+      try require::($module-name);
+      if ::($module-name) ~~ Failure {
+        self.TRACE: 'Failed loading module ' ~ $module-name ~ '; ' ~ $!.message;
+      }
+      else {
+        $.Dbu = ::($module-name).new;
+        $.Dbu.initialize-config(cfg => %.Config);
+        #-- Build the database file
+        $.Dbu.main(self, userid => '', ucomm => 'INIT', params => %.Params);
+      }
+    }
+
+    #-- $.Sys
+    ($module-id, $module, $module-name, $module-path) = self.get-module-name(module-id => 'SY00');
+    #self.TRACE: 'module-id = ' ~ $module-id;
+    #self.TRACE: 'module = ' ~ $module;
+    #self.TRACE: 'module-name = ' ~ $module-name;
+    #self.TRACE: 'module-path = ' ~ $module-path;
+
+    if $module-path.IO.e {
+      try require::($module-name);
+      if ::($module-name) ~~ Failure {
+        self.TRACE: 'Failed loading module ' ~ $module-name ~ '; ' ~ $!.message;
+      }
+      else {
+        $.Sys = ::($module-name).new;
+        $.Dbu.initialize-config(cfg => %.Config);
+
+      }
+    }
+  }
 
   method detect-button(:%params) {
     my Str $button = '';
@@ -396,24 +478,6 @@ class Runtime is export {
     return $form;
   }
 
-  multi method run(Str :$signature,
-                  Str :$app,
-                  Str :$cmd,
-                  Str :$userid,
-                  :%params) {
-
-    my Str $sy-application = 'SY00';
-    my Str $db-utility = 'DB00';
-    my Str $module-name = '';
-
-      #-- generate default directory structures
-      #-- generate Database module
-      #-- then load DB utility module
-      #-- generate System Module
-
-    #self.TRACE: 'RUN-PARAMS: ' ~ %params.Str;
-    return True;
-  }
 
   method create-directory(Str :$path) {
     my Str @FilePath = $path.split('/');
@@ -494,7 +558,7 @@ class Runtime is export {
                               Str :$file,
                               Str :$text) {
 
-      my Str $module-name = $C_NAMESPACE ~ '::' ~ $module;
+      my Str $module-name = $module;
       my $source-code = '';
       my $snippet = '';
       my $exception-text = $text;
@@ -502,9 +566,9 @@ class Runtime is export {
 
 
       $snippet = "\n" 
-      ~ 'unit module ' ~ $C_NAMESPACE ~ '::' ~ $module ~ ':ver<' ~ $C_VERSION ~ '>:auth<' ~ $C_AUTHOR ~ '>;' 
+      ~ 'unit module ' ~ $module ~ ':ver<' ~ $C_VERSION ~ '>:auth<' ~ $C_AUTHOR ~ '>;' 
       ~ "\n" ~ '  use DBIish;'
-      ~ "\n" ~ '  class X::' ~ $C_NAMESPACE ~ '::' ~ $module ~ ' is Exception {'
+      ~ "\n" ~ '  class X::' ~ $module ~ ' is Exception {'
       ~ "\n";
       $source-code ~= $snippet;
 
@@ -525,16 +589,15 @@ class Runtime is export {
 
 
       $snippet = q:to/END_OF_CODE/;
-      method message() {
-        #-- TODO: Get the message from the data dictionary
+        method message() {
+          #-- TODO: Get the message from the data dictionary
 
-        "$.msg-id" ~ "-" ~ $.msg-no ~ " " ~
-        "$.msg-ty " ~
-        "$.msg-t1 $.msg-t2 $.msg-t3 $.msg-t4"; # Generic error
+          "$.msg-id" ~ "-" ~ $.msg-no ~ " " ~
+          "$.msg-ty " ~
+          "$.msg-t1 $.msg-t2 $.msg-t3 $.msg-t4"; # Generic error
+        }
       }
-    }
-q:to/END_OF_CODE/;
-
+    END_OF_CODE
       $source-code ~= $snippet;
 
 
@@ -759,7 +822,7 @@ q:to/END_OF_CODE/;
 
 
       $snippet = "\n" 
-      ~ "\n" ~ '  my $e = X::' ~ $C_NAMESPACE ~ '::' ~ $module ~ '.new('
+      ~ "\n" ~ '  my $e = X::' ~ $module ~ '.new('
       ~ "\n";
       $source-code ~= $snippet;
 
@@ -769,12 +832,10 @@ q:to/END_OF_CODE/;
           msg-t1 => $sInfo, msg-t2 => $t2, msg-t3 => $t3,msg-t4 => $t4);
           note $e.message;
       }
-    };
 
         
     END_OF_CODE
       $source-code ~= $snippet;
-
 
       $snippet = q:to/END_OF_CODE/;
         method initialize-DBTABLES() {
@@ -2711,17 +2772,17 @@ q:to/END_OF_CODE/;
 
       $snippet = q:to/END_OF_CODE/;
         method create-directory(Str :$path) {
-            my Str @FilePath = $path.split('/');
-            my Str $directory = '.';
-            for @FilePath -> $dir {
-              next if $dir ~~ /\./;
-              next if $dir ~~ /^.*\\(.*)$/;
-              $directory ~= '/' ~ $dir;
-              unless $directory.IO ~~ :d {
-                $directory.IO.mkdir;
-              }
+          my Str @FilePath = $path.split('/');
+          my Str $directory = '.';
+          for @FilePath -> $dir {
+            next if $dir ~~ /\./;
+            next if $dir ~~ /^.*\\\(.*)$/;
+            $directory ~= '/' ~ $dir;
+            unless $directory.IO ~~ :d {
+              $directory.IO.mkdir;
             }
           }
+        }
 
         
     END_OF_CODE
@@ -3887,7 +3948,8 @@ q:to/END_OF_CODE/;
                                 Str :$file,
                                 Str :$text) {
 
-    my Str $module-name = $C_NAMESPACE ~ '::' ~ $module;
+    self.TRACE: 'GENERATE-SYSTEM-MODULE: ' ~ $module;
+    my Str $module-name = $module;
     my $source-code = '';
     my $snippet = '';
     my $exception-text = 'S1';
@@ -3899,7 +3961,7 @@ q:to/END_OF_CODE/;
     #-------------------------------------------------------------
     
     $snippet = "\n" 
-    ~ "\n" ~ 'unit module ' ~ $C_NAMESPACE ~ '::' ~ $module ~ ':ver<' ~ $C_VERSION ~ '>:auth<' ~ $C_AUTHOR ~ '>;'
+    ~ "\n" ~ 'unit module ' ~ $module ~ ':ver<' ~ $C_VERSION ~ '>:auth<' ~ $C_AUTHOR ~ '>;'
     ~ "\n"
     ~ "\n";
     $source-code ~= $snippet;
@@ -3917,7 +3979,7 @@ END_OF_CODE
 
 
     $snippet = "\n"
-    ~ "\n" ~ '  class X::' ~ $C_NAMESPACE ~ '::' ~ $module ~ ' is Exception {'
+    ~ "\n" ~ '  class X::' ~ $module ~ ' is Exception {'
     ~ "\n";
     $source-code ~= $snippet;
 
@@ -3945,10 +4007,12 @@ END_OF_CODE
     $source-code ~= $snippet;
 
 
-
+    $snippet = "\n" 
+        ~ "\n" ~ 'class ' ~ $module ~ ' is export {'
+        ~ "\n";
+    $source-code ~= $snippet;
 
     $snippet = q:to/END_OF_CODE/;
-       class App is export {
         constant $C_NAMESPACE = 'Sys';
         constant $C_LIBPATH = './lib';
         constant $C_WEBFORM = 'WEBC';
@@ -4524,7 +4588,7 @@ END_OF_CODE
 
 
     $snippet = "\n" 
-    ~ "\n" ~ '      my $e = X::' ~ $C_NAMESPACE ~ '::' ~ $module ~ '.new('
+    ~ "\n" ~ '      my $e = X::' ~ $module ~ '.new('
     ~ "\n";
     $source-code ~= $snippet;
 

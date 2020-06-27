@@ -1,12 +1,12 @@
 
 
-unit module Sys::Sys::System:ver<0.0.0>:auth<Domingo Areola (dareola@gmail.com)>;
+unit module Sys::System:ver<0.0.0>:auth<Domingo Areola (dareola@gmail.com)>;
 
     use Sys::Database;
     use Template::Mustache;
 
 
-  class X::Sys::Sys::System is Exception {
+  class X::Sys::System is Exception {
         has $.msg-id; #message class
         has $.msg-no; #message number
         has $.msg-ty; #message type = [A, E, I, S, W]
@@ -23,7 +23,9 @@ unit module Sys::Sys::System:ver<0.0.0>:auth<Domingo Areola (dareola@gmail.com)>
           "$.msg-t1 $.msg-t2 $.msg-t3 $.msg-t4"; # Generic error
         }
       }
-       class App is export {
+
+
+class Sys::System is export {
         constant $C_NAMESPACE = 'Sys';
         constant $C_LIBPATH = './lib';
         constant $C_WEBFORM = 'WEBC';
@@ -118,82 +120,30 @@ unit module Sys::Sys::System:ver<0.0.0>:auth<Domingo Areola (dareola@gmail.com)>
         has %.SCREEN_TITLE is rw = (
           1000 => "TESTING_1000";
         );
+
         method main($App, Str :$userid, Str :$ucomm, :%params) {
-          
-          $.UserCommand = $ucomm; #-- the pressed button will be the user command
-
-          if $ucomm ne $C_INIT {
-            %params<BUTTON> = $ucomm.Str;
-          }
-
-          self.TRACE: 'Program = ' ~ $App ~ '; ' 
-                    ~ ' $ucomm = ' ~ $ucomm ~ '; ' 
-                    ~ ' UserID = ' ~ $userid;
-          my $kv = '';
-          for %params.sort -> (:$key, :$value) {
-            given $key.lc {
-              when 'text' {
-                $kv ~= '<b>text' ~ '</b>=' ~ '...[skiptext]; ';
-              }
-              default {
-              $kv ~= '<b>' ~ $key ~ '</b>=' ~ $value ~ '; '; 
-              }
-            }
-          }
-          self.TRACE: 'Parameters: ' ~ $kv;
-    
-          $.UserID = $userid;
-          
-          if defined %params<OKCODE> {
-            %params<OKCODE>:delete if %params<BUTTON> ne $C_OK; #- remove OKCODE if NOT BUTTON<OK>
-          }
-
-          %.params = %params;
-          my Str $application-id = 'SY00';
-          my Str $ok-code = '';
-
-          $application-id = %params<APP> if defined %params<APP> && %params<APP> ne '';          
-          if defined %.params<OKCODE> && %.params<OKCODE> ne '' {
-            $ok-code = %.params<OKCODE> if defined %params<BUTTON> && %.params<BUTTON> eq $C_OK;                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      
-          }
-          if $ok-code ne 'SY00' && $ok-code ne '' {
-              $application-id = $ok-code;
-          }
-          $.App = $application-id.uc; #-- this is the transaction code corresponding to application
-          given $application-id {
-            when 'SY00' { #-- System module
-              #-- NOTE: Use the Default user interface
-              given $ucomm {
-                when %.CMD<init> {
-                  #self.initialize-db();
-                  $.SCREEN = '1000';
-                }
-              }
-            }
-            default { #-- switch to other module
-              #-- NOTE: EACH APPLICATION HANDLES ITS OWN USER INTERFACE
-              $.SCREEN = '2000';
-            }
-          }
-          self.goto-screen(screen => $.SCREEN);
+          self.TRACE: 'SYS00.main: ' 
+          ~ '<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;app = ' ~ $App ~ '; '
+          ~ 'cmd = ' ~ $ucomm ~ '; '
+          ~ 'userid = ' ~ $userid ~ '; '
+          ~ '<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;params = ' ~ %params.Str;
         }
-        method allow-shortcut(Bool :$flag = False) {
-          if $flag {
-                self.FORM-IMG-BUTTON(key => 'OK',
-                                    src => $C_ICON_OK,
-                                    alt => 'Enter');
-                self.FORM-SPACE();
-                self.FORM-TEXT(key => 'OKCODE',
-                              value => '',
-                              size => '10', #%shortcut<intleng>',
-                              length => '10',
-                              );
-            $.AllowShortcut = 'X';
-          }
-          else {
-            $.AllowShortcut = '';
+
+        method goto-screen(Str :$screen) {
+          my Str $sNextScreen = 'screen_' ~ $screen;
+          if self.can($sNextScreen) {
+            self."$sNextScreen"();
           }
         }
+        
+        method screen_1000 { #-- System Module
+         
+        }
+        method screen_2000 { #-- other Application Module
+          
+        }
+
+
         method message(Str $info, Str :$type = 'I') {
           my Str $icon = '';
           given $type {
@@ -212,220 +162,18 @@ unit module Sys::Sys::System:ver<0.0.0>:auth<Domingo Areola (dareola@gmail.com)>
           }
           self.FT(tag => 'MESSAGE_BAR', text => $icon ~ '&nbsp;' ~ $info) if $info ne '';
         }
-        method goto-screen(Str :$screen) {
-          my Str $sNextScreen = 'screen_' ~ $screen;
-          if self.can($sNextScreen) {
-            self."$sNextScreen"();
-          }
-        }
-        method screen_1000 { #-- System Module
-          my Str $tcode = $.App;
-          #- default tcode is SY00
-          #- determine if shortcut is given
-          #--- the shortcust is taken from parameter "OKCODE"
-          my Str $button-clicked = '';
-          my Str $ok-code = ''; 
-          my Str $function-code = '';
-          $function-code = $.UserCommand;
-          #self.TRACE: 'SYSTEM 1000';
 
-          $button-clicked = %.params<BUTTON> if defined %.params<BUTTON> && %.params<BUTTON> ne '';
-          if defined %.params<OKCODE> && %.params<OKCODE> ne '' {
-            $ok-code = %.params<OKCODE> if defined %.params<BUTTON> && %.params<BUTTON> eq $C_OK;
-          }
-          if $ok-code ne '' {
-            #-- This is a transaction code
-            $tcode = $ok-code.uc if $ok-code ne '';
-          }
-          else {
-            #-- Button is for the function code
-            $function-code = %.params<BUTTON> if defined %.params<BUTTON> &&  %.params<BUTTON> ne '';
-            $.UserCommand = $function-code;
-          }
-          #-- BEGIN -- APPLICATION FORM 
-          self.BEGIN-FORM(appgroup => $C_WEBFORM);
-          self.FORM-BREAK();
-          self.FORM-BREAK();      
-          self.END-FORM(tcode => $tcode, appgroup => $C_WEBFORM);
-
-          my Str $login-link = '';
-          my Str $logout-link = '';
-          my Str $wiki-link = '';
-          $wiki-link = '<a href="/wiki">' ~ self.get(key => 'WIKI_NAME') ~ '</a>';
-          $login-link = '<a href="/login">Login</a>';
-          $logout-link = '<a href="/logout">Logout</a>';
-
-          #-- BEGIN -- PAGE FRAME
-          self.FT(tag => 'PAGE_TITLE', text => 'app: System');
-          self.FT(tag => 'SITE_LOGO', text => self.site-logo());
-          #self.FT(tag => 'PAGE_EDITOR', text => $login-link);
-          if $.UserID ne '' {
-            self.FT(tag => 'PAGE_EDITOR', text => $.UserID);
-            self.FT(tag => 'MENU_BAR', text => $wiki-link);
-            self.FT(tag => 'PAGE_EDITOR', text => $logout-link);
-          }
-          else {
-            self.FT(tag => 'PAGE_EDITOR', text => $login-link);
-          }
-          self.FT(tag => 'WIKIMENU_BAR', text => $tcode);
-          self.FT(tag => 'MENU_BAR', text => $wiki-link);
-          #self.FT(tag => 'MESSAGE_BAR', text => 'i: Transaction <b>' ~ $tcode ~ '</b>; Function <b>' ~ $function-code ~ '</b>');
-          #-- END -- PAGE FRAME
-          return True;
-        }
-        method screen_2000 { #-- other Application Module
-          my Str $tcode = $.App;
-          my Str $module-name = '';
-          my $AppModule = '';
-          my Str $app-group = '';
-
-          #self.TRACE: 'SYSTEM 2000; user command = ' ~ $.UserCommand ~ '; tcode = ' ~ $tcode;
-          #-- BEGIN -- PAGE FRAME 
-          #-- END -- PAGE FRAME
-
-          #self.FT(text => 'Let us attempt to load an application');
-
-          if defined %.APPTABLE{$tcode} {
-            $module-name = %.APPTABLE{$tcode};
-            $app-group = %.APPGROUP{$tcode};
-
-            #self.FT(text => '<br>Found this application: ' ~ $module-name);
-            #self.TRACE: 'Found application :' ~ $module-name;
-
-            if self.load-module($AppModule, module => $module-name) {
-              #self.BEGIN-FORM(appgroup => $app-group);
-              #self.TRACE: 'Try appmodule; ucomm = ' ~ $.UserCommand;
-
-              try $AppModule.main(self, userid => $.UserID, 
-                                        ucomm => $.UserCommand, 
-                                        params => %.params);
-              if ($!) {
-                self.TRACE: 'Error occured on module ' ~ $module-name ~ '; ' ~ $!.message ~ '; ' ~ $!.gist;
-              }
-              else {
-                self.FT(tag => 'MESSAGE_BAR', text => 'i: Module <b>' ~ $module-name ~ '</b> was loaded successfully', last => 1);
-                #self.TRACE: 'Module ' ~ $module-name ~ ' was loaded successully';
-                $.DebugInfo ~= $AppModule.DebugInfo if $AppModule.DebugInfo ne '';
-              }
-              self.END-FORM(tcode => $tcode, appgroup => $app-group);
-            }
-          }
-          else {    
-            given $tcode.uc {
-              when 'SY00' {
-                self.FT(tag => 'MESSAGE_BAR', text => 'i: Transaction <b>' ~ $tcode ~ '</b> not found. TODO: Query database for tcode.');
-                #- DO NOTHING
-              }
-              when 'DB00' {
-                self.FT(tag => 'MESSAGE_BAR', text => 'i: Transaction <b>' ~ $tcode ~ '</b> not found. TODO: Query database for tcode.');
-                #- DO NOTHING
-              }
-              default {
-                $module-name = $C_NAMESPACE ~ '::Database';
-                try require ::($module-name);
-                if ::($module-name) ~~ Failure {
-                  #-- generate module
-                  self.TRACE: 'Failed loading ' ~ $module-name ~ ', ' ~ $!.message;
-                }
-                else {
-                  #-- TEST BEGIN
-                  #-- create an instance of $sModuleName
-                  $.Dbu = ::($module-name)::Database.new;
-                  $.Dbu.initialize-config(cfg => %.Config);
-
-                  #self.TRACE: 'Loading ' ~ $module-name;        
-                  #self.TRACE: 'Calling is-shortcut with ' ~ $tcode;     
-
-                  my Str $program = '',
-                  my Str $progtxt = '';
-                  my Str $app-group = '';
-  
-                  #self.TRACE: 'We try calling the database utility';
-
-                  ($program, $progtxt, $app-group) = $.Dbu.is-shortcut(shortcut => $tcode);
-
-                  #self.TRACE: 'FOUND program ' ~ $program ~ '; text ' ~ $progtxt ~ '; group = ' ~ $app-group;
-                  if $program ne '' {
-                    if self.load-module($AppModule, module => $program) {
-                      #-- $app-group = 'WEBC'; #- TODO get application group
-                      self.BEGIN-FORM(appgroup => $app-group);
-                      #self.TRACE: '$.UserComand = ' ~ $.UserCommand; 
-                      try $AppModule.main(self, userid => $.UserID, 
-                                              ucomm => $.UserCommand, 
-                                              params => %.params);
-                      if ($!) {
-                        self.TRACE: 'Error occured on module ' ~ $module-name ~ '; ' ~ $!.message ~ '; ' ~ $!.gist;
-                      }
-                      else {
-                        #self.FT(tag => 'MESSAGE_BAR', text => 'i: Module <b>' ~ $module-name ~ '</b> was loaded successfully', last => 1);
-                        #self.TRACE: 'Module ' ~ $module-name ~ ' was loaded successully';
-                        $.DebugInfo ~= $AppModule.DebugInfo if $AppModule.DebugInfo ne '';
-                      }
-                      self.END-FORM(tcode => $tcode, appgroup => $app-group);
-                    }
-                  }
-                  else {
-                    my Str $home = '<a href="/home">home</a>';
-                    my Str $alert-icon = '<img src="themes/img/icons/alert.png"/>';
-                    #self.TRACE: 'TCODE NOT EXISTS';
-                    #-- BEGIN -- PAGE FRAME
-                    self.FT(tag => 'PAGE_TITLE', text => 'app: System');
-                    self.FT(tag => 'SITE_LOGO', text => self.site-logo());
-                    #self.FT(tag => 'PAGE_EDITOR', text => $login-link);
-                    self.FT(tag => 'MENU_BAR', text => $home);
-                    self.FT(tag => 'MESSAGE_BAR', text => $alert-icon ~ self.FORM-SPACE() ~ 'Program assigned to shortcut "<b>' ~ $tcode.uc ~ '</b>" not found');
-                    if $.UserID ne '' {
-                      self.FT(tag => 'PAGE_EDITOR', text => $.UserID);
-                    }
-                    #-- BEGIN -- APPLICATION FORM 
-                    self.BEGIN-FORM(appgroup => $C_WEBFORM);
-                    self.allow-shortcut(flag => True);
-                    self.FORM-BREAK();
-                    self.FORM-BREAK();
-                    self.END-FORM(tcode => $tcode, appgroup => $C_WEBFORM);
-                              
-                  }
-                }
-              }
-              #-- TEST END
-            }
-          }
-          return True;
-        }
         method BEGIN-FORM(Str :$appgroup = '') {
-          given $appgroup {
-            when $C_WEBFORM { #- form based screeen
-              self.FORM-OPEN();
-              if $.UserID eq '' && %.params<OKCODE> eq 'login' {
-                  #-- hide OKCODE
-              }
-              else {
-                #self.FORM-IMG-BUTTON(key => 'OK',
-                #                    src => $C_ICON_OK,
-                #                    alt => 'Enter');
-                #self.FORM-SPACE();
-              }
-              if $.UserID eq '' && %.params<OKCODE> eq 'login' {
-                   #-- hide OKCODE
-              }
-              else {
-                #self.FORM-STRING(text => $.AllowShortcut);
-                #self.FORM-TEXT(key => 'OKCODE',
-                #              value => '',
-                #              size => '10', #%shortcut<intleng>',
-                #              length => '10',
-                #              );
-              }
-            }
-          }
         }
-      method END-FORM(Str :$tcode = '', Str :$appgroup = '') {
-          given $appgroup {
-            when $C_WEBFORM {
-              self.FORM-CLOSE(app => $tcode);
-            }
-          }
+        
+        method END-FORM(Str :$tcode = '', Str :$appgroup = '') {
+          
         }
+
+        method initialize-config(:%cfg) {
+          %.Config = %cfg;
+         }
+
         method load-module($AppModule is rw, Str :$module) {
           my Bool $return-code = True;
           my Str $module-name = '';
@@ -498,7 +246,7 @@ unit module Sys::Sys::System:ver<0.0.0>:auth<Domingo Areola (dareola@gmail.com)>
           $.DebugInfo ~= $msg ~ "<br/>" if $msg ne "";
 
 
-      my $e = X::Sys::Sys::System.new(
+      my $e = X::Sys::System.new(
             msg-id => $id, msg-no => $no, msg-ty => $ty,
             msg-t1 => $sInfo, msg-t2 => $t2, msg-t3 => $t3,msg-t4 => $t4);
             note $e.message;

@@ -202,7 +202,6 @@ method TRACE(Str $msg, :$id = "D0", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
       msg-t1 => $sInfo, msg-t2 => $t2, msg-t3 => $t3,msg-t4 => $t4);
       note $e.message;
   }
-};
 
     
     method initialize-DBTABLES() {
@@ -1984,17 +1983,17 @@ method TRACE(Str $msg, :$id = "D0", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
 
     
     method create-directory(Str :$path) {
-        my Str @FilePath = $path.split('/');
-        my Str $directory = '.';
-        for @FilePath -> $dir {
-          next if $dir ~~ /\./;
-          next if $dir ~~ /^.*\(.*\)$/;
-          $directory ~= '/' ~ $dir;
-          unless $directory.IO ~~ :d {
-            $directory.IO.mkdir;
-          }
+      my Str @FilePath = $path.split('/');
+      my Str $directory = '.';
+      for @FilePath -> $dir {
+        next if $dir ~~ /\./;
+        next if $dir ~~ /^.*\\(.*)$/;
+        $directory ~= '/' ~ $dir;
+        unless $directory.IO ~~ :d {
+          $directory.IO.mkdir;
         }
       }
+    }
 
     
     method db-create-table(Str :$tabname, Str :$descrip, Str :$sql, Str :$language = 'E') {
