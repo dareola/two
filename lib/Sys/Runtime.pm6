@@ -183,11 +183,13 @@ class Runtime is export {
       $sth.execute;
       my %wCLNTUSER = $sth.fetchall-hash;
       for %wCLNTUSER -> $fld {
-        #self.TRACE: 'data-from-db: ' ~ $fld.key ~ '=' ~ $fld.value;
+        self.TRACE: 'data-from-db: ' ~ $fld.key ~ '=' ~ $fld.value;
         given $fld.key {
           when 'passwrd' {
-            my $password-from-db = $fld.value;
-            $login-status = True if $password-from-db eq $passwrd;
+            if $fld.value ne '' {
+              my $password-from-db = $fld.value;
+              $login-status = True if $password-from-db eq $passwrd;
+            }
           }
         }
       }
@@ -4532,7 +4534,7 @@ END_OF_CODE
     $source-code ~= $snippet;
 
     $snippet = q:to/END_OF_CODE/;
-        method main($App, Str :$userid, Str :$ucomm, :%params) {
+       method main($App, Str :$userid, Str :$ucomm, :%params) {
           self.TRACE: 'SYS00.main: ' 
           ~ 'app = ' ~ $App ~ '; '
           ~ 'cmd = ' ~ $ucomm ~ '; '
@@ -4557,18 +4559,37 @@ END_OF_CODE
           self.TRACE: 'SYS00.main.Parameters: ' ~ $kv;
           self.TRACE: 'APPLICATION ID: ' ~ $.App;
 
+          my $next-screen = '';
+          given $.App {
+            when 'LOGIN' { #-- User login
+              given $.UserCommand {
+                when 'INIT' {
+                  $next-screen = '1000';
+                }
+                when 'INVALID_PASSWORD' {
+                  $next-screen = '1000';
+                }
+              }
+            }  
+          }
+
           #-- todo: Get screen for application
-          self.goto-screen(app => $.App);
+          self.goto-screen(app => $.App, screen => $next-screen);
 
         }
 END_OF_CODE
     $source-code ~= $snippet;
 
     $snippet = q:to/END_OF_CODE/;
-        method goto-screen(Str :$app) {
+        method goto-screen(Str :$app, Str :$screen = '') {
           my Str $next-screen = '';
           my Str $application-screen = '';
-          $next-screen = %.APPSCREEN{$app};
+          if $screen ne '' {
+            $next-screen = $screen;
+          }
+          else {
+            $next-screen = %.APPSCREEN{$app};
+          }
           $application-screen = $app ~ '-screen_' ~ $next-screen;
           if self.can($application-screen) {
             self.TRACE: 'Calling method ' ~ $application-screen;

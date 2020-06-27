@@ -163,14 +163,41 @@ class Sys::System is export {
           self.TRACE: 'SYS00.main.Parameters: ' ~ $kv;
           self.TRACE: 'APPLICATION ID: ' ~ $.App;
 
+          my $next-screen = '';
+          given $.App {
+            when 'LOGIN' { #-- User login
+              given $.UserCommand {
+                when 'INIT' {
+                  $next-screen = '1000';
+                }
+                when 'VERIFY' {
+                 
+                  if %.Params<register> {
+                    $.UserCommand = 'REGISTER';
+                    $next-screen = '2000';
+                  }
+                  else {
+                    $.UserCommand = 'INVALID_PASSWORD';
+                    $next-screen = '1000';
+                  }
+                }
+              }
+            }  
+          }
+          self.TRACE: 'User Command: ' ~ $.UserCommand;
           #-- todo: Get screen for application
-          self.goto-screen(app => $.App);
+          self.goto-screen(app => $.App, screen => $next-screen);
 
         }
-        method goto-screen(Str :$app) {
+        method goto-screen(Str :$app, Str :$screen = '') {
           my Str $next-screen = '';
           my Str $application-screen = '';
-          $next-screen = %.APPSCREEN{$app};
+          if $screen ne '' {
+            $next-screen = $screen;
+          }
+          else {
+            $next-screen = %.APPSCREEN{$app};
+          }
           $application-screen = $app ~ '-screen_' ~ $next-screen;
           if self.can($application-screen) {
             self.TRACE: 'Calling method ' ~ $application-screen;
@@ -261,83 +288,103 @@ class Sys::System is export {
           self.FT(tag => 'MENU_BAR', text => $home-link);
           self.FT(tag => 'MENU_BAR', text => $login-link);
 
-          self.BEGIN-FORM(appgroup => $C_WEBFORM);
 
-          self.FORM-IMG-BUTTON(key => 'press-login',
-            src => $C_ICON_LOGIN,
-            alt => 'Login');
-          self.FORM-SPACE();
-
-          self.FORM-IMG-BUTTON(key => 'press-register',
-                      src => $C_ICON_REGISTER,
-                      alt => 'Register');
+          self.TRACE: 'User command: ' ~ $.UserCommand;
 
 
-          self.FORM-BREAK();
-          self.FORM-BREAK();      
-
-          my $clntnum-text = $.Dbu.field-text(field => 'CLNTUSER-CLNTNUM', type => 'S');
-          self.FORM-STRING(text => $clntnum-text);
-          self.FORM-SPACE;
-
-          my %wSelectOptions = ();
-          self.FORM-SELECT(key => 'CLNTUSER-CLNTNUM',
-                            value => '000',
-                            options => %wSelectOptions,
-                            label => 'Client number');
-
-          self.FORM-BREAK();
-
-          my $usercod-text = $.Dbu.field-text(field => 'CLNTUSER-USERCOD', type => 'S');
-          self.FORM-STRING(text => $usercod-text);
-
-          self.FORM-SPACE;
-          self.FORM-TEXT(key => 'CLNTUSER-USERCOD', value => '', size => '18', length => '18'); 
+          given $.UserCommand {
+            when 'INIT' {
 
 
+              self.BEGIN-FORM(appgroup => $C_WEBFORM);
 
-          my $password-field = self.encrypt-field('PASSWORD');
-          my $javascript = '<script type="text/javascript">' 
-                        ~ "\n"
-                        ~ '//<![CDATA[' 
-                        ~ "\n";
-            $javascript ~= $password-field 
-                        ~ "\n";
-            $javascript ~= self.encrypt-md5();
-            $javascript ~= '//]]'
-                        ~ "\n" 
-                        ~ '</script>';
-          self.FT(tag => 'JAVASCRIPT', text => $javascript); #-- This will insert javascript code header
+              self.FORM-IMG-BUTTON(key => 'press-login',
+                src => $C_ICON_LOGIN,
+                alt => 'Login');
+              self.FORM-SPACE();
+
+              self.FORM-IMG-BUTTON(key => 'press-register',
+                          src => $C_ICON_REGISTER,
+                          alt => 'Register');
 
 
-          self.FORM-BREAK();
+              self.FORM-BREAK();
+              self.FORM-BREAK();      
 
-          my $passwrd-text = $.Dbu.field-text(field => 'CLNTUSER-PASSWRD', type => 'S');
-          self.FORM-STRING(text => $passwrd-text);
-          self.FORM-SPACE;
+              my $clntnum-text = $.Dbu.field-text(field => 'CLNTUSER-CLNTNUM', type => 'S');
+              self.FORM-STRING(text => $clntnum-text);
+              self.FORM-SPACE;
 
-          #-- encoded password is 32 characters
-          self.FORM-PASSWORD(key => 'PASSWORD',
-                              value => '',
-                              size => '32',
-                              length => '15',
-                              event => 'onChange',
-                              action => 'javascript:encryptPassword_' 
-                                        ~ 'PASSWORD' ~ '();'
-                    );
+              my %wSelectOptions = ();
+              self.FORM-SELECT(key => 'CLNTUSER-CLNTNUM',
+                                value => '000',
+                                options => %wSelectOptions,
+                                label => 'Client number');
 
-          self.FORM-BREAK();
-          my $langiso-text = $.Dbu.field-text(field => 'CLNTUSER-LANGISO', type => 'S');
-          self.FORM-STRING(text => $langiso-text);
-          self.FORM-SPACE;
-          %wSelectOptions = ();
-          self.FORM-SELECT(key => 'CLNTUSER-LANGISO',
-                            value => 'E',
-                            options => %wSelectOptions,
-                            label => 'Language');
+              self.FORM-BREAK();
+
+              my $usercod-text = $.Dbu.field-text(field => 'CLNTUSER-USERCOD', type => 'S');
+              self.FORM-STRING(text => $usercod-text);
+
+              self.FORM-SPACE;
+              self.FORM-TEXT(key => 'CLNTUSER-USERCOD', value => '', size => '18', length => '18'); 
 
 
-          self.END-FORM(app => $.App, appgroup => $C_WEBFORM);
+
+              my $password-field = self.encrypt-field('PASSWORD');
+              my $javascript = '<script type="text/javascript">' 
+                            ~ "\n"
+                            ~ '//<![CDATA[' 
+                            ~ "\n";
+                $javascript ~= $password-field 
+                            ~ "\n";
+                $javascript ~= self.encrypt-md5();
+                $javascript ~= '//]]'
+                            ~ "\n" 
+                            ~ '</script>';
+              self.FT(tag => 'JAVASCRIPT', text => $javascript); #-- This will insert javascript code header
+
+
+              self.FORM-BREAK();
+
+              my $passwrd-text = $.Dbu.field-text(field => 'CLNTUSER-PASSWRD', type => 'S');
+              self.FORM-STRING(text => $passwrd-text);
+              self.FORM-SPACE;
+
+              #-- encoded password is 32 characters
+              self.FORM-PASSWORD(key => 'PASSWORD',
+                                  value => '',
+                                  size => '32',
+                                  length => '15',
+                                  event => 'onChange',
+                                  action => 'javascript:encryptPassword_' 
+                                            ~ 'PASSWORD' ~ '();'
+                        );
+
+              self.FORM-BREAK();
+              my $langiso-text = $.Dbu.field-text(field => 'CLNTUSER-LANGISO', type => 'S');
+              self.FORM-STRING(text => $langiso-text);
+              self.FORM-SPACE;
+              %wSelectOptions = ();
+              self.FORM-SELECT(key => 'CLNTUSER-LANGISO',
+                                value => 'E',
+                                options => %wSelectOptions,
+                                label => 'Language');
+
+
+
+
+
+              self.END-FORM(app => $.App, appgroup => $C_WEBFORM);
+            }
+            when 'INVALID_PASSWORD' {
+              self.message('INVALID PASSWORD, please login again');
+            }
+
+          }
+
+
+
 
         }
         method message(Str $info, Str :$type = 'I') {
