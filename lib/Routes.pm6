@@ -209,7 +209,11 @@ sub routes() is export {
           my Str $userid = '';
           $userid = $session.username if defined $session.username && $session.username ne '';
           content 'text/html', 
-            $oRuntime.dispatch(app => 'startup',
+          #  $oRuntime.dispatch(app => 'startup',
+          #                      cmd => 'INIT', 
+          #                      userid => $userid, 
+          #                      :%params);
+            $oRuntime.dispatch(app => 'home',
                                 cmd => 'INIT', 
                                 userid => $userid, 
                                 :%params);
@@ -254,20 +258,25 @@ sub routes() is export {
                                 :%params);
         }
 
-        get -> LoggedIn $user, $dead-end, :%params {
+        get -> LoggedIn $user, $dispatcher, :%params {
           my Str $userid = '';
           $userid = $user.username if defined $user.username && $user.username ne '';
           content 'text/html', 
-            $oRuntime.dispatch(app => 'dispatcher',
+            $oRuntime.dispatch(app => $dispatcher,
                                 cmd => 'INIT', 
                                 userid => $userid, 
                                 :%params);
         }
 
-        get -> $dead-end, :%params {
+        get -> $default, :%params {
             my Str $userid = '';
+          #content 'text/html', 
+          #  $oRuntime.dispatch(app => 'home',
+          #                      cmd => 'INIT', 
+          #                      userid => $userid, 
+          #                      :%params);
           content 'text/html', 
-            $oRuntime.dispatch(app => 'default',
+            $oRuntime.dispatch(app => 'home',
                                 cmd => 'INIT', 
                                 userid => $userid, 
                                 :%params);
@@ -296,7 +305,7 @@ sub routes() is export {
             my Str $userid = '';
             $userid = $user.username if defined $user.username && $user.username ne '';
             content 'text/html', 
-              $oRuntime.dispatch(app => 'startup',
+              $oRuntime.dispatch(app => 'home',
                                  cmd => 'INIT', 
                                  userid => $userid, 
                                  :%params);

@@ -93,12 +93,12 @@ class Runtime is export {
     my Str $db-utility = 'DB00';
     my Str $module-name = '';
 
-    self.TRACE: 'runtime.RUN: ' 
-              ~ 'signature = ' ~ $signature ~ '; '
-              ~ '<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;app = ' ~ $app ~ '; '
-              ~ 'cmd = ' ~ $cmd ~ '; '
-              ~ 'userid = ' ~ $userid ~ '; '
-              ~ '<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;params = ' ~ %params.Str;
+    #self.TRACE: 'runtime.RUN: ' 
+    #          ~ 'signature = ' ~ $signature ~ '; '
+    #          ~ '<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;app = ' ~ $app ~ '; '
+    #          ~ 'cmd = ' ~ $cmd ~ '; '
+    #          ~ 'userid = ' ~ $userid ~ '; '
+    #          ~ '<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;params = ' ~ %params.Str;
 
 
     #-- run System module to display default user interface
@@ -107,7 +107,7 @@ class Runtime is export {
       self.TRACE: 'Error calling application ' ~ $app ~ '; ' ~ $!.message ~ '; ' ~ $!.gist;
     }
     else {
-    
+      $.DebugInfo ~= $.Sys.DebugInfo if $.Sys.DebugInfo ne ''; #-- Sys TRACES
     }
 
 
@@ -140,63 +140,48 @@ class Runtime is export {
       }
     }      
 
-    my Str $user = '';
-    $user = $userid if $userid ne '';
+    #my Str $user = '';
+    #$user = $userid if $userid ne '';
 
-    my Str $app-toolbar = '';
+    #my Str $app-toolbar = '';
 
-    $app-toolbar ~= '<a href="/">home</a>' ~ '&nbsp;|&nbsp;';
-    $app-toolbar ~= '<a href="/index">index</a>' ~ '&nbsp;|&nbsp;';
-    $app-toolbar ~= '<a href="/help">help</a>' ~ '&nbsp;|&nbsp;';
-    $app-toolbar ~= '<a href="/login">login</a>' ~ '&nbsp;' if $user eq '';
-    $app-toolbar ~= '<b>' ~ $user.uc ~ '</b>&nbsp;<a href="/logout">logout</a>' ~ '&nbsp;' if $user ne '';
-    $app-toolbar ~= '<hr/>';
+    #$app-toolbar ~= '<a href="/">home</a>' ~ '&nbsp;|&nbsp;';
+    #$app-toolbar ~= '<a href="/index">index</a>' ~ '&nbsp;|&nbsp;' if $user ne '';
+    #$app-toolbar ~= '<a href="/help">help</a>' ~ '&nbsp;|&nbsp;' if $user ne '';
+    #$app-toolbar ~= '<a href="/login">login</a>' ~ '&nbsp;' if $user eq '';
+    #$app-toolbar ~= '<b>' ~ $user.uc ~ '</b>&nbsp;<a href="/logout">logout</a>' ~ '&nbsp;' if $user ne '';
+    #$app-toolbar ~= '<hr/>';
 
-    if $user ne '' {
-      if $app ne 'login' {
-        $app-toolbar ~= self.begin-form() ~ self.user-command() ~ self.end-form() ;
-        $app-toolbar ~= 'Parameters: [' ~ %.Params.Str ~ ']<br>';
-      }
-    }
+    #if $user ne '' {
+    #  if $app ne 'login' {
+        #$app-toolbar ~= self.begin-form() ~ self.user-command() ~ self.end-form() ;
+        #$app-toolbar ~= 'Parameters: [' ~ %.Params.Str ~ ']<br>';
+    #  }
+    #}
 
-    my Str $text = '';
+    #my Str $text = '';
 
-    given $app {
-      when 'startup' {
-        $text ~= $app-toolbar;
-        $text ~= '<br>WELCOME<br><br>';
-      }
-      when 'login' {
-        $app-toolbar ~= self.begin-form(app => 'login') 
-                     ~ self.user-login() 
-                     ~ self.end-form() ;
-        $text ~= $app-toolbar;
-      }
-      when 'logout' {
-        $text ~= $app-toolbar;
-      }
-      when 'home' {
-        $text ~= $app-toolbar;
-      }
-      when 'index' {
-        $text ~= $app-toolbar;
-      }
-      when 'default' {
-        $text ~= $app-toolbar;
-      }
-      when 'dispatcher' {
-        $text ~= $app-toolbar;
-      }
-      when 'relogin' {
-        $text ~= $app-toolbar;
-      }
-    }
+    #given $app {
+    #  when 'home' {
+    #    $text ~= $app-toolbar;
+    #    $text ~= '<br>WELCOME<br><br>';
+    #  }
+    #  when 'login' {
+        #$app-toolbar ~= self.begin-form(app => 'login') 
+        #             ~ self.user-login() 
+        #             ~ self.end-form() ;
+        #$text ~= $app-toolbar;
+    #  }
+    #  default {
+    #    $text ~= $app-toolbar;
+    #  }
+    #}
 
-    $text ~= 'User = ' ~ $user ~ '<br>' 
-          ~ 'Application = ' ~ $app ~ '<br>'
-          ~ 'Command = ' ~ $cmd ~ '<br>';
+    #$text ~= 'User = ' ~ $user ~ '<br>' 
+    #      ~ 'Application = ' ~ $app ~ '<br>'
+    #      ~ 'Command = ' ~ $cmd ~ '<br>';
 
-    return self.build-html-page(text => $text); #$text;
+    return self.build-html-page(); #$text;
   }
 
   method TWEAK() { #-- last method called to intialize instance variables 
@@ -400,7 +385,7 @@ class Runtime is export {
       }
       else {
         $.Sys = ::($module-name).new;
-        $.Dbu.initialize-config(cfg => %.Config);
+        $.Sys.initialize-config(cfg => %.Config);
 
       }
     }
