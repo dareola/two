@@ -266,6 +266,8 @@ class Runtime is export {
 
     #-- create default system directories
     self.create-default-directories();
+    self.create-default-page-stylesheet();
+    self.create-default-page-javascript();
 
     #-- generate system module
     self.generate-default-modules();
@@ -412,58 +414,6 @@ class Runtime is export {
 
 
 
-  method begin-form(Str :$app = '') {
-    my Str $form = '';
-    if $app ne '' {
-      $form = '<form method="POST" action="/' ~ $app ~ '" enctype="application/x-www-form-url-encoded">';
-    }
-    else {
-      $form = '<form method="POST" action="/" enctype="application/x-www-form-url-encoded">';
-    }  
-    return $form;
-  }
-  method end-form() {
-    my Str $form = '';
-    $form = '</form>';
-    return $form;
-  }
-
-  method user-command() {
-    my Str $form = '';
-    my Str $alt = '';
-    $alt = 'Enter';
-    $form ~= '<input type="image" name="press-enter" '
-          ~  'src="themes/img/icons/tick.png" '
-          ~  'alt="' ~ $alt ~ '">'
-          ~  '&nbsp;<span style="font-size:75%;">' ~ $alt ~ '</span>&nbsp;';
-    #$form ~= '<input type="submit" name="enter" value="Enter" />';
-    $form ~= '&nbsp;<input type="text" name="ucomm" value="" size="10" maxlength="60" />';
-    #$form ~= '&nbsp;<input type="submit" name="fcode" value="first" />';
-    #$form ~= '&nbsp;<input type="submit" name="fcode" value="previous" />';
-    #$form ~= '&nbsp;<input type="submit" name="fcode" value="next" />';
-    #$form ~= '&nbsp;<input type="submit" name="fcode" value="last" />';
-    return $form;
-  }
-
-  method user-login() {
-    my Str $form = '';
-    my Str $alt = '';
-    $alt = 'Login';
-    $form ~= '<input type="image" name="press-login" '
-          ~  'src="themes/img/icons/key.png" '
-          ~  'alt="' ~ $alt ~ '">'
-          ~  '&nbsp;<span style="font-size:75%;">' ~ $alt ~ '</span>&nbsp;';
-    #$form ~= '<input type="submit" name="login" value="Login" />';
-    $form ~= '<br><br><div>';
-    $form ~= 'Username: <input type="text" name="username" />';
-    $form ~= '</div>';
-    $form ~= '<div>';
-    $form ~= 'Password: <input type="password" name="password" />';
-    $form ~= '</div>';
-    return $form;
-  }
-
-
   method create-directory(Str :$path) {
     my Str @FilePath = $path.split('/');
     my Str $directory = '.';
@@ -537,6 +487,624 @@ class Runtime is export {
     self.create-directory(path => $wikidata-dir ~ '/lock');
     self.create-directory(path => $wikidata-dir ~ '/tmpl');
   }
+
+  method create-default-page-stylesheet() {
+		#self.TRACE: 'TODO: create-default-page-stylesheet';
+		#self.TRACE: '.... file: ' ~ $.System.get('PUBLIC_DIR') ~ '/styles/'
+		#                                                     ~ $.System.get('CSS_DEFAULT_DIR')
+		#                                                     ~ '/'
+		#                                                     ~ $.System.get('CSS_DEFAULT_FILE');
+		my Str $default-stylesheet-data = q:to/DEFAULT_STYLESHEET/;
+      body,td {font-family:"Lucida Grande", "Corbel", tahoma, verdana, helvetica, arial,sans-serif; font-size:10pt; }
+      body {margin:0px; SCROLLBAR-FACE-COLOR: #fbfbf1; SCROLLBAR-HIGHLIGHT-COLOR: #c9c7b3; SCROLLBAR-SHADOW-COLOR: #c9c7b3; COLOR: #000000; SCROLLBAR-ARROW-COLOR: #000000; SCROLLBAR-BASE-COLOR: #c9c7b3; scrollbar-3d-light-color: #e2e0c9; scrollbar-dark-shadow-color: #c9c7b3}
+      #navcontainer { width: 155px; float: right; display: block; }
+      #navcontainer ul {margin-left: 0; padding-left: 0; list-style-type: none; font-family:verdana,arial,sans-serif;  }
+      #navcontainer a { display: block; padding: 2px; width: 140px; }
+      #navcontainer a:link, #navcontainer a:visited, #navlist a:visited { /*color: #FFF; */ text-decoration: none; }
+      #navcontainer a:hover { background-color: #336699; color: #fff; }
+      .page_title { font-weight: bold;
+                  font-size: 20px;
+                  color: darkblue;
+                  text-decoration: none;
+                  font-family: Tahoma, Helvetica, Arial, Verdana, sans-serif;
+      }
+      .subpage_title { font-weight: bold;
+                  font-size: 20px;
+                  color: darkblue;
+                  text-decoration: none;
+                  font-family: Tahoma, Helvetica, Arial, Verdana, sans-serif;
+      }
+      .pagemenu a {text-align:left; font-family: Tahoma, Helvetica, Arial, sans-serif; font-size: 10pt; text-decoration: none;}
+      .pagemenu a:hover {color:red; text-decoration: underline;}
+      A.subpage_title { font-weight: bold;
+                  font-size: 16px;
+                  text-decoration: none;
+                  color: darkblue;
+                  font-family: Tahoma, Helvetica, Arial, Verdana, sans-serif;
+      }
+      A.page_title { font-weight: bold;
+                  font-size: 20px;
+                  color: darkblue;
+                  text-decoration: none;
+                  font-family: Tahoma, Helvetica, Arial, Verdana, sans-serif;
+      }
+      HR.wikilinediff {
+                  border:1px solid #999999;
+      }
+      HR.wikiline {
+                  border:1px solid #999999;
+      }
+      HR {border: none 0;
+        border-top: 1px dashed #000;/*the border*/
+        height: 1px;/*whatever the total width of the border-top and border-bottom equal*/
+      }
+      TABLE.wikiscrumtable {
+                  border:1px solid #999999;
+                  padding:0;
+                  margin: 0;
+                  background-color: #ffffff;
+      }
+      TR.wikiscrumtablerow {
+                  border:1px solid #999999;
+      }
+      TD.wikiscrumtablecell {
+            border:0px solid #000;
+                  padding:1;
+                  padding-left:2;
+                  margin: 0;
+                  align: left;
+                  font-family: Tahoma, Helvetica, Arial, sans-serif;
+                  font-size: 10pt;
+      }
+      .wikitext { font-family: Tahoma, Helvetica, Arial, sans-serif;
+                  font-size: 10pt;
+                  text-decoration: none;
+      }
+      .wikitext a:hover {color:red; text-decoration: underline;}
+      A:hover {color:red; text-decoration: underline;}
+      .searchbox { font-family: Tahoma, Helvetica, Arial, sans-serif;
+        font-size: 10pt;
+      }
+      h1,h2,h3,h4,h5,h6,h7,h8 {font-family:"Trebuchet MS",helvetica,sans-serif; color:maroon; letter-spacing:1px;  }
+      h1 {font-size:20pt;}
+      h2 {font-size:18pt;}
+      h3 {font-size:18pt;}
+      h4 {font-size:15pt;}
+      h5 {font-size:14pt;}
+      h6 {font-size:13pt;}
+      h7 {font-size:12pt;}
+      h8 {font-size:11pt;}
+      .scroller {
+        FONT-WEIGHT: normal; FONT-SIZE: 8pt; COLOR: #ffffff; FONT-FAMILY: Arial, Helvetica, sans-serif; TEXT-DECORATION: none
+      }
+      /* begin: control the display of definition lists */
+      dl {
+          padding: 0.5em;
+      }
+      dt {
+          float: left;
+          clear: left;
+          width: 120px;
+          text-align: right;
+      }
+      dt::after {
+          content: ":";
+      }
+      dd {
+          margin: 0 0 0 140px;
+          padding: 0 0 0.5em 0;
+      }
+      /* end: control the display of definition lists */
+      /*********** POPUP MENU STYLES ****************/
+      #navi { WIDTH: 400px; POSITION: relative; LEFT: 5px; TOP: 0px; HEIGHT: 40px; TEXT-ALIGN: left; }
+      .menu {	PADDING-RIGHT: 0px; DISPLAY: block; PADDING-LEFT: 0px; PADDING-BOTTOM: 0px; MARGIN: 0px; WIDTH: auto; PADDING-TOP: 0px; }
+      .menu UL { PADDING-RIGHT: 0px; DISPLAY: block; PADDING-LEFT: 0px; PADDING-BOTTOM: 0px; MARGIN: 0px; PADDING-TOP: 0px; POSITION: absolute }
+      .menu LI UL { VISIBILITY: hidden }
+      .menu LI LI UL { MARGIN-TOP: -23px; LEFT: auto; POSITION: absolute; TOP: auto }
+      .menu LI { PADDING-RIGHT: 0px; DISPLAY: block; PADDING-LEFT: 0px; FLOAT: left; PADDING-BOTTOM: 0px; MARGIN: 0px; LINE-HEIGHT: 20px; PADDING-TOP: 0px; LIST-STYLE-TYPE: none; HEIGHT: auto }
+      * html .menu li li{display:inline;border-bottom:1px solid #404040;border-left:1px solid #404040;border-right:1px solid #404040;}
+      .menu A { DISPLAY: block; font-family: Tahoma, Helvetica, Arial, sans-serif;
+                  font-size: 10pt;
+                  text-decoration: none; BACKGROUND: url(/themes/images/link_bg.jpg); FILTER: Alpha(opacity=80);   color:#ffffff;}
+      .menu A:hover { font-family: Tahoma, Helvetica, Arial, sans-serif;
+                  font-size: 10pt;
+                  text-decoration: none;  color:red;}
+      .menu A:unknown {}
+      .menu SPAN { DISPLAY: none }
+      UNKNOWN { PADDING-RIGHT: 0px; DISPLAY: block; PADDING-LEFT: 0px;  PADDING-BOTTOM: 0px; MARGIN: -1px; PADDING-TOP: 0px; TEXT-ALIGN: left; TEXT-DECORATION: none }
+      UNKNOWN { }
+      .top { BORDER-RIGHT: 0px; PADDING-RIGHT: 0px; BORDER-TOP: 0px; PADDING-LEFT: 0px; PADDING-BOTTOM: 0px; MARGIN: 0px; BORDER-LEFT: 0px; PADDING-TOP: 0px; BORDER-BOTTOM: 0px; POSITION: relative; TOP: 1px; color:#cccccc; }
+      /*popmenu_1*/
+      #popmenu_1 {	BORDER-RIGHT: 0px; PADDING-RIGHT: 0px; BORDER-TOP: 0px; PADDING-LEFT: 0px; PADDING-BOTTOM: 0px; MARGIN: 0px; BORDER-LEFT: 0px; WIDTH: auto; PADDING-TOP: 0px; BORDER-BOTTOM: 0px; TOP: 1px; }
+      #popmenu_1 UL { WIDTH: 150px }
+      #popmenu_1 UL A { PADDING-RIGHT: 1px; PADDING-LEFT: 10px; PADDING-BOTTOM: 0px; MARGIN: 0px; WIDTH: 140px; PADDING-TOP: 0px }
+      .menu LI LI A IMG { LEFT: 144px; POSITION: absolute }
+      /*popmenuitem_1_1*/
+      #popmenuitem_1_1 UL { MARGIN-LEFT: 120px }
+      #popmenuitem_1_1 UL { WIDTH: 150px }
+      /*popmenuitem_1_2*/
+      #popmenuitem_1_2 UL { MARGIN-LEFT: 120px }
+      #popmenuitem_1_2 UL { WIDTH: 150px }
+      /*popmenuitem_1_3*/
+      #popmenuitem_1_3 UL { MARGIN-LEFT: 120px }
+      #popmenuitem_1_3 UL { WIDTH: 140px }
+      /*popmenuitem_1_4*/
+      #popmenuitem_1_4 UL { MARGIN-LEFT: 120px }
+      #popmenuitem_1_4 UL { WIDTH: 150px }
+      /*popmenuitem_1_5*/
+      #popmenuitem_1_5 UL { MARGIN-LEFT: 120px }
+      #popmenuitem_1_5 UL { WIDTH: 150px }
+      /*popmenuitem_1_6*/
+      #popmenuitem_1_6 UL { MARGIN-LEFT: 120px }
+      #popmenuitem_1_6 UL { WIDTH: 150px }
+      /*popmenuitem_1_7*/
+      #popmenuitem_1_7 UL { MARGIN-LEFT: 120px }
+      #popmenuitem_1_7 UL { WIDTH: 150px }
+      /*popmenuitem_1_8*/
+      #popmenuitem_1_8 UL { MARGIN-LEFT: 120px }
+      #popmenuitem_1_8 UL { WIDTH: 150px }
+      /*popmenuitem_1_9*/
+      #popmenuitem_1_9 UL { MARGIN-LEFT: 120px }
+      #popmenuitem_1_9 UL { WIDTH: 150px }
+      /*popmenuitem_1_10*/
+      #popmenuitem_1_10 UL { MARGIN-LEFT: 120px }
+      #popmenuitem_1_10 UL { WIDTH: 150px }
+      /*popmenu_2*/
+      #popmenu_2 { WIDTH: auto; PADDING-LEFT: 6px;}
+      #popmenu_2 UL { WIDTH: 150px }
+      #popmenu_2 UL A { PADDING-RIGHT: 1px; PADDING-LEFT: 10px; PADDING-BOTTOM: 0px; MARGIN: -1px 0px 0px; WIDTH: 140px; PADDING-TOP: 0px }
+      .menu LI LI A IMG { LEFT: 144px; POSITION: absolute }
+      /*popmenuitem_2_1*/
+      #popmenuitem_2_1 UL { MARGIN-LEFT: 120px }
+      #popmenuitem_2_1 UL { WIDTH: 150px }
+      /*popmenuitem_2_2*/
+      #popmenuitem_2_2 UL { MARGIN-LEFT: 120px }
+      #popmenuitem_2_2 UL { WIDTH: 150px }
+      /*popmenuitem_2_3*/
+      #popmenuitem_2_3 UL { MARGIN-LEFT: 120px }
+      #popmenuitem_2_3 UL { WIDTH: 140px }
+      /*popmenuitem_2_4*/
+      #popmenuitem_2_4 UL { MARGIN-LEFT: 120px }
+      #popmenuitem_2_4 UL { WIDTH: 150px }
+      /*popmenuitem_2_5*/
+      #popmenuitem_2_5 UL { MARGIN-LEFT: 120px }
+      #popmenuitem_2_5 UL { WIDTH: 150px }
+      /*popmenuitem_2_6*/
+      #popmenuitem_2_6 UL { MARGIN-LEFT: 120px }
+      #popmenuitem_2_6 UL { WIDTH: 150px }
+      /*popmenuitem_2_7*/
+      #popmenuitem_2_7 UL { MARGIN-LEFT: 120px }
+      #popmenuitem_2_7 UL { WIDTH: 150px }
+      /*popmenuitem_2_8*/
+      #popmenuitem_2_8 UL { MARGIN-LEFT: 120px }
+      #popmenuitem_2_8 UL { WIDTH: 150px }
+      /*popmenuitem_2_9*/
+      #popmenuitem_2_9 UL { MARGIN-LEFT: 120px }
+      #popmenuitem_2_9 UL { WIDTH: 150px }
+      /*popmenuitem_2_10*/
+      #popmenuitem_2_10 UL { MARGIN-LEFT: 120px }
+      #popmenuitem_2_10 UL { WIDTH: 150px }
+      /*popmenu_3*/
+      #popmenu_3 { WIDTH: auto; PADDING-LEFT: 6px; }
+      #popmenu_3 UL { WIDTH: 150px }
+      #popmenu_3 UL A { PADDING-RIGHT: 1px; PADDING-LEFT: 10px; PADDING-BOTTOM: 0px; MARGIN: -1px 0px 0px; WIDTH: 140px; PADDING-TOP: 0px }
+      .menu LI LI A IMG { LEFT: 144px; POSITION: absolute }
+      /*popmenuitem_3_1*/
+      #popmenuitem_3_1 UL { MARGIN-LEFT: 120px }
+      #popmenuitem_3_1 UL { WIDTH: 150px }
+      /*popmenuitem_3_2*/
+      #popmenuitem_3_2 UL { MARGIN-LEFT: 120px }
+      #popmenuitem_3_2 UL { WIDTH: 150px }
+      /*popmenuitem_3_3*/
+      #popmenuitem_3_3 UL { MARGIN-LEFT: 120px }
+      #popmenuitem_3_3 UL { WIDTH: 140px }
+      /*popmenuitem_3_4*/
+      #popmenuitem_3_4 UL { MARGIN-LEFT: 120px }
+      #popmenuitem_3_4 UL { WIDTH: 150px }
+      /*popmenuitem_3_5*/
+      #popmenuitem_3_5 UL { MARGIN-LEFT: 120px }
+      #popmenuitem_3_5 UL { WIDTH: 150px }
+      /*popmenuitem_3_6*/
+      #popmenuitem_3_6 UL { MARGIN-LEFT: 120px }
+      #popmenuitem_3_6 UL { WIDTH: 150px }
+      /*popmenuitem_3_7*/
+      #popmenuitem_3_7 UL { MARGIN-LEFT: 120px }
+      #popmenuitem_3_7 UL { WIDTH: 150px }
+      /*popmenuitem_3_8*/
+      #popmenuitem_3_8 UL { MARGIN-LEFT: 120px }
+      #popmenuitem_3_8 UL { WIDTH: 150px }
+      /*popmenuitem_3_9*/
+      #popmenuitem_3_9 UL { MARGIN-LEFT: 120px }
+      #popmenuitem_3_9 UL { WIDTH: 150px }
+      /*popmenuitem_3_10*/
+      #popmenuitem_3_10 UL { MARGIN-LEFT: 120px }
+      #popmenuitem_3_10 UL { WIDTH: 150px }
+      /*popmenu_4*/
+      #popmenu_4 { WIDTH: 150px; PADDING-LEFT: 6px; }
+      #popmenu_4 UL { WIDTH: 150px }
+      #popmenu_4 UL A { PADDING-RIGHT: 1px; PADDING-LEFT: 10px; PADDING-BOTTOM: 0px; MARGIN: -1px 0px 0px; WIDTH: 140px; PADDING-TOP: 0px }
+      .menu LI LI A IMG { LEFT: 144px; POSITION: absolute }
+      /*popmenuitem_4_1*/
+      #popmenuitem_4_1 UL { MARGIN-LEFT: 120px }
+      #popmenuitem_4_1 UL { WIDTH: 150px }
+      /*popmenuitem_4_2*/
+      #popmenuitem_4_2 UL { MARGIN-LEFT: 120px }
+      #popmenuitem_4_2 UL { WIDTH: 150px }
+      /*popmenuitem_4_3*/
+      #popmenuitem_4_3 UL { MARGIN-LEFT: 120px }
+      #popmenuitem_4_3 UL { WIDTH: 140px }
+      /*popmenuitem_4_4*/
+      #popmenuitem_4_4 UL { MARGIN-LEFT: 120px }
+      #popmenuitem_4_4 UL { WIDTH: 150px }
+      /*popmenuitem_4_5*/
+      #popmenuitem_4_5 UL { MARGIN-LEFT: 120px }
+      #popmenuitem_4_5 UL { WIDTH: 150px }
+      /*popmenuitem_4_6*/
+      #popmenuitem_4_6 UL { MARGIN-LEFT: 120px }
+      #popmenuitem_4_6 UL { WIDTH: 150px }
+      /*popmenuitem_4_7*/
+      #popmenuitem_4_7 UL { MARGIN-LEFT: 120px }
+      #popmenuitem_4_7 UL { WIDTH: 150px }
+      /*popmenuitem_4_8*/
+      #popmenuitem_4_8 UL { MARGIN-LEFT: 120px }
+      #popmenuitem_4_8 UL { WIDTH: 150px }
+      /*popmenuitem_4_9*/
+      #popmenuitem_4_9 UL { MARGIN-LEFT: 120px }
+      #popmenuitem_4_9 UL { WIDTH: 150px }
+      /*popmenuitem_4_10*/
+      #popmenuitem_4_10 UL { MARGIN-LEFT: 120px }
+      #popmenuitem_4_10 UL { WIDTH: 150px }
+      /*popmenu_5*/
+      #popmenu_5 { WIDTH: 150px ; PADDING-LEFT: 6px; }
+      #popmenu_5 UL { WIDTH: 150px }
+      #popmenu_5 UL A { PADDING-RIGHT: 1px; PADDING-LEFT: 10px; PADDING-BOTTOM: 0px; MARGIN: -1px 0px 0px; WIDTH: 140px; PADDING-TOP: 0px }
+      .menu LI LI A IMG { LEFT: 144px; POSITION: absolute }
+      /*popmenuitem_5_1*/
+      #popmenuitem_5_1 UL { MARGIN-LEFT: 120px }
+      #popmenuitem_5_1 UL { WIDTH: 150px }
+      /*popmenuitem_5_2*/
+      #popmenuitem_5_2 UL { MARGIN-LEFT: 120px }
+      #popmenuitem_5_2 UL { WIDTH: 150px }
+      /*popmenuitem_5_3*/
+      #popmenuitem_5_3 UL { MARGIN-LEFT: 120px }
+      #popmenuitem_5_3 UL { WIDTH: 140px }
+      /*popmenuitem_5_4*/
+      #popmenuitem_5_4 UL { MARGIN-LEFT: 120px }
+      #popmenuitem_5_4 UL { WIDTH: 150px }
+      /*popmenuitem_5_5*/
+      #popmenuitem_5_5 UL { MARGIN-LEFT: 120px }
+      #popmenuitem_5_5 UL { WIDTH: 150px }
+      /*popmenuitem_5_6*/
+      #popmenuitem_5_6 UL { MARGIN-LEFT: 120px }
+      #popmenuitem_5_6 UL { WIDTH: 150px }
+      /*popmenuitem_5_7*/
+      #popmenuitem_5_7 UL { MARGIN-LEFT: 120px }
+      #popmenuitem_5_7 UL { WIDTH: 150px }
+      /*popmenuitem_5_8*/
+      #popmenuitem_5_8 UL { MARGIN-LEFT: 120px }
+      #popmenuitem_5_8 UL { WIDTH: 150px }
+      /*popmenuitem_5_9*/
+      #popmenuitem_5_9 UL { MARGIN-LEFT: 120px }
+      #popmenuitem_5_9 UL { WIDTH: 150px }
+      /*popmenuitem_5_10*/
+      #popmenuitem_5_10 UL { MARGIN-LEFT: 120px }
+      #popmenuitem_5_10 UL { WIDTH: 150px }
+      /*popmenu_6*/
+      #popmenu_6 { WIDTH: 150px ; PADDING-LEFT: 6px; }
+      #popmenu_6 UL { WIDTH: 150px }
+      #popmenu_6 UL A { PADDING-RIGHT: 1px; PADDING-LEFT: 10px; PADDING-BOTTOM: 0px; MARGIN: -1px 0px 0px; WIDTH: 140px; PADDING-TOP: 0px }
+      .menu LI LI A IMG { LEFT: 144px; POSITION: absolute }
+      /*popmenuitem_6_1*/
+      #popmenuitem_6_1 UL { MARGIN-LEFT: 120px }
+      #popmenuitem_6_1 UL { WIDTH: 150px }
+      /*popmenuitem_6_2*/
+      #popmenuitem_6_2 UL { MARGIN-LEFT: 120px }
+      #popmenuitem_6_2 UL { WIDTH: 150px }
+      /*popmenuitem_6_3*/
+      #popmenuitem_6_3 UL { MARGIN-LEFT: 120px }
+      #popmenuitem_6_3 UL { WIDTH: 140px }
+      /*popmenuitem_6_4*/
+      #popmenuitem_6_4 UL { MARGIN-LEFT: 120px }
+      #popmenuitem_6_4 UL { WIDTH: 150px }
+      /*popmenuitem_6_5*/
+      #popmenuitem_6_5 UL { MARGIN-LEFT: 120px }
+      #popmenuitem_6_5 UL { WIDTH: 150px }
+      /*popmenuitem_6_6*/
+      #popmenuitem_6_6 UL { MARGIN-LEFT: 120px }
+      #popmenuitem_6_6 UL { WIDTH: 150px }
+      /*popmenuitem_6_7*/
+      #popmenuitem_6_7 UL { MARGIN-LEFT: 120px }
+      #popmenuitem_6_7 UL { WIDTH: 150px }
+      /*popmenuitem_6_8*/
+      #popmenuitem_6_8 UL { MARGIN-LEFT: 120px }
+      #popmenuitem_6_8 UL { WIDTH: 150px }
+      /*popmenuitem_6_9*/
+      #popmenuitem_6_9 UL { MARGIN-LEFT: 120px }
+      #popmenuitem_6_9 UL { WIDTH: 150px }
+      /*popmenuitem_6_10*/
+      #popmenuitem_6_10 UL { MARGIN-LEFT: 120px }
+      #popmenuitem_6_10 UL { WIDTH: 150px }
+      /*popmenu_7*/
+      #popmenu_7 { WIDTH: 150px ; PADDING-LEFT: 6px; }
+      #popmenu_7 UL { WIDTH: 150px }
+      #popmenu_7 UL A { PADDING-RIGHT: 1px; PADDING-LEFT: 10px; PADDING-BOTTOM: 0px; MARGIN: -1px 0px 0px; WIDTH: 140px; PADDING-TOP: 0px }
+      .menu LI LI A IMG { LEFT: 144px; POSITION: absolute }
+      /*popmenuitem_7_1*/
+      #popmenuitem_7_1 UL { MARGIN-LEFT: 120px }
+      #popmenuitem_7_1 UL { WIDTH: 150px }
+      /*popmenuitem_7_2*/
+      #popmenuitem_7_2 UL { MARGIN-LEFT: 120px }
+      #popmenuitem_7_2 UL { WIDTH: 150px }
+      /*popmenuitem_7_3*/
+      #popmenuitem_7_3 UL { MARGIN-LEFT: 120px }
+      #popmenuitem_7_3 UL { WIDTH: 140px }
+      /*popmenuitem_7_4*/
+      #popmenuitem_7_4 UL { MARGIN-LEFT: 120px }
+      #popmenuitem_7_4 UL { WIDTH: 150px }
+      /*popmenuitem_7_5*/
+      #popmenuitem_7_5 UL { MARGIN-LEFT: 120px }
+      #popmenuitem_7_5 UL { WIDTH: 150px }
+      /*popmenuitem_7_6*/
+      #popmenuitem_7_6 UL { MARGIN-LEFT: 120px }
+      #popmenuitem_7_6 UL { WIDTH: 150px }
+      /*popmenuitem_7_7*/
+      #popmenuitem_7_7 UL { MARGIN-LEFT: 120px }
+      #popmenuitem_7_7 UL { WIDTH: 150px }
+      /*popmenuitem_7_8*/
+      #popmenuitem_7_8 UL { MARGIN-LEFT: 120px }
+      #popmenuitem_7_8 UL { WIDTH: 150px }
+      /*popmenuitem_7_9*/
+      #popmenuitem_7_9 UL { MARGIN-LEFT: 120px }
+      #popmenuitem_7_9 UL { WIDTH: 150px }
+      /*popmenuitem_7_10*/
+      #popmenuitem_7_10 UL { MARGIN-LEFT: 120px }
+      #popmenuitem_7_10 UL { WIDTH: 150px }
+      /*popmenu_8*/
+      #popmenu_8 { WIDTH: 150px ; PADDING-LEFT: 6px; }
+      #popmenu_8 UL { WIDTH: 150px }
+      #popmenu_8 UL A { PADDING-RIGHT: 1px; PADDING-LEFT: 10px; PADDING-BOTTOM: 0px; MARGIN: -1px 0px 0px; WIDTH: 140px; PADDING-TOP: 0px }
+      .menu LI LI A IMG { LEFT: 144px; POSITION: absolute }
+      /*popmenuitem_8_1*/
+      #popmenuitem_8_1 UL { MARGIN-LEFT: 120px }
+      #popmenuitem_8_1 UL { WIDTH: 150px }
+      /*popmenuitem_8_2*/
+      #popmenuitem_8_2 UL { MARGIN-LEFT: 120px }
+      #popmenuitem_8_2 UL { WIDTH: 150px }
+      /*popmenuitem_8_3*/
+      #popmenuitem_8_3 UL { MARGIN-LEFT: 120px }
+      #popmenuitem_8_3 UL { WIDTH: 140px }
+      /*popmenuitem_8_4*/
+      #popmenuitem_8_4 UL { MARGIN-LEFT: 120px }
+      #popmenuitem_8_4 UL { WIDTH: 150px }
+      /*popmenuitem_8_5*/
+      #popmenuitem_8_5 UL { MARGIN-LEFT: 120px }
+      #popmenuitem_8_5 UL { WIDTH: 150px }
+      /*popmenuitem_8_6*/
+      #popmenuitem_8_6 UL { MARGIN-LEFT: 120px }
+      #popmenuitem_8_6 UL { WIDTH: 150px }
+      /*popmenuitem_8_7*/
+      #popmenuitem_8_7 UL { MARGIN-LEFT: 120px }
+      #popmenuitem_8_7 UL { WIDTH: 150px }
+      /*popmenuitem_8_8*/
+      #popmenuitem_8_8 UL { MARGIN-LEFT: 120px }
+      #popmenuitem_8_8 UL { WIDTH: 150px }
+      /*popmenuitem_8_9*/
+      #popmenuitem_8_9 UL { MARGIN-LEFT: 120px }
+      #popmenuitem_8_9 UL { WIDTH: 150px }
+      /*popmenuitem_8_10*/
+      #popmenuitem_8_10 UL { MARGIN-LEFT: 120px }
+      #popmenuitem_8_10 UL { WIDTH: 150px }
+      /*popmenu_9*/
+      #popmenu_9 { WIDTH: 150px ; PADDING-LEFT: 6px; }
+      #popmenu_9 UL { WIDTH: 150px }
+      #popmenu_9 UL A { PADDING-RIGHT: 1px; PADDING-LEFT: 10px; PADDING-BOTTOM: 0px; MARGIN: -1px 0px 0px; WIDTH: 140px; PADDING-TOP: 0px }
+      .menu LI LI A IMG { LEFT: 144px; POSITION: absolute }
+      /*popmenuitem_9_1*/
+      #popmenuitem_9_1 UL { MARGIN-LEFT: 120px }
+      #popmenuitem_9_1 UL { WIDTH: 150px }
+      /*popmenuitem_9_2*/
+      #popmenuitem_9_2 UL { MARGIN-LEFT: 120px }
+      #popmenuitem_9_2 UL { WIDTH: 150px }
+      /*popmenuitem_9_3*/
+      #popmenuitem_9_3 UL { MARGIN-LEFT: 120px }
+      #popmenuitem_9_3 UL { WIDTH: 140px }
+      /*popmenuitem_9_4*/
+      #popmenuitem_9_4 UL { MARGIN-LEFT: 120px }
+      #popmenuitem_9_4 UL { WIDTH: 150px }
+      /*popmenuitem_9_5*/
+      #popmenuitem_9_5 UL { MARGIN-LEFT: 120px }
+      #popmenuitem_9_5 UL { WIDTH: 150px }
+      /*popmenuitem_9_6*/
+      #popmenuitem_9_6 UL { MARGIN-LEFT: 120px }
+      #popmenuitem_9_6 UL { WIDTH: 150px }
+      /*popmenuitem_9_7*/
+      #popmenuitem_9_7 UL { MARGIN-LEFT: 120px }
+      #popmenuitem_9_7 UL { WIDTH: 150px }
+      /*popmenuitem_9_8*/
+      #popmenuitem_9_8 UL { MARGIN-LEFT: 120px }
+      #popmenuitem_9_8 UL { WIDTH: 150px }
+      /*popmenuitem_9_9*/
+      #popmenuitem_9_9 UL { MARGIN-LEFT: 120px }
+      #popmenuitem_9_9 UL { WIDTH: 150px }
+      /*popmenuitem_9_10*/
+      #popmenuitem_9_10 UL { MARGIN-LEFT: 120px }
+      #popmenuitem_9_10 UL { WIDTH: 150px }
+      /*popmenu_10*/
+      #popmenu_10 { WIDTH: 150px; PADDING-LEFT: 6px;  }
+      #popmenu_10 UL { WIDTH: 150px }
+      #popmenu_10 UL A { PADDING-RIGHT: 1px; PADDING-LEFT: 10px; PADDING-BOTTOM: 0px; MARGIN: -1px 0px 0px; WIDTH: 140px; PADDING-TOP: 0px }
+      .menu LI LI A IMG { LEFT: 144px; POSITION: absolute }
+      /*popmenuitem_10_1*/
+      #popmenuitem_10_1 UL { MARGIN-LEFT: 120px }
+      #popmenuitem_10_1 UL { WIDTH: 150px }
+      /*popmenuitem_10_2*/
+      #popmenuitem_10_2 UL { MARGIN-LEFT: 120px }
+      #popmenuitem_10_2 UL { WIDTH: 150px }
+      /*popmenuitem_10_3*/
+      #popmenuitem_10_3 UL { MARGIN-LEFT: 120px }
+      #popmenuitem_10_3 UL { WIDTH: 140px }
+      /*popmenuitem_10_4*/
+      #popmenuitem_10_4 UL { MARGIN-LEFT: 120px }
+      #popmenuitem_10_4 UL { WIDTH: 150px }
+      /*popmenuitem_10_5*/
+      #popmenuitem_10_5 UL { MARGIN-LEFT: 120px }
+      #popmenuitem_10_5 UL { WIDTH: 150px }
+      /*popmenuitem_10_6*/
+      #popmenuitem_10_6 UL { MARGIN-LEFT: 120px }
+      #popmenuitem_10_6 UL { WIDTH: 150px }
+      /*popmenuitem_10_7*/
+      #popmenuitem_10_7 UL { MARGIN-LEFT: 120px }
+      #popmenuitem_10_7 UL { WIDTH: 150px }
+      /*popmenuitem_10_8*/
+      #popmenuitem_10_8 UL { MARGIN-LEFT: 120px }
+      #popmenuitem_10_8 UL { WIDTH: 150px }
+      /*popmenuitem_10_9*/
+      #popmenuitem_10_9 UL { MARGIN-LEFT: 120px }
+      #popmenuitem_10_9 UL { WIDTH: 150px }
+      /*popmenuitem_10_10*/
+      #popmenuitem_10_10 UL { MARGIN-LEFT: 120px }
+      #popmenuitem_10_10 UL { WIDTH: 150px }
+      DEFAULT_STYLESHEET
+
+		my Str $default-stylesheet-file = self.get(key => 'PUBLIC_DIR') ~ '/styles/'
+						~ self.get(key => 'CSS_DEFAULT_DIR')
+						~ '/'
+						~ self.get(key => 'CSS_DEFAULT_FILE');
+		if $default-stylesheet-file.IO.e {
+			#-- do nothing..
+		}
+		else {
+			my IO::Path $IOPath = $default-stylesheet-file.IO.resolve;
+			my Str $filename = $IOPath.Str;
+			self.write-string-to-file(file-name => $filename, data => $default-stylesheet-data);
+		}
+	}
+
+  method create-default-page-javascript() {
+		#self.TRACE: 'TODO: create-default-page-javascript';
+		my Str $default-javascript-data = q:to/DEFAULT_JAVASCRIPT/;
+      var DebugMode = false;
+      var sSiteBase = '';
+      var sHomePage = '';
+      function getReady(sitebase, homepage, action) {
+        sSiteBase = sitebase;
+        sHomePage = homepage;
+        if (DebugMode) {
+          handleClientRequest(action, 'page_contents');
+        }
+        if (action != '') {
+          sendRequest(action);
+        }
+        return;
+      }
+
+      function sendRequest(action) {
+        // parse action
+        var request = new requestPackage(action);
+        var query = request.Action + '&' + request.Command + '&' + request.Importing;
+        if (DebugMode) {
+          handleClientRequest(query, 'page_contents', request.PageID);
+        }
+        if (request != null) {
+          handleServerRequest(query, request.divID, request.PageID); // main request
+        }
+        return;
+      }
+
+      function requestPackage(action) {
+        // action is assumed to follow the following format:
+        //  action=someaction&cmd=somecommand&importing=resource~divID:someresource
+        this.Action = action.substring(0, action.indexOf('&',0))
+        this.Command = action.substring(action.indexOf('&',0) + 1, action.indexOf('&',action.indexOf('&',0) + 1));
+        var importing =  action.substring(action.lastIndexOf('&', action.length + 1) + 1, action.length);
+        var resource = importing.substring(importing.lastIndexOf('~', importing.length + 1) + 1,  importing.length);
+        this.divID = resource.substring(0, resource.indexOf(':'));
+        this.PageID = importing.substring(importing.indexOf(':',0) + 1);
+        this.Importing = 'importing=resource~' + this.PageID;
+        return;
+      }
+
+      function handleServerRequest(action, divID, pageID) {
+        // sSiteBase = $SITEBASE i.e. "http://erpmini/cgi-bin/dma/$CGI"
+        // action = 'action=runmode' i.e. 'action=hello'
+        // divID = the 'divID' i.e. 'page_contents'
+      var oWAX = false;
+      try {
+        oWAX = new ActiveXObject("Msxml2.XMLHTTP");
+      }
+      catch (e) {
+        try {
+          oWAX = new ActiveXObject("Microsoft.XMLHTTP");
+        }
+        catch (E) {
+          oWAX = false;
+        }
+      }
+      if (!oWAX && typeof XMLHttpRequest!='undefined') {
+        oWAX = new XMLHttpRequest();
+      }
+      var url = sSiteBase + '?' + action;
+      url = url + '&no_cache=' + Math.random(); //disable caching
+      //var div;
+      //  div = document.getElementById('pagecontents');
+      //	div.innerHTML = url;
+      //	return '';
+      // url = "http://erpmini:81/nwind?sql=SELECT * FROM Employees FOR XML AUTO&root=root";
+      oWAX.open("GET", url, true);
+      var debugtext = '';
+        oWAX.onreadystatechange=function() {
+        if (oWAX.readyState==4) {
+        var r = oWAX.responseText;
+        // the first line of the response contains the
+        // page title and subpage title
+        // in the form of PageTitle;Subpagetitle string text
+        var bodytext = r;
+        var div;
+        div = document.getElementById(divID);
+        if (DebugMode) {
+          var debuginfo = div.innerHTML;
+          bodytext = 'DEBUGINFO:<br>' + debuginfo + '<hr>' + bodytext;
+        }
+        div.innerHTML = bodytext;
+        }
+      }
+      oWAX.send(null)
+      return;
+      }
+      function handleClientRequest(action, divID, pageID) {
+        // sSiteBase = $SITEBASE i.e. "http://erpmini/cgi-bin/dma/$CGI"
+        // action = runmode i.e. 'hello'
+        // callerID = the div id i.e. 'page_contents'
+          var div;
+          div = document.getElementById(divID);
+          div.innerHTML = 'Your request action is [' + action + '] ' +
+                          'and current Sitebase is [' + sSiteBase + '] ' +
+                          'and current HomePage is [' + sHomePage + '] ' +
+                          'and divID is [' + divID + '] ' +
+                          'and pageID is [' + pageID + '] ';;
+        return;
+      }
+      function truncSpaces(s) {
+        while (s.substr(s.length - 1, 1) == ' ')
+          s = s.substr(0, s.length - 1);
+        return s;
+      }
+      DEFAULT_JAVASCRIPT
+
+		my Str $default-javascript-file = self.get(key => 'PUBLIC_DIR') ~ '/jscript/'
+						~ self.get(key => 'JS_DEFAULT_DIR')
+						~ '/'
+						~ self.get(key => 'JS_DEFAULT_FILE');
+		if $default-javascript-file.IO.e {
+			#-- do nothing..
+		}
+		else {
+			my IO::Path $IOPath = $default-javascript-file.IO.resolve;
+			my Str $filename = $IOPath.Str;
+			self.write-string-to-file(file-name => $filename, data => $default-javascript-data);
+		}
+	}
+
 
   method generate-database-utility-module(Str :$shortcut,
                               Str :$module,
@@ -4004,9 +4572,15 @@ END_OF_CODE
         constant $C_DBTYPE_SQLITE = 'SQLite';
         constant $C_OK = 'OK';
         constant $C_ICON_OK = 'themes/img/icons/tick.png';
+        constant $C_ICON_FIRST = 'themes/img/icons/resultset_first.png';
+        constant $C_ICON_PREV = 'themes/img/icons/resultset_previous.png';
+        constant $C_ICON_NEXT = 'themes/img/icons/resultset_next.png';
+        constant $C_ICON_LAST = 'themes/img/icons/resultset_last.png';
+        constant $C_ICON_LOGIN = 'themes/img/icons/key.png';
+
         constant $C_INIT = 'INIT';
 
-        has %.params = ();
+        has %.Params = ();
         has $.DebugInfo is rw = "";
         has $.FORM is rw = '';
         has $.App is rw =  '';
@@ -4023,10 +4597,22 @@ END_OF_CODE
         #-- Temporary query this for testing modules
         has Str %.APPTABLE = ( #-- Autogenerated modules
           'DB00' => 'Database',
+          'LOGIN' => 'Login',
         );
         has Str %.APPGROUP = (
           'DB00' => 'WEBA', #-- Utilities (Web interface) - WEBA does not have form control
+          'LOGIN' => 'WEBC', #-- Login screen
         );
+
+        has Str %.APPSCREEN = (
+          'HOME' => '1000',
+          'LOGIN' => '1000',
+          'INDEX' => '1000',
+          'HELP' => '1000',
+          'LOGOUT' => '1000',
+        );
+
+
         #has Str %.APPTEXTS = ( #-- for the Exception
         #  'DB00' => 'D0',
         #  'SCUT' => 'S2',
@@ -4100,18 +4686,18 @@ END_OF_CODE
 
     $snippet = q:to/END_OF_CODE/;
         method main($App, Str :$userid, Str :$ucomm, :%params) {
+          self.TRACE: 'SYS00.main: ' 
+          ~ 'app = ' ~ $App ~ '; '
+          ~ 'cmd = ' ~ $ucomm ~ '; '
+          ~ 'userid = ' ~ $userid ~ '; ';
           
-          $.UserCommand = $ucomm; #-- the pressed button will be the user command
+          $.UserCommand = $ucomm;
+          %.Params = %params;
+          $.UserID = $userid;
+          $.App = $App.uc;
 
-          if $ucomm ne $C_INIT {
-            %params<BUTTON> = $ucomm.Str;
-          }
-
-          self.TRACE: 'Program = ' ~ $App ~ '; ' 
-                    ~ ' $ucomm = ' ~ $ucomm ~ '; ' 
-                    ~ ' UserID = ' ~ $userid;
-          my $kv = '';
-          for %params.sort -> (:$key, :$value) {
+          my Str $kv = '';
+          for %.Params.sort -> (:$key, :$value) {
             given $key.lc {
               when 'text' {
                 $kv ~= '<b>text' ~ '</b>=' ~ '...[skiptext]; ';
@@ -4121,42 +4707,32 @@ END_OF_CODE
               }
             }
           }
-          self.TRACE: 'Parameters: ' ~ $kv;
-    
-          $.UserID = $userid;
-          
-          if defined %params<OKCODE> {
-            %params<OKCODE>:delete if %params<BUTTON> ne $C_OK; #- remove OKCODE if NOT BUTTON<OK>
-          }
+          self.TRACE: 'SYS00.main.Parameters: ' ~ $kv;
+          self.TRACE: 'APPLICATION ID: ' ~ $.App;
 
-          %.params = %params;
-          my Str $application-id = 'SY00';
-          my Str $ok-code = '';
+          #-- todo: Get screen for application
+          self.goto-screen(app => $.App);
 
-          $application-id = %params<APP> if defined %params<APP> && %params<APP> ne '';          
-          if defined %.params<OKCODE> && %.params<OKCODE> ne '' {
-            $ok-code = %.params<OKCODE> if defined %params<BUTTON> && %.params<BUTTON> eq $C_OK;                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      
+        }
+END_OF_CODE
+    $source-code ~= $snippet;
+
+
+
+    $snippet = q:to/END_OF_CODE/;
+        method goto-screen(Str :$app) {
+          my Str $next-screen = '';
+          my Str $application-screen = '';
+          $next-screen = %.APPSCREEN{$app};
+          $application-screen = $app ~ '-screen_' ~ $next-screen;
+          if self.can($application-screen) {
+            self.TRACE: 'Calling method ' ~ $application-screen;
+            self."$application-screen"();
           }
-          if $ok-code ne 'SY00' && $ok-code ne '' {
-              $application-id = $ok-code;
+          else {
+            self.TRACE: 'METHOD_NOT_FOUND: ' ~ $application-screen;
+            self.SCREEN_not_found(app => $application-screen);
           }
-          $.App = $application-id.uc; #-- this is the transaction code corresponding to application
-          given $application-id {
-            when 'SY00' { #-- System module
-              #-- NOTE: Use the Default user interface
-              given $ucomm {
-                when %.CMD<init> {
-                  #self.initialize-db();
-                  $.SCREEN = '1000';
-                }
-              }
-            }
-            default { #-- switch to other module
-              #-- NOTE: EACH APPLICATION HANDLES ITS OWN USER INTERFACE
-              $.SCREEN = '2000';
-            }
-          }
-          self.goto-screen(screen => $.SCREEN);
         }
 END_OF_CODE
     $source-code ~= $snippet;
@@ -4165,25 +4741,137 @@ END_OF_CODE
 
 
     $snippet = q:to/END_OF_CODE/;
-        method allow-shortcut(Bool :$flag = False) {
-          if $flag {
-                self.FORM-IMG-BUTTON(key => 'OK',
-                                    src => $C_ICON_OK,
-                                    alt => 'Enter');
-                self.FORM-SPACE();
-                self.FORM-TEXT(key => 'OKCODE',
-                              value => '',
-                              size => '10', #%shortcut<intleng>',
-                              length => '10',
-                              );
-            $.AllowShortcut = 'X';
-          }
-          else {
-            $.AllowShortcut = '';
+        method SCREEN_not_found(Str :$app='') {
+          my Str $home-link = '';
+          my Str $index-link = '';
+          my Str $help-link = '';
+          my Str $login-link = '';
+          my Str $logout-link = '';
+
+          $home-link = '<a href="/">home</a>' ~ '&nbsp;';
+
+
+          self.FT(tag => 'PAGE_TITLE', text => 'Error: method <b>' ~ $app ~ '</b> implementation not found');
+          self.FT(tag => 'SITE_LOGO', text => self.site-logo());
+          self.FT(tag => 'PAGE_EDITOR', text => $.UserID);
+
+          self.FT(tag => 'MENU_BAR', text => $home-link);
+          
+        }
+END_OF_CODE
+    $source-code ~= $snippet;
+
+
+
+
+
+    $snippet = q:to/END_OF_CODE/;
+        method HOME-screen_1000() { #-- System Module
+          my Str $home-link = '';
+          my Str $index-link = '';
+          my Str $help-link = '';
+          my Str $login-link = '';
+          my Str $logout-link = '';
+
+          $home-link = '<a href="/">home</a>' ~ '&nbsp;';
+          $index-link = '|&nbsp;<a href="/index">index</a>' ~ '&nbsp;' if $.UserID ne '';
+          $help-link = '|&nbsp;<a href="/help">help</a>' ~ '&nbsp;' if $.UserID ne '';
+          $login-link = '|&nbsp;<a href="/login">login</a>' ~ '&nbsp;' if $.UserID eq '';
+          $logout-link = '|&nbsp;<a href="/logout">logout</a>' ~ '&nbsp;' if $.UserID ne '';
+
+
+          self.FT(tag => 'PAGE_TITLE', text => 'app: System');
+          self.FT(tag => 'SITE_LOGO', text => self.site-logo());
+          self.FT(tag => 'PAGE_EDITOR', text => $.UserID);
+
+          self.FT(tag => 'MENU_BAR', text => $home-link);
+          self.FT(tag => 'MENU_BAR', text => $index-link);
+          self.FT(tag => 'MENU_BAR', text => $help-link);
+          self.FT(tag => 'MENU_BAR', text => $login-link);
+          self.FT(tag => 'MENU_BAR', text => $logout-link);
+
+          if $.UserID ne '' {
+            self.BEGIN-FORM(appgroup => $C_WEBFORM);
+
+            self.FORM-IMG-BUTTON(key => 'press-first',
+              src => $C_ICON_FIRST,
+              alt => 'First');
+
+            self.FORM-IMG-BUTTON(key => 'press-prev',
+              src => $C_ICON_PREV,
+              alt => 'Previous');
+
+            self.FORM-IMG-BUTTON(key => 'press-next',
+              src => $C_ICON_NEXT,
+              alt => 'Next');
+
+            self.FORM-IMG-BUTTON(key => 'press-last',
+              src => $C_ICON_LAST,
+              alt => 'Last');
+
+
+            self.FORM-BREAK();
+            self.FORM-BREAK();      
+            self.END-FORM(app => $.App, appgroup => $C_WEBFORM);
           }
         }
 END_OF_CODE
     $source-code ~= $snippet;
+
+
+
+
+
+    $snippet = q:to/END_OF_CODE/;
+        method LOGIN-screen_1000() { #-- System Module
+          my Str $home-link = '';
+          my Str $index-link = '';
+          my Str $help-link = '';
+          my Str $login-link = '';
+
+          $home-link = '<a href="/">home</a>' ~ '&nbsp;';
+          $index-link = '|&nbsp;<a href="/index">index</a>' ~ '&nbsp;' if $.UserID ne '';
+          $login-link = '|&nbsp;<a href="/login">login</a>' ~ '&nbsp;' if $.UserID eq '';
+
+          self.FT(tag => 'PAGE_TITLE', text => 'System login');
+          self.FT(tag => 'SITE_LOGO', text => self.site-logo());
+          self.FT(tag => 'PAGE_EDITOR', text => $.UserID);
+
+
+          self.FT(tag => 'MENU_BAR', text => $home-link);
+          self.FT(tag => 'MENU_BAR', text => $login-link);
+
+          self.BEGIN-FORM(appgroup => $C_WEBFORM);
+
+          self.FORM-IMG-BUTTON(key => 'press-login',
+            src => $C_ICON_LOGIN,
+            alt => 'Login');
+
+          
+
+
+          self.FORM-BREAK();
+          self.FORM-BREAK();      
+
+          self.FORM-STRING(text => 'Username');
+          self.FORM-SPACE;
+          self.FORM-TEXT(key => 'username', value => '', size => '30', length => '35'); 
+          self.FORM-BREAK();
+          
+
+
+          self.FORM-STRING(text => 'Password');
+          self.FORM-SPACE;
+          self.FORM-TEXT(key => 'password', value => '', size => '30', length => '10'); 
+          self.FORM-BREAK();
+
+
+          self.END-FORM(app => $.App, appgroup => $C_WEBFORM);
+
+        }
+END_OF_CODE
+    $source-code ~= $snippet;
+
 
 
 
@@ -4213,232 +4901,22 @@ END_OF_CODE
 
 
 
-    $snippet = q:to/END_OF_CODE/;
-        method goto-screen(Str :$screen) {
-          my Str $sNextScreen = 'screen_' ~ $screen;
-          if self.can($sNextScreen) {
-            self."$sNextScreen"();
-          }
-        }
-END_OF_CODE
-    $source-code ~= $snippet;
-
-
-
 
     $snippet = q:to/END_OF_CODE/;
-        method screen_1000 { #-- System Module
-          my Str $tcode = $.App;
-          #- default tcode is SY00
-          #- determine if shortcut is given
-          #--- the shortcust is taken from parameter "OKCODE"
-          my Str $button-clicked = '';
-          my Str $ok-code = ''; 
-          my Str $function-code = '';
-          $function-code = $.UserCommand;
-          #self.TRACE: 'SYSTEM 1000';
+       method BEGIN-FORM(Str :$appgroup = '') {
+          if $appgroup eq $C_WEBFORM { #-- form based screen
+            self.FORM-OPEN();
+            if $.App ne 'LOGIN' {
+              self.FORM-IMG-BUTTON(key => 'press-enter',
+                src => $C_ICON_OK,
+                alt => 'Enter');
 
-          $button-clicked = %.params<BUTTON> if defined %.params<BUTTON> && %.params<BUTTON> ne '';
-          if defined %.params<OKCODE> && %.params<OKCODE> ne '' {
-            $ok-code = %.params<OKCODE> if defined %.params<BUTTON> && %.params<BUTTON> eq $C_OK;
-          }
-          if $ok-code ne '' {
-            #-- This is a transaction code
-            $tcode = $ok-code.uc if $ok-code ne '';
-          }
-          else {
-            #-- Button is for the function code
-            $function-code = %.params<BUTTON> if defined %.params<BUTTON> &&  %.params<BUTTON> ne '';
-            $.UserCommand = $function-code;
-          }
-          #-- BEGIN -- APPLICATION FORM 
-          self.BEGIN-FORM(appgroup => $C_WEBFORM);
-          self.FORM-BREAK();
-          self.FORM-BREAK();      
-          self.END-FORM(tcode => $tcode, appgroup => $C_WEBFORM);
-
-          my Str $login-link = '';
-          my Str $logout-link = '';
-          my Str $wiki-link = '';
-          $wiki-link = '<a href="/wiki">' ~ self.get(key => 'WIKI_NAME') ~ '</a>';
-          $login-link = '<a href="/login">Login</a>';
-          $logout-link = '<a href="/logout">Logout</a>';
-
-          #-- BEGIN -- PAGE FRAME
-          self.FT(tag => 'PAGE_TITLE', text => 'app: System');
-          self.FT(tag => 'SITE_LOGO', text => self.site-logo());
-          #self.FT(tag => 'PAGE_EDITOR', text => $login-link);
-          if $.UserID ne '' {
-            self.FT(tag => 'PAGE_EDITOR', text => $.UserID);
-            self.FT(tag => 'MENU_BAR', text => $wiki-link);
-            self.FT(tag => 'PAGE_EDITOR', text => $logout-link);
-          }
-          else {
-            self.FT(tag => 'PAGE_EDITOR', text => $login-link);
-          }
-          self.FT(tag => 'WIKIMENU_BAR', text => $tcode);
-          self.FT(tag => 'MENU_BAR', text => $wiki-link);
-          #self.FT(tag => 'MESSAGE_BAR', text => 'i: Transaction <b>' ~ $tcode ~ '</b>; Function <b>' ~ $function-code ~ '</b>');
-          #-- END -- PAGE FRAME
-          return True;
-        }
-END_OF_CODE
-    $source-code ~= $snippet;
-
-
-
-
-    $snippet = q:to/END_OF_CODE/;
-        method screen_2000 { #-- other Application Module
-          my Str $tcode = $.App;
-          my Str $module-name = '';
-          my $AppModule = '';
-          my Str $app-group = '';
-
-          #self.TRACE: 'SYSTEM 2000; user command = ' ~ $.UserCommand ~ '; tcode = ' ~ $tcode;
-          #-- BEGIN -- PAGE FRAME 
-          #-- END -- PAGE FRAME
-
-          #self.FT(text => 'Let us attempt to load an application');
-
-          if defined %.APPTABLE{$tcode} {
-            $module-name = %.APPTABLE{$tcode};
-            $app-group = %.APPGROUP{$tcode};
-
-            #self.FT(text => '<br>Found this application: ' ~ $module-name);
-            #self.TRACE: 'Found application :' ~ $module-name;
-
-            if self.load-module($AppModule, module => $module-name) {
-              #self.BEGIN-FORM(appgroup => $app-group);
-              #self.TRACE: 'Try appmodule; ucomm = ' ~ $.UserCommand;
-
-              try $AppModule.main(self, userid => $.UserID, 
-                                        ucomm => $.UserCommand, 
-                                        params => %.params);
-              if ($!) {
-                self.TRACE: 'Error occured on module ' ~ $module-name ~ '; ' ~ $!.message ~ '; ' ~ $!.gist;
-              }
-              else {
-                self.FT(tag => 'MESSAGE_BAR', text => 'i: Module <b>' ~ $module-name ~ '</b> was loaded successfully', last => 1);
-                #self.TRACE: 'Module ' ~ $module-name ~ ' was loaded successully';
-                $.DebugInfo ~= $AppModule.DebugInfo if $AppModule.DebugInfo ne '';
-              }
-              self.END-FORM(tcode => $tcode, appgroup => $app-group);
-            }
-          }
-          else {    
-            given $tcode.uc {
-              when 'SY00' {
-                self.FT(tag => 'MESSAGE_BAR', text => 'i: Transaction <b>' ~ $tcode ~ '</b> not found. TODO: Query database for tcode.');
-                #- DO NOTHING
-              }
-              when 'DB00' {
-                self.FT(tag => 'MESSAGE_BAR', text => 'i: Transaction <b>' ~ $tcode ~ '</b> not found. TODO: Query database for tcode.');
-                #- DO NOTHING
-              }
-              default {
-                $module-name = $C_NAMESPACE ~ '::Database';
-                try require ::($module-name);
-                if ::($module-name) ~~ Failure {
-                  #-- generate module
-                  self.TRACE: 'Failed loading ' ~ $module-name ~ ', ' ~ $!.message;
-                }
-                else {
-                  #-- TEST BEGIN
-                  #-- create an instance of $sModuleName
-                  $.Dbu = ::($module-name)::Database.new;
-                  $.Dbu.initialize-config(cfg => %.Config);
-
-                  #self.TRACE: 'Loading ' ~ $module-name;        
-                  #self.TRACE: 'Calling is-shortcut with ' ~ $tcode;     
-
-                  my Str $program = '',
-                  my Str $progtxt = '';
-                  my Str $app-group = '';
-  
-                  #self.TRACE: 'We try calling the database utility';
-
-                  ($program, $progtxt, $app-group) = $.Dbu.is-shortcut(shortcut => $tcode);
-
-                  #self.TRACE: 'FOUND program ' ~ $program ~ '; text ' ~ $progtxt ~ '; group = ' ~ $app-group;
-                  if $program ne '' {
-                    if self.load-module($AppModule, module => $program) {
-                      #-- $app-group = 'WEBC'; #- TODO get application group
-                      self.BEGIN-FORM(appgroup => $app-group);
-                      #self.TRACE: '$.UserComand = ' ~ $.UserCommand; 
-                      try $AppModule.main(self, userid => $.UserID, 
-                                              ucomm => $.UserCommand, 
-                                              params => %.params);
-                      if ($!) {
-                        self.TRACE: 'Error occured on module ' ~ $module-name ~ '; ' ~ $!.message ~ '; ' ~ $!.gist;
-                      }
-                      else {
-                        #self.FT(tag => 'MESSAGE_BAR', text => 'i: Module <b>' ~ $module-name ~ '</b> was loaded successfully', last => 1);
-                        #self.TRACE: 'Module ' ~ $module-name ~ ' was loaded successully';
-                        $.DebugInfo ~= $AppModule.DebugInfo if $AppModule.DebugInfo ne '';
-                      }
-                      self.END-FORM(tcode => $tcode, appgroup => $app-group);
-                    }
-                  }
-                  else {
-                    my Str $home = '<a href="/home">home</a>';
-                    my Str $alert-icon = '<img src="themes/img/icons/alert.png"/>';
-                    #self.TRACE: 'TCODE NOT EXISTS';
-                    #-- BEGIN -- PAGE FRAME
-                    self.FT(tag => 'PAGE_TITLE', text => 'app: System');
-                    self.FT(tag => 'SITE_LOGO', text => self.site-logo());
-                    #self.FT(tag => 'PAGE_EDITOR', text => $login-link);
-                    self.FT(tag => 'MENU_BAR', text => $home);
-                    self.FT(tag => 'MESSAGE_BAR', text => $alert-icon ~ self.FORM-SPACE() ~ 'Program assigned to shortcut "<b>' ~ $tcode.uc ~ '</b>" not found');
-                    if $.UserID ne '' {
-                      self.FT(tag => 'PAGE_EDITOR', text => $.UserID);
-                    }
-                    #-- BEGIN -- APPLICATION FORM 
-                    self.BEGIN-FORM(appgroup => $C_WEBFORM);
-                    self.allow-shortcut(flag => True);
-                    self.FORM-BREAK();
-                    self.FORM-BREAK();
-                    self.END-FORM(tcode => $tcode, appgroup => $C_WEBFORM);
-                              
-                  }
-                }
-              }
-              #-- TEST END
-            }
-          }
-          return True;
-        }
-END_OF_CODE
-    $source-code ~= $snippet;
-
-
-
-
-    $snippet = q:to/END_OF_CODE/;
-        method BEGIN-FORM(Str :$appgroup = '') {
-          given $appgroup {
-            when $C_WEBFORM { #- form based screeen
-              self.FORM-OPEN();
-              if $.UserID eq '' && %.params<OKCODE> eq 'login' {
-                  #-- hide OKCODE
-              }
-              else {
-                #self.FORM-IMG-BUTTON(key => 'OK',
-                #                    src => $C_ICON_OK,
-                #                    alt => 'Enter');
-                #self.FORM-SPACE();
-              }
-              if $.UserID eq '' && %.params<OKCODE> eq 'login' {
-                   #-- hide OKCODE
-              }
-              else {
-                #self.FORM-STRING(text => $.AllowShortcut);
-                #self.FORM-TEXT(key => 'OKCODE',
-                #              value => '',
-                #              size => '10', #%shortcut<intleng>',
-                #              length => '10',
-                #              );
-              }
+              self.FORM-TEXT(key => 'ucomm',
+                            value => '',
+                            size => '10', #%shortcut<intleng>',
+                            length => '60',
+                            );
+              self.FORM-SPACE();
             }
           }
         }
@@ -4448,16 +4926,27 @@ END_OF_CODE
 
 
 
+
     $snippet = q:to/END_OF_CODE/;
-      method END-FORM(Str :$tcode = '', Str :$appgroup = '') {
-          given $appgroup {
-            when $C_WEBFORM {
-              self.FORM-CLOSE(app => $tcode);
-            }
+       method END-FORM(Str :$app = '', Str :$appgroup = '') {
+          if $appgroup eq $C_WEBFORM {
+            self.FORM-CLOSE(app => $app);
           }
         }
 END_OF_CODE
     $source-code ~= $snippet;
+
+
+
+
+
+    $snippet = q:to/END_OF_CODE/;
+        method initialize-config(:%cfg) {
+          %.Config = %cfg;
+         }
+END_OF_CODE
+    $source-code ~= $snippet;
+
 
 
 
@@ -4504,8 +4993,9 @@ END_OF_CODE
 
 
 
+
     $snippet = q:to/END_OF_CODE/;
-      method get(Str :$key) {
+     method get(Str :$key) {
                 my $sVar = '';
                 $sVar = %.PAGEVARS{$key} if defined %.PAGEVARS{$key};
                 $sVar ~~ s:g/\{\{$key\}\}//;
@@ -4541,8 +5031,8 @@ END_OF_CODE
     $snippet = q:to/END_OF_CODE/;
       method getparam(Str :$key = '') {
                 my $parameter-value = '';
-                if %.params{"$key"}:exists {
-                  $parameter-value = %.params{"$key"};
+                if %.Params{"$key"}:exists {
+                  $parameter-value = %.Params{"$key"};
                 }
                 return $parameter-value;
               }
@@ -4550,6 +5040,15 @@ END_OF_CODE
     $source-code ~= $snippet;
 
 
+
+
+
+    $snippet = q:to/END_OF_CODE/;
+      method site-logo() {
+        return '<img src="./favicon.ico"/>';
+      }
+END_OF_CODE
+    $source-code ~= $snippet;
 
 
     $snippet = "\n"
@@ -4585,8 +5084,10 @@ END_OF_CODE
             msg-t1 => $sInfo, msg-t2 => $t2, msg-t3 => $t3,msg-t4 => $t4);
             note $e.message;
         }
+
 END_OF_CODE
     $source-code ~= $snippet;
+
 
 
 
@@ -4624,8 +5125,9 @@ END_OF_CODE
 
 
 
+
     $snippet = q:to/END_OF_CODE/;
-multi method render(Str :$web-part) {
+        multi method render(Str :$web-part) {
           my Str $sPage = '';
           given $web-part {
             when 'BODY' {
@@ -4652,26 +5154,30 @@ END_OF_CODE
 
 
 
+
     $snippet = q:to/END_OF_CODE/;
-    method FORM-OPEN(Bool :$multipart) {
+        method FORM-OPEN(Bool :$multipart) {
+          my Str $app = '';
           $.FORM = ''; #reset form
+          
           if defined $multipart {
             if $multipart {
-              $.FORM ~= '<form method="POST" '
-                      ~ 'enctype="multipart/form-data">';
+              $.FORM ~= '<form method="POST" ';
+              $.FORM ~= 'enctype="multipart/form-data">';
             }
             else {
-              $.FORM ~= '<form method="POST" '
-                      ~ 'enctype="application/x-www-form-url-encoded">';
+              $.FORM ~= '<form method="POST" ';
+              $.FORM ~= 'enctype="application/x-www-form-url-encoded">';
             }
           }
           else {
-            $.FORM ~= '<form method="POST" '
-                    ~ 'enctype="application/x-www-form-url-encoded">';
+            $.FORM ~= '<form method="POST" ';
+            $.FORM ~= 'enctype="application/x-www-form-url-encoded">';
           }
         }
 END_OF_CODE
     $source-code ~= $snippet;
+
 
 
 
@@ -4686,12 +5192,14 @@ END_OF_CODE
 
 
 
+
     $snippet = q:to/END_OF_CODE/;
         method FORM-LINE() {
           $.FORM ~= '<hr/>';
         }
 END_OF_CODE
     $source-code ~= $snippet;
+
 
 
 
@@ -4706,12 +5214,14 @@ END_OF_CODE
 
 
 
+
     $snippet = q:to/END_OF_CODE/;
         method FORM-SKIP() {
           $.FORM ~= '<br/><br/>';
         }
 END_OF_CODE
     $source-code ~= $snippet;
+
 
 
 
@@ -4738,6 +5248,7 @@ END_OF_CODE
 
 
 
+
     $snippet = q:to/END_OF_CODE/;
         method FORM-FILE(:$file) {
           $.FORM ~= '<input type="file" '
@@ -4745,6 +5256,7 @@ END_OF_CODE
         }
 END_OF_CODE
     $source-code ~= $snippet;
+
 
 
 
@@ -4761,6 +5273,7 @@ END_OF_CODE
 
 
 
+
     $snippet = q:to/END_OF_CODE/;
         method FORM-LABEL(Str :$key, Str :$value) {
           $.FORM ~= '<label for="' ~ $key ~ '">'
@@ -4768,6 +5281,7 @@ END_OF_CODE
         }
 END_OF_CODE
     $source-code ~= $snippet;
+
 
 
 
@@ -4790,6 +5304,7 @@ END_OF_CODE
 
 
 
+
     $snippet = q:to/END_OF_CODE/;
         method FORM-STRING(Str :$text = '') {
           $.FORM ~= $text if $text ne '';
@@ -4800,8 +5315,9 @@ END_OF_CODE
 
 
 
+
     $snippet = q:to/END_OF_CODE/;
-        method FORM-TEXTAREA(Str :$key, Str :$value, Int :$rows, Int :$cols) {
+      method FORM-TEXTAREA(Str :$key, Str :$value, Int :$rows, Int :$cols) {
           $.FORM ~= '<textarea '
                   ~ 'name="' ~ $key ~ '" '
                   ~ 'rows="' ~ $rows.Str ~ '" '
@@ -4814,6 +5330,7 @@ END_OF_CODE
         }
 END_OF_CODE
     $source-code ~= $snippet;
+
 
 
 
@@ -4836,6 +5353,7 @@ END_OF_CODE
 
 
 
+
     $snippet = q:to/END_OF_CODE/;
         method FORM-IMG-BUTTON(Str :$key, Str :$src, Str :$alt, Str :$event, Str :$action, Str :$type = 'image') {
           $.FORM ~= '<input type="' ~ $type ~ '" '
@@ -4846,7 +5364,7 @@ END_OF_CODE
             $.FORM ~= ' ' ~ $event ~ '="' ~ $action ~ '"';
           }
           $.FORM ~= '/>';
-          $.FORM ~= '&nbsp;' ~ $alt if $alt ne '';
+          $.FORM ~= '&nbsp;<span style="font-size:75%;">' ~ $alt ~ '</span>&nbsp;' if $alt ne '';
         }
 END_OF_CODE
     $source-code ~= $snippet;
@@ -4908,6 +5426,9 @@ END_OF_CODE
     $source-code ~= $snippet;
 
 
+
+
+
     $snippet = q:to/END_OF_CODE/;
         method FORM-SELECT(Str :$key, Str :$value, :%options, Str :$label) {
           my Str ($table, $field) = $key.split(/\-/);
@@ -4950,6 +5471,9 @@ END_OF_CODE
     $source-code ~= $snippet;
 
 
+
+
+
     $snippet = q:to/END_OF_CODE/;
         method FORM-CLOSE(Str :$section, Str :$app = '') {
           my Str $application-id = '';
@@ -4971,6 +5495,9 @@ END_OF_CODE
     $source-code ~= $snippet;
 
 
+
+
+
     $snippet = q:to/END_OF_CODE/;
         method space(Int :$length) {
           my Str $sBlank = '';
@@ -4986,6 +5513,8 @@ END_OF_CODE
         }
 END_OF_CODE
     $source-code ~= $snippet;
+
+
 
 
 
@@ -5324,13 +5853,10 @@ END_OF_CODE
 
 
 
-
     $snippet = q:to/END_OF_CODE/;
     };
 END_OF_CODE
     $source-code ~= $snippet;
-
-
 
 
     #-------------------------------------------------------------
@@ -5342,11 +5868,8 @@ END_OF_CODE
     self.write-string-to-file(file-name => $file,
                                data => $source-code);
 
+
   }
-
-
-
-
 
 #-- END-OF-CLASS --
 

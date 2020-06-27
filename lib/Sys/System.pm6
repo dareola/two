@@ -138,7 +138,6 @@ class Sys::System is export {
         has %.SCREEN_TITLE is rw = (
           1000 => "TESTING_1000";
         );
-
         method main($App, Str :$userid, Str :$ucomm, :%params) {
           self.TRACE: 'SYS00.main: ' 
           ~ 'app = ' ~ $App ~ '; '
@@ -168,7 +167,6 @@ class Sys::System is export {
           self.goto-screen(app => $.App);
 
         }
-
         method goto-screen(Str :$app) {
           my Str $next-screen = '';
           my Str $application-screen = '';
@@ -183,7 +181,6 @@ class Sys::System is export {
             self.SCREEN_not_found(app => $application-screen);
           }
         }
-        
         method SCREEN_not_found(Str :$app='') {
           my Str $home-link = '';
           my Str $index-link = '';
@@ -194,15 +191,13 @@ class Sys::System is export {
           $home-link = '<a href="/">home</a>' ~ '&nbsp;';
 
 
-          self.FT(tag => 'PAGE_TITLE', text => 'Error: SCREEN_NOT_FOUND; method <b>' ~ $app ~ '</b> implementation not found');
+          self.FT(tag => 'PAGE_TITLE', text => 'Error: method <b>' ~ $app ~ '</b> implementation not found');
           self.FT(tag => 'SITE_LOGO', text => self.site-logo());
           self.FT(tag => 'PAGE_EDITOR', text => $.UserID);
 
           self.FT(tag => 'MENU_BAR', text => $home-link);
           
         }
-
-
         method HOME-screen_1000() { #-- System Module
           my Str $home-link = '';
           my Str $index-link = '';
@@ -252,7 +247,6 @@ class Sys::System is export {
             self.END-FORM(app => $.App, appgroup => $C_WEBFORM);
           }
         }
-
         method LOGIN-screen_1000() { #-- System Module
           my Str $home-link = '';
           my Str $index-link = '';
@@ -299,8 +293,6 @@ class Sys::System is export {
           self.END-FORM(app => $.App, appgroup => $C_WEBFORM);
 
         }
-        
-
         method message(Str $info, Str :$type = 'I') {
           my Str $icon = '';
           given $type {
@@ -319,8 +311,7 @@ class Sys::System is export {
           }
           self.FT(tag => 'MESSAGE_BAR', text => $icon ~ '&nbsp;' ~ $info) if $info ne '';
         }
-
-        method BEGIN-FORM(Str :$appgroup = '') {
+       method BEGIN-FORM(Str :$appgroup = '') {
           if $appgroup eq $C_WEBFORM { #-- form based screen
             self.FORM-OPEN();
             if $.App ne 'LOGIN' {
@@ -337,17 +328,14 @@ class Sys::System is export {
             }
           }
         }
-        
-        method END-FORM(Str :$app = '', Str :$appgroup = '') {
+       method END-FORM(Str :$app = '', Str :$appgroup = '') {
           if $appgroup eq $C_WEBFORM {
             self.FORM-CLOSE(app => $app);
           }
         }
-        
         method initialize-config(:%cfg) {
           %.Config = %cfg;
          }
-
         method load-module($AppModule is rw, Str :$module) {
           my Bool $return-code = True;
           my Str $module-name = '';
@@ -383,7 +371,7 @@ class Sys::System is export {
           }
           return $return-code;
         }
-      method get(Str :$key) {
+     method get(Str :$key) {
                 my $sVar = '';
                 $sVar = %.PAGEVARS{$key} if defined %.PAGEVARS{$key};
                 $sVar ~~ s:g/\{\{$key\}\}//;
@@ -408,7 +396,6 @@ class Sys::System is export {
                 }
                 return $parameter-value;
               }
-
       method site-logo() {
         return '<img src="./favicon.ico"/>';
       }
@@ -429,6 +416,7 @@ class Sys::System is export {
             msg-t1 => $sInfo, msg-t2 => $t2, msg-t3 => $t3,msg-t4 => $t4);
             note $e.message;
         }
+
       method FT(Str :$tag, Str :$text, Int :$last) { #-- FILL-TEMPLATE
           #method FT(Str $sTag?, Str $sText?, Int $iLast?) {
           my Str $sWebPart = $tag;
@@ -455,7 +443,7 @@ class Sys::System is export {
           %.PAGEVARS{$sWebPart} = $sData if !$bClearVariables;
           return True;
         };
-multi method render(Str :$web-part) {
+        multi method render(Str :$web-part) {
           my Str $sPage = '';
           given $web-part {
             when 'BODY' {
@@ -476,8 +464,6 @@ multi method render(Str :$web-part) {
           }
           return $sPage;
         }
-
-
         method FORM-OPEN(Bool :$multipart) {
           my Str $app = '';
           $.FORM = ''; #reset form
@@ -551,7 +537,7 @@ multi method render(Str :$web-part) {
         method FORM-STRING(Str :$text = '') {
           $.FORM ~= $text if $text ne '';
         }
-        method FORM-TEXTAREA(Str :$key, Str :$value, Int :$rows, Int :$cols) {
+      method FORM-TEXTAREA(Str :$key, Str :$value, Int :$rows, Int :$cols) {
           $.FORM ~= '<textarea '
                   ~ 'name="' ~ $key ~ '" '
                   ~ 'rows="' ~ $rows.Str ~ '" '
@@ -584,7 +570,6 @@ multi method render(Str :$web-part) {
           $.FORM ~= '/>';
           $.FORM ~= '&nbsp;<span style="font-size:75%;">' ~ $alt ~ '</span>&nbsp;' if $alt ne '';
         }
-
         method FORM-BUTTON(Str :$key, Str :$value, Str :$event, Str :$action, Str :$type = 'submit') {
           $.FORM ~= '<input type="' ~ $type ~ '" '
                   ~ 'name="' ~ $key ~ '" '
