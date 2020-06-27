@@ -64,7 +64,6 @@ class X::Routes is Exception {
 	}
 }
 
-
 sub TRACE(Str $msg, 
           Str :$id = "R0", 
           Str :$no = "001", 
@@ -283,10 +282,19 @@ sub routes() is export {
         }
 
         post -> UserSession $user, 'login' {
-          request-body -> (:$username, :$password, *%params) {
-            if valid-user-pass($username, $password) {
-                $user.username = $username;
+          #request-body -> (:$username, :$password, *%params) 
+          request-body -> (:$CLNTUSER-CLNTNUM, 
+                           :$CLNTUSER-LANGISO, 
+                           :$CLNTUSER-USERCOD, 
+                           :$PASSWORD, *%params) {
+
+            if valid-user-pass(clntnum => $CLNTUSER-CLNTNUM,
+                               langiso => $CLNTUSER-LANGISO,
+                               usercod => $CLNTUSER-USERCOD,
+                               passwrd => $PASSWORD) {
+                $user.username = $CLNTUSER-USERCOD;
                 redirect '/', :see-other;
+                
             }
             else {
               my Str $userid = '';          
@@ -312,15 +320,15 @@ sub routes() is export {
           }
         }
 
-        sub valid-user-pass($username, $password) {
+
+        sub valid-user-pass(:$clntnum, :$langiso, :$usercod, :$passwrd) {
           my Bool $ok = False;
-          $ok = True if $username eq 'system' && $password eq 'pass';
-          $ok = True if $username eq 'dareola' && $password eq 'ok';
-          $ok = True if $username eq 'DAREOLA' && $password eq 'jerome';
-          # Call a database or similar here
+
+          $ok = $oRuntime.is-login(clntnum => $clntnum,
+                                   usercod => $usercod,
+                                   passwrd => $passwrd);
           return $ok; #$username eq 'system' && $password eq 'pass';
         }
-
 
         #-- FAVICON
         get -> 'favicon.ico' {
@@ -377,7 +385,5 @@ sub routes() is export {
                         ~ '/';
           static $jscript-dir, @path;
         }
-
-
     }
 }

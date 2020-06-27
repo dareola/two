@@ -10,7 +10,6 @@ unit module Sys::Database:ver<0.0.0>:auth<Domingo Areola (dareola@gmail.com)>;
   has $.msg-t3; #message text 3
   has $.msg-t4; #message text 4
 
-
     
     method message() {
       #-- TODO: Get the message from the data dictionary
@@ -39,8 +38,6 @@ class Sys::Database is export {
     has %SCREEN_TITLE = (
       1000 => "TESTING_1000";
     );
-
-
 
     
     method main($App, Str :$userid, Str :$ucomm, :%params) {
@@ -311,7 +308,6 @@ method TRACE(Str $msg, :$id = "D0", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
                               sql => $new-table, language => $langiso);
         #----------------------------------------------
 
-
         $tabname = 'OBJTYPES';
         $descrip = 'Dictionary object types';
         $langiso = 'E';
@@ -343,7 +339,6 @@ method TRACE(Str $msg, :$id = "D0", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
         self.db-create-table(tabname => $tabname, descrip => $descrip,
                               sql => $new-table, language => $langiso);
         #----------------------------------------------
-
 
         $tabname = 'LOGICALS';
         $descrip = 'Logical true or false';
@@ -838,7 +833,6 @@ method TRACE(Str $msg, :$id = "D0", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
                               sql => $new-table, language => $langiso);
         #----------------------------------------------
 
-
         $tabname = 'PROGTEXT';
         $descrip = 'Program text elements';
         $langiso = 'E';
@@ -857,7 +851,6 @@ method TRACE(Str $msg, :$id = "D0", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
         self.db-create-table(tabname => $tabname, descrip => $descrip,
                               sql => $new-table, language => $langiso);
         #----------------------------------------------
-
 
         #$tabname = 'LOCKTABLE';
         #$descrip = 'Lock objects';
@@ -1130,7 +1123,6 @@ method TRACE(Str $msg, :$id = "D0", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
         self.insert-table($tabname, key => 'MESGTXTS|CHANGBY|A|0', values => 'CHANGBY|0005| | |USERMSTR|CHAR|12|12');
         self.insert-table($tabname, key => 'MESGTXTS|CHANGDT|A|0', values => 'CHANGDT|0006| | ||CHAR|8|8');
         self.insert-table($tabname, key => 'MESGTXTS|CHANGTM|A|0', values => 'CHANGTM|0007| | ||CHAR|6|6');
-
 
         # DDRELATE
         self.insert-table($tabname, key => 'DDRELATE|TABNAME|A|0', values => 'DBTABLE|0001|X| |DBTABLES|CHAR|30|30');
@@ -1771,7 +1763,6 @@ method TRACE(Str $msg, :$id = "D0", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
       self.insert-table($tabname, key => 'DOMVALUT|CHANGBY|A|0', values => 'USERMSTR|REF|1|CN|SY_DDIC| |');
       self.insert-table($tabname, key => 'DOMVALUT|LANGISO|A|0', values => 'ISOLANGU|REF|1|CN|SY_DDIC| |');
 
-
       # DDRELATE-key
       self.insert-table($tabname, key => 'DDRELATE|TABNAME|A|0', values => 'DBTABLES|REF|1|CN|SY_DDIC| |');
       self.insert-table($tabname, key => 'DDRELATE|ACTVATD|A|0', values => 'STATCODE|REF|1|CN|SY_DDIC| |');
@@ -1786,7 +1777,6 @@ method TRACE(Str $msg, :$id = "D0", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
       self.insert-table($tabname, key => 'DDRELATT|VERSION|A|0', values => 'DDICVERS|REF|1|CN|SY_DDIC| |');
       self.insert-table($tabname, key => 'DDRELATT|LANGISO|A|0', values => 'ISOLANGU|REF|1|CN|SY_DDIC| |');
       self.insert-table($tabname, key => 'DDRELATT|CHANGBY|A|0', values => 'USERMSTR|REF|1|CN|SY_DDIC| |');
-
 
     }
 
@@ -2070,7 +2060,6 @@ method TRACE(Str $msg, :$id = "D0", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
                 
                 #-- Register DBTABLET into DBTABLES
 
-
                 my %wDBTABLES = ();
                 my @iDBTABLES = ();
 
@@ -2096,7 +2085,6 @@ method TRACE(Str $msg, :$id = "D0", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
                 $dbh.do($sql-insert);
 
                 #-- Register DBTABLET into DBTABLET
-
 
                 %wDBTABLET = ();
                 @iDBTABLET = ();
@@ -2154,7 +2142,6 @@ method TRACE(Str $msg, :$id = "D0", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
                 $dbh.do($sql-insert);
 
                 #-- Register <TABNAME> into DBTABLET
-
 
                 my %wDBTABLET = ();
                 my @iDBTABLET = ();

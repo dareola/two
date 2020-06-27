@@ -37,6 +37,8 @@ class Sys::System is export {
         constant $C_ICON_NEXT = 'themes/img/icons/resultset_next.png';
         constant $C_ICON_LAST = 'themes/img/icons/resultset_last.png';
         constant $C_ICON_LOGIN = 'themes/img/icons/key.png';
+        constant $C_ICON_REGISTER = 'themes/img/icons/user_add.png';
+        constant $C_ICON_SAVEREG = 'themes/img/icons/disk.png';
 
         constant $C_INIT = 'INIT';
 
@@ -72,14 +74,12 @@ class Sys::System is export {
           'LOGOUT' => '1000',
         );
 
-
         #has Str %.APPTEXTS = ( #-- for the Exception
         #  'DB00' => 'D0',
         #  'SCUT' => 'S2',
         #  'TEST' => 'T1',
         #);
         #-- BEGIN - While DATBAE  NOT YET EXISTING
-
 
         has %.PAGEVARS = #-- Page variable for Template::Mustache
         ( POPUP_MENU      => '{{POPUP_MENU}}',
@@ -190,7 +190,6 @@ class Sys::System is export {
 
           $home-link = '<a href="/">home</a>' ~ '&nbsp;';
 
-
           self.FT(tag => 'PAGE_TITLE', text => 'Error: method <b>' ~ $app ~ '</b> implementation not found');
           self.FT(tag => 'SITE_LOGO', text => self.site-logo());
           self.FT(tag => 'PAGE_EDITOR', text => $.UserID);
@@ -211,7 +210,6 @@ class Sys::System is export {
           $login-link = '|&nbsp;<a href="/login">login</a>' ~ '&nbsp;' if $.UserID eq '';
           $logout-link = '|&nbsp;<a href="/logout">logout</a>' ~ '&nbsp;' if $.UserID ne '';
 
-
           self.FT(tag => 'PAGE_TITLE', text => 'app: System');
           self.FT(tag => 'SITE_LOGO', text => self.site-logo());
           self.FT(tag => 'PAGE_EDITOR', text => $.UserID);
@@ -225,22 +223,21 @@ class Sys::System is export {
           if $.UserID ne '' {
             self.BEGIN-FORM(appgroup => $C_WEBFORM);
 
-            self.FORM-IMG-BUTTON(key => 'press-first',
-              src => $C_ICON_FIRST,
-              alt => 'First');
+          #  self.FORM-IMG-BUTTON(key => 'press-first',
+          #    src => $C_ICON_FIRST,
+          #    alt => 'First');
 
-            self.FORM-IMG-BUTTON(key => 'press-prev',
-              src => $C_ICON_PREV,
-              alt => 'Previous');
+          #  self.FORM-IMG-BUTTON(key => 'press-prev',
+          #    src => $C_ICON_PREV,
+          #    alt => 'Previous');
 
-            self.FORM-IMG-BUTTON(key => 'press-next',
-              src => $C_ICON_NEXT,
-              alt => 'Next');
+          #  self.FORM-IMG-BUTTON(key => 'press-next',
+          #    src => $C_ICON_NEXT,
+          #    alt => 'Next');
 
-            self.FORM-IMG-BUTTON(key => 'press-last',
-              src => $C_ICON_LAST,
-              alt => 'Last');
-
+          #  self.FORM-IMG-BUTTON(key => 'press-last',
+          #    src => $C_ICON_LAST,
+          #    alt => 'Last');
 
             self.FORM-BREAK();
             self.FORM-BREAK();      
@@ -261,7 +258,6 @@ class Sys::System is export {
           self.FT(tag => 'SITE_LOGO', text => self.site-logo());
           self.FT(tag => 'PAGE_EDITOR', text => $.UserID);
 
-
           self.FT(tag => 'MENU_BAR', text => $home-link);
           self.FT(tag => 'MENU_BAR', text => $login-link);
 
@@ -270,24 +266,75 @@ class Sys::System is export {
           self.FORM-IMG-BUTTON(key => 'press-login',
             src => $C_ICON_LOGIN,
             alt => 'Login');
+          self.FORM-SPACE();
 
-          
+          self.FORM-IMG-BUTTON(key => 'press-register',
+                      src => $C_ICON_REGISTER,
+                      alt => 'Register');
 
 
           self.FORM-BREAK();
           self.FORM-BREAK();      
 
-          self.FORM-STRING(text => 'Username');
+          my $clntnum-text = $.Dbu.field-text(field => 'CLNTUSER-CLNTNUM', type => 'S');
+          self.FORM-STRING(text => $clntnum-text);
           self.FORM-SPACE;
-          self.FORM-TEXT(key => 'username', value => '', size => '30', length => '35'); 
+
+          my %wSelectOptions = ();
+          self.FORM-SELECT(key => 'CLNTUSER-CLNTNUM',
+                            value => '000',
+                            options => %wSelectOptions,
+                            label => 'Client number');
+
           self.FORM-BREAK();
-          
+
+          my $usercod-text = $.Dbu.field-text(field => 'CLNTUSER-USERCOD', type => 'S');
+          self.FORM-STRING(text => $usercod-text);
+
+          self.FORM-SPACE;
+          self.FORM-TEXT(key => 'CLNTUSER-USERCOD', value => '', size => '18', length => '18'); 
 
 
-          self.FORM-STRING(text => 'Password');
-          self.FORM-SPACE;
-          self.FORM-TEXT(key => 'password', value => '', size => '30', length => '10'); 
+
+          my $password-field = self.encrypt-field('PASSWORD');
+          my $javascript = '<script type="text/javascript">' 
+                        ~ "\n"
+                        ~ '//<![CDATA[' 
+                        ~ "\n";
+            $javascript ~= $password-field 
+                        ~ "\n";
+            $javascript ~= self.encrypt-md5();
+            $javascript ~= '//]]'
+                        ~ "\n" 
+                        ~ '</script>';
+          self.FT(tag => 'JAVASCRIPT', text => $javascript); #-- This will insert javascript code header
+
+
           self.FORM-BREAK();
+
+          my $passwrd-text = $.Dbu.field-text(field => 'CLNTUSER-PASSWRD', type => 'S');
+          self.FORM-STRING(text => $passwrd-text);
+          self.FORM-SPACE;
+
+          #-- encoded password is 32 characters
+          self.FORM-PASSWORD(key => 'PASSWORD',
+                              value => '',
+                              size => '32',
+                              length => '15',
+                              event => 'onChange',
+                              action => 'javascript:encryptPassword_' 
+                                        ~ 'PASSWORD' ~ '();'
+                    );
+
+          self.FORM-BREAK();
+          my $langiso-text = $.Dbu.field-text(field => 'CLNTUSER-LANGISO', type => 'S');
+          self.FORM-STRING(text => $langiso-text);
+          self.FORM-SPACE;
+          %wSelectOptions = ();
+          self.FORM-SELECT(key => 'CLNTUSER-LANGISO',
+                            value => 'E',
+                            options => %wSelectOptions,
+                            label => 'Language');
 
 
           self.END-FORM(app => $.App, appgroup => $C_WEBFORM);
@@ -333,7 +380,8 @@ class Sys::System is export {
             self.FORM-CLOSE(app => $app);
           }
         }
-        method initialize-config(:%cfg) {
+        method initialize-config($Dbu, :%cfg) {
+          $.Dbu = $Dbu;
           %.Config = %cfg;
          }
         method load-module($AppModule is rw, Str :$module) {

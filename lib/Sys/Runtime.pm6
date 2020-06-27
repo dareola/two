@@ -6,7 +6,6 @@ use JSON::Tiny;
 # $.lower-snake-case = for methods and local variables
 # $C_UPPER_CASE = constants (global)
 
-
 #-- Exception handlers
 class X::Runtime is Exception {
 	has Str $.msg-id; #message class
@@ -74,7 +73,6 @@ class Runtime is export {
 	has Str $.AppTitle is rw = 'Untitled';
   #-- end: page templates (defaults)
 
-
   submethod BUILD(:&!callback) { #-- constructor
   }
 
@@ -100,7 +98,6 @@ class Runtime is export {
     #          ~ 'userid = ' ~ $userid ~ '; '
     #          ~ '<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;params = ' ~ %params.Str;
 
-
     #-- run System module to display default user interface
     try $.Sys.main($app, userid => $userid, ucomm => $cmd, :%params);
     if ($!) {
@@ -109,9 +106,6 @@ class Runtime is export {
     else {
       $.DebugInfo ~= $.Sys.DebugInfo if $.Sys.DebugInfo ne ''; #-- Sys TRACES
     }
-
-
-
     return True;
   }
 
@@ -139,48 +133,6 @@ class Runtime is export {
         $!.resume;
       }
     }      
-
-    #my Str $user = '';
-    #$user = $userid if $userid ne '';
-
-    #my Str $app-toolbar = '';
-
-    #$app-toolbar ~= '<a href="/">home</a>' ~ '&nbsp;|&nbsp;';
-    #$app-toolbar ~= '<a href="/index">index</a>' ~ '&nbsp;|&nbsp;' if $user ne '';
-    #$app-toolbar ~= '<a href="/help">help</a>' ~ '&nbsp;|&nbsp;' if $user ne '';
-    #$app-toolbar ~= '<a href="/login">login</a>' ~ '&nbsp;' if $user eq '';
-    #$app-toolbar ~= '<b>' ~ $user.uc ~ '</b>&nbsp;<a href="/logout">logout</a>' ~ '&nbsp;' if $user ne '';
-    #$app-toolbar ~= '<hr/>';
-
-    #if $user ne '' {
-    #  if $app ne 'login' {
-        #$app-toolbar ~= self.begin-form() ~ self.user-command() ~ self.end-form() ;
-        #$app-toolbar ~= 'Parameters: [' ~ %.Params.Str ~ ']<br>';
-    #  }
-    #}
-
-    #my Str $text = '';
-
-    #given $app {
-    #  when 'home' {
-    #    $text ~= $app-toolbar;
-    #    $text ~= '<br>WELCOME<br><br>';
-    #  }
-    #  when 'login' {
-        #$app-toolbar ~= self.begin-form(app => 'login') 
-        #             ~ self.user-login() 
-        #             ~ self.end-form() ;
-        #$text ~= $app-toolbar;
-    #  }
-    #  default {
-    #    $text ~= $app-toolbar;
-    #  }
-    #}
-
-    #$text ~= 'User = ' ~ $user ~ '<br>' 
-    #      ~ 'Application = ' ~ $app ~ '<br>'
-    #      ~ 'Command = ' ~ $cmd ~ '<br>';
-
     return self.build-html-page(); #$text;
   }
 
@@ -209,6 +161,42 @@ class Runtime is export {
 		note $e.message;
 	}
 
+  method is-login(Str :$clntnum = '',
+                  Str :$usercod = '',
+                  Str :$passwrd = '') {
+    my Bool $login-status = False;
+
+    #self.TRACE: 'input CLNTNUM = ' ~ $clntnum;
+    #self.TRACE: 'input USERCOD = ' ~ $usercod;
+    #self.TRACE: 'input PASSWRD = ' ~ $passwrd;
+
+    my $db-file = $.Dbu.db-filename(type => $C_DBTYPE_SQLITE);
+    my $dbh = $.Dbu.db-connect(dbtype => $C_DBTYPE_SQLITE, dbname => $db-file);
+    if defined $dbh {
+      my $sth = $dbh.prepare(qq:to/SQL/);
+        SELECT clntnum, usercod, passwrd
+        FROM CLNTUSER 
+        WHERE clntnum = '$clntnum' AND
+              usercod = '$usercod' AND
+              actvatd = 'A'
+      SQL
+      $sth.execute;
+      my %wCLNTUSER = $sth.fetchall-hash;
+      for %wCLNTUSER -> $fld {
+        #self.TRACE: 'data-from-db: ' ~ $fld.key ~ '=' ~ $fld.value;
+        given $fld.key {
+          when 'passwrd' {
+            my $password-from-db = $fld.value;
+            $login-status = True if $password-from-db eq $passwrd;
+          }
+        }
+      }
+      $sth.finish;
+      $dbh.dispose;
+    }
+    return $login-status;
+  }
+
 	method set-page-heading() {
 		my Str $html-heading = '';
 		my Str $style-sheet = '';
@@ -223,7 +211,6 @@ class Runtime is export {
 		return $html-heading;
 	}
 
-
 	method set-page-title(Str :$title) {
 		my Str $page-title = '';
     $.AppTitle = $.Sys.get(key => 'PAGE_TITLE');
@@ -233,7 +220,6 @@ class Runtime is export {
 						    ~ $.HtmlTitleEnd if $title ne '';
 		return $page-title;
 	}
-
 
 	method set-page-body(Str :$text = '') {
 		my Str $html-body = '';
@@ -258,7 +244,6 @@ class Runtime is export {
   method load-config-file(Str :$file) {
     %.Config = from-json(slurp($file));
   }
-
 
   method initialize() {
     $.Page = '';
@@ -287,12 +272,10 @@ class Runtime is export {
                          name => $module-name,
                          path => $module-path);
 
-
     ($module-id, $module, $module-name, $module-path) = self.get-module-name(module-id => 'SY00');
     self.generate-module(module => $module-id,
                          name => $module-name,
                          path => $module-path);
-
 
   }
 
@@ -387,7 +370,7 @@ class Runtime is export {
       }
       else {
         $.Sys = ::($module-name).new;
-        $.Sys.initialize-config(cfg => %.Config);
+        $.Sys.initialize-config($.Dbu, cfg => %.Config);
 
       }
     }
@@ -411,8 +394,6 @@ class Runtime is export {
       }
     }
   }
-
-
 
   method create-directory(Str :$path) {
     my Str @FilePath = $path.split('/');
@@ -1105,7 +1086,6 @@ class Runtime is export {
 		}
 	}
 
-
   method generate-database-utility-module(Str :$shortcut,
                               Str :$module,
                               Str :$file,
@@ -1116,15 +1096,12 @@ class Runtime is export {
       my $snippet = '';
       my $exception-text = $text;
 
-
-
       $snippet = "\n" 
       ~ 'unit module ' ~ $module ~ ':ver<' ~ $C_VERSION ~ '>:auth<' ~ $C_AUTHOR ~ '>;' 
       ~ "\n" ~ '  use DBIish;'
       ~ "\n" ~ '  class X::' ~ $module ~ ' is Exception {'
       ~ "\n";
       $source-code ~= $snippet;
-
 
       $snippet = q:to/END_OF_CODE/;
       has $.msg-id; #message class
@@ -1135,11 +1112,9 @@ class Runtime is export {
       has $.msg-t3; #message text 3
       has $.msg-t4; #message text 4
 
-
         
     END_OF_CODE
       $source-code ~= $snippet;
-
 
       $snippet = q:to/END_OF_CODE/;
         method message() {
@@ -1152,7 +1127,6 @@ class Runtime is export {
       }
     END_OF_CODE
       $source-code ~= $snippet;
-
 
       $snippet = "\n"
     ~ "\n" ~ 'class ' ~ $module ~ ' is export {'
@@ -1177,12 +1151,9 @@ class Runtime is export {
           1000 => "TESTING_1000";
         );
 
-
-
         
     END_OF_CODE
       $source-code ~= $snippet;
-
 
       $snippet = q:to/END_OF_CODE/;
         method main($App, Str :$userid, Str :$ucomm, :%params) {
@@ -1205,7 +1176,6 @@ class Runtime is export {
     END_OF_CODE
       $source-code ~= $snippet;
 
-
       $snippet = q:to/END_OF_CODE/;
         method goto-screen(Str :$screen) {
         my Str $sNextScreen = 'screen_' ~ $screen;
@@ -1217,7 +1187,6 @@ class Runtime is export {
         
     END_OF_CODE
       $source-code ~= $snippet;
-
 
       $snippet = q:to/END_OF_CODE/;
       method screen_1000 { #-- ucomm = INIT; Create a blank database 
@@ -1312,7 +1281,6 @@ class Runtime is export {
     END_OF_CODE
       $source-code ~= $snippet;
 
-
       $snippet = q:to/END_OF_CODE/;
         method initialize-config(:%cfg) {
         %.Config = %cfg;
@@ -1321,7 +1289,6 @@ class Runtime is export {
         
     END_OF_CODE
       $source-code ~= $snippet;
-
 
       $snippet = q:to/END_OF_CODE/;
         method get(Str :$key) {
@@ -1341,7 +1308,6 @@ class Runtime is export {
     END_OF_CODE
       $source-code ~= $snippet;
 
-
       $snippet = q:to/END_OF_CODE/;
         method getenv(Str :$key) {
         my $sVar =  '';
@@ -1353,12 +1319,10 @@ class Runtime is export {
     END_OF_CODE
       $source-code ~= $snippet;
 
-
       $snippet = "\n" 
       ~ "\n" ~ 'method TRACE(Str $msg, :$id = "' ~ $exception-text ~ '", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = "", :$t3 = "", :$t4 = "" ) {'
       ~ "\n";
       $source-code ~= $snippet;
-
 
       $snippet = q:to/END_OF_CODE/;  
         my Str $sInfo = "";
@@ -1373,12 +1337,10 @@ class Runtime is export {
     END_OF_CODE
       $source-code ~= $snippet;
 
-
       $snippet = "\n" 
       ~ "\n" ~ '  my $e = X::' ~ $module ~ '.new('
       ~ "\n";
       $source-code ~= $snippet;
-
 
       $snippet = q:to/END_OF_CODE/;
           msg-id => $id, msg-no => $no, msg-ty => $ty,
@@ -1498,7 +1460,6 @@ class Runtime is export {
                                   sql => $new-table, language => $langiso);
             #----------------------------------------------
 
-
             $tabname = 'OBJTYPES';
             $descrip = 'Dictionary object types';
             $langiso = 'E';
@@ -1530,7 +1491,6 @@ class Runtime is export {
             self.db-create-table(tabname => $tabname, descrip => $descrip,
                                   sql => $new-table, language => $langiso);
             #----------------------------------------------
-
 
             $tabname = 'LOGICALS';
             $descrip = 'Logical true or false';
@@ -2025,7 +1985,6 @@ class Runtime is export {
                                   sql => $new-table, language => $langiso);
             #----------------------------------------------
 
-
             $tabname = 'PROGTEXT';
             $descrip = 'Program text elements';
             $langiso = 'E';
@@ -2044,7 +2003,6 @@ class Runtime is export {
             self.db-create-table(tabname => $tabname, descrip => $descrip,
                                   sql => $new-table, language => $langiso);
             #----------------------------------------------
-
 
             #$tabname = 'LOCKTABLE';
             #$descrip = 'Lock objects';
@@ -2075,7 +2033,6 @@ class Runtime is export {
         
     END_OF_CODE
       $source-code ~= $snippet;
-
 
       $snippet = q:to/END_OF_CODE/;
         method initialize-TABLFLDS(Str :$tabname) {
@@ -2323,7 +2280,6 @@ class Runtime is export {
             self.insert-table($tabname, key => 'MESGTXTS|CHANGDT|A|0', values => 'CHANGDT|0006| | ||CHAR|8|8');
             self.insert-table($tabname, key => 'MESGTXTS|CHANGTM|A|0', values => 'CHANGTM|0007| | ||CHAR|6|6');
 
-
             # DDRELATE
             self.insert-table($tabname, key => 'DDRELATE|TABNAME|A|0', values => 'DBTABLE|0001|X| |DBTABLES|CHAR|30|30');
             self.insert-table($tabname, key => 'DDRELATE|FLDNAME|A|0', values => 'FLDNAME|0002|X| ||CHAR|30|30');
@@ -2420,7 +2376,6 @@ class Runtime is export {
     END_OF_CODE
       $source-code ~= $snippet;
 
-
       $snippet = q:to/END_OF_CODE/;
         method initialize-DBDOMAIN(Str :$tabname) {
             self.insert-table($tabname, key => 'DOMNAME|A|0', values => 'CHAR|30|30|0| | | | |DBDOMAIN');
@@ -2473,7 +2428,6 @@ class Runtime is export {
         
     END_OF_CODE
       $source-code ~= $snippet;
-
 
       $snippet = q:to/END_OF_CODE/;
         method initialize-DBDOMAIT(Str :$tabname) {
@@ -2528,7 +2482,6 @@ class Runtime is export {
         
     END_OF_CODE
       $source-code ~= $snippet;
-
 
       $snippet = q:to/END_OF_CODE/;
         method initialize-DATAELEM(Str :$tabname) {
@@ -2607,7 +2560,6 @@ class Runtime is export {
     END_OF_CODE
       $source-code ~= $snippet;
 
-
       $snippet = q:to/END_OF_CODE/;
         method initialize-DATAELET(Str :$tabname) {
             self.insert-table($tabname, key => 'DOMNAME|A|0|E', values => 'Domain name|Domain name|Domain name|Domain name');
@@ -2685,7 +2637,6 @@ class Runtime is export {
     END_OF_CODE
       $source-code ~= $snippet;
 
-
       $snippet = q:to/END_OF_CODE/;
         method initialize-STATCODE(Str :$tabname) {
             self.insert-table($tabname, key => 'A', values => '');
@@ -2699,7 +2650,6 @@ class Runtime is export {
         
     END_OF_CODE
       $source-code ~= $snippet;
-
 
       $snippet = q:to/END_OF_CODE/;
         method initialize-STATCODT(Str :$tabname) {
@@ -2716,7 +2666,6 @@ class Runtime is export {
     END_OF_CODE
       $source-code ~= $snippet;
 
-
       $snippet = q:to/END_OF_CODE/;
         method initialize-DDICVERS(Str :$tabname) {
             self.insert-table($tabname, key => '0', values => '0|0');
@@ -2725,7 +2674,6 @@ class Runtime is export {
         
     END_OF_CODE
       $source-code ~= $snippet;
-
 
       $snippet = q:to/END_OF_CODE/;
         method initialize-VERSTEXT(Str :$tabname) {
@@ -2736,7 +2684,6 @@ class Runtime is export {
     END_OF_CODE
       $source-code ~= $snippet;
 
-
       $snippet = q:to/END_OF_CODE/;
         method initialize-ISOLANGU(Str :$tabname) {
             self.insert-table($tabname, key => 'E', values => 'English');
@@ -2745,7 +2692,6 @@ class Runtime is export {
         
     END_OF_CODE
       $source-code ~= $snippet;
-
 
       $snippet = q:to/END_OF_CODE/;
         method initialize-LOGICALS(Str :$tabname) {
@@ -2762,7 +2708,6 @@ class Runtime is export {
         
     END_OF_CODE
       $source-code ~= $snippet;
-
 
       $snippet = q:to/END_OF_CODE/;
         method initialize-BOOLEANS(Str :$tabname) {
@@ -2781,7 +2726,6 @@ class Runtime is export {
     END_OF_CODE
       $source-code ~= $snippet;
 
-
       $snippet = q:to/END_OF_CODE/;
         method initialize-DATATYPE(Str :$tabname) {
             self.insert-table($tabname, key => 'CHAR', values => 'Character');
@@ -2798,7 +2742,6 @@ class Runtime is export {
     END_OF_CODE
       $source-code ~= $snippet;
 
-
       $snippet = q:to/END_OF_CODE/;
         method initialize-TABLTYPE(Str :$tabname) {
             self.insert-table($tabname, key => 'T', values => '');
@@ -2808,7 +2751,6 @@ class Runtime is export {
         
     END_OF_CODE
       $source-code ~= $snippet;
-
 
       $snippet = q:to/END_OF_CODE/;
         method initialize-TABLTYPT(Str :$tabname) {
@@ -2820,7 +2762,6 @@ class Runtime is export {
     END_OF_CODE
       $source-code ~= $snippet;
 
-
       $snippet = q:to/END_OF_CODE/;
         method initialize-OBJTYPES(Str :$tabname) {
             self.insert-table($tabname, key => 'WEBA', values => '');
@@ -2830,7 +2771,6 @@ class Runtime is export {
         
     END_OF_CODE
       $source-code ~= $snippet;
-
 
       $snippet = q:to/END_OF_CODE/;
         method initialize-OBJTYPET(Str :$tabname) {
@@ -2842,7 +2782,6 @@ class Runtime is export {
     END_OF_CODE
       $source-code ~= $snippet;
 
-
       $snippet = q:to/END_OF_CODE/;
         method initialize-USERMSTR(Str :$tabname) {
             self.insert-table($tabname, key => 'SYSTEM|A', values => 'System|System');
@@ -2851,7 +2790,6 @@ class Runtime is export {
         
     END_OF_CODE
       $source-code ~= $snippet;
-
 
       $snippet = q:to/END_OF_CODE/;
         method initialize-CLNTMSTR(Str :$tabname) {
@@ -2862,7 +2800,6 @@ class Runtime is export {
     END_OF_CODE
       $source-code ~= $snippet;
 
-
       $snippet = q:to/END_OF_CODE/;
         method initialize-CLNTMSTT(Str :$tabname) {
             self.insert-table($tabname, key => '000|A|E', values => 'Template client');
@@ -2871,7 +2808,6 @@ class Runtime is export {
         
     END_OF_CODE
       $source-code ~= $snippet;
-
 
       $snippet = q:to/END_OF_CODE/;
         method initialize-CLNTUSER(Str :$tabname) {
@@ -2882,7 +2818,6 @@ class Runtime is export {
     END_OF_CODE
       $source-code ~= $snippet;
 
-
       $snippet = q:to/END_OF_CODE/;
         method initialize-APPLAREA(Str :$tabname) {
             self.insert-table($tabname, key => 'SY|E', values => 'System - Core Components|SYSTEM');
@@ -2892,7 +2827,6 @@ class Runtime is export {
         
     END_OF_CODE
       $source-code ~= $snippet;
-
 
       $snippet = q:to/END_OF_CODE/;
         method initialize-PROGTABL(Str :$tabname) {
@@ -2909,7 +2843,6 @@ class Runtime is export {
     END_OF_CODE
       $source-code ~= $snippet;
 
-
       $snippet = q:to/END_OF_CODE/;
         method initialize-PROGTABT(Str :$tabname) {
             self.insert-table($tabname, key => 'DataBrowser|A|E', values => 'Database table browser');
@@ -2925,7 +2858,6 @@ class Runtime is export {
     END_OF_CODE
       $source-code ~= $snippet;
 
-
       $snippet = q:to/END_OF_CODE/;
         method initialize-SHORTCUT(Str :$tabname) {
             self.insert-table($tabname, key => 'SCUT|Shortcut|A', values => 'Shortcut module');
@@ -2940,7 +2872,6 @@ class Runtime is export {
         
     END_OF_CODE
       $source-code ~= $snippet;
-
 
       $snippet = q:to/END_OF_CODE/;
         method initialize-DDRELATE(Str :$tabname) {
@@ -3088,7 +3019,6 @@ class Runtime is export {
           self.insert-table($tabname, key => 'DOMVALUT|CHANGBY|A|0', values => 'USERMSTR|REF|1|CN|SY_DDIC| |');
           self.insert-table($tabname, key => 'DOMVALUT|LANGISO|A|0', values => 'ISOLANGU|REF|1|CN|SY_DDIC| |');
 
-
           # DDRELATE-key
           self.insert-table($tabname, key => 'DDRELATE|TABNAME|A|0', values => 'DBTABLES|REF|1|CN|SY_DDIC| |');
           self.insert-table($tabname, key => 'DDRELATE|ACTVATD|A|0', values => 'STATCODE|REF|1|CN|SY_DDIC| |');
@@ -3104,13 +3034,11 @@ class Runtime is export {
           self.insert-table($tabname, key => 'DDRELATT|LANGISO|A|0', values => 'ISOLANGU|REF|1|CN|SY_DDIC| |');
           self.insert-table($tabname, key => 'DDRELATT|CHANGBY|A|0', values => 'USERMSTR|REF|1|CN|SY_DDIC| |');
 
-
         }
 
         
     END_OF_CODE
       $source-code ~= $snippet;
-
 
       $snippet = q:to/END_OF_CODE/;
         method initialize-DDRELATT(Str :$tabname) {
@@ -3279,7 +3207,6 @@ class Runtime is export {
     END_OF_CODE
       $source-code ~= $snippet;
 
-
       $snippet = q:to/END_OF_CODE/;
         method initialize-MESGTXTS(Str :$tabname) {
             self.insert-table($tabname, key => 'E|SY|001', values => 'This is sample message &1.');     
@@ -3289,14 +3216,12 @@ class Runtime is export {
     END_OF_CODE
       $source-code ~= $snippet;
 
-
       $snippet = q:to/END_OF_CODE/;
         #-------- BEGIN: DATABASE utilities (not auto-generated)  
 
         
     END_OF_CODE
       $source-code ~= $snippet;
-
 
       $snippet = q:to/END_OF_CODE/;
         method db-connect(Str :$dbtype, :$dbname) {
@@ -3322,7 +3247,6 @@ class Runtime is export {
     END_OF_CODE
       $source-code ~= $snippet;
 
-
       $snippet = q:to/END_OF_CODE/;
         method create-directory(Str :$path) {
           my Str @FilePath = $path.split('/');
@@ -3340,7 +3264,6 @@ class Runtime is export {
         
     END_OF_CODE
       $source-code ~= $snippet;
-
 
       $snippet = q:to/END_OF_CODE/;
         method db-create-table(Str :$tabname, Str :$descrip, Str :$sql, Str :$language = 'E') {
@@ -3417,7 +3340,6 @@ class Runtime is export {
                     
                     #-- Register DBTABLET into DBTABLES
 
-
                     my %wDBTABLES = ();
                     my @iDBTABLES = ();
 
@@ -3443,7 +3365,6 @@ class Runtime is export {
                     $dbh.do($sql-insert);
 
                     #-- Register DBTABLET into DBTABLET
-
 
                     %wDBTABLET = ();
                     @iDBTABLET = ();
@@ -3501,7 +3422,6 @@ class Runtime is export {
                     $dbh.do($sql-insert);
 
                     #-- Register <TABNAME> into DBTABLET
-
 
                     my %wDBTABLET = ();
                     my @iDBTABLET = ();
@@ -3567,7 +3487,6 @@ class Runtime is export {
     END_OF_CODE
       $source-code ~= $snippet;
 
-
       $snippet = q:to/END_OF_CODE/;
         method db-filename(Str :$dbtype = $C_DBTYPE_SQLITE) {
             my Str $file-name = '';
@@ -3586,7 +3505,6 @@ class Runtime is export {
     END_OF_CODE
       $source-code ~= $snippet;
 
-
       $snippet = q:to/END_OF_CODE/;
         method system-date() {
             my $YYYYMMDD = { sprintf "%04d%02d%02d", .year, .month, .day };
@@ -3597,7 +3515,6 @@ class Runtime is export {
     END_OF_CODE
       $source-code ~= $snippet;
 
-
       $snippet = q:to/END_OF_CODE/;
         method system-time() {
             my $HHMMSS = { sprintf "%02d%02d%02d", .hour, .minute, .second };
@@ -3607,7 +3524,6 @@ class Runtime is export {
         
     END_OF_CODE
       $source-code ~= $snippet;
-
 
       $snippet = q:to/END_OF_CODE/;
         method structure(Str :@iFieldlist) {
@@ -3621,8 +3537,6 @@ class Runtime is export {
         
     END_OF_CODE
       $source-code ~= $snippet;
-
-
 
       $snippet = q:to/END_OF_CODE/;
         method table-query(Str :$tabname, :%fields, :%where) {
@@ -3681,10 +3595,6 @@ class Runtime is export {
     END_OF_CODE
       $source-code ~= $snippet;
 
-
-
-
-
       $snippet = q:to/END_OF_CODE/;
         method table-structure(Str :$tabname = '', Bool :$keyonly = True) {
             my Str %wTableStructure = ();
@@ -3727,10 +3637,6 @@ class Runtime is export {
         
     END_OF_CODE
       $source-code ~= $snippet;
-
-
-
-
 
       $snippet = q:to/END_OF_CODE/;
         method field-info(Str :$field, Str :$language = 'E') {
@@ -3825,10 +3731,6 @@ class Runtime is export {
     END_OF_CODE
       $source-code ~= $snippet;
 
-
-
-
-
       $snippet = q:to/END_OF_CODE/;
         method field-text(Str :$field, Str :$type = 'D', Str :$language = 'E') {
             my Str ($tab, $fld) = $field.split(/\-/);
@@ -3902,10 +3804,6 @@ class Runtime is export {
     END_OF_CODE
       $source-code ~= $snippet;
 
-
-
-
-
       $snippet = q:to/END_OF_CODE/;
         method append-table(@iTable, %wRecord) {
             @iTable.push(%wRecord.list.hash);
@@ -3914,10 +3812,6 @@ class Runtime is export {
         
     END_OF_CODE
       $source-code ~= $snippet;
-
-
-
-
 
       $snippet = q:to/END_OF_CODE/;
         method db-insert(Str :$table, :@data) {
@@ -3957,10 +3851,6 @@ class Runtime is export {
     END_OF_CODE
       $source-code ~= $snippet;
 
-
-
-
-
       $snippet = q:to/END_OF_CODE/;
         method is-table(Str :$tabname, Bool :$active = True, Str :$tabltyp = 'T') {
             my Str $db-file = ''; 
@@ -3990,10 +3880,6 @@ class Runtime is export {
         
     END_OF_CODE
       $source-code ~= $snippet;
-
-
-
-
 
       $snippet = q:to/END_OF_CODE/;
         method is-field(Str :$tabname = '', Str :$fldname = '', Bool :$active = True) {
@@ -4025,10 +3911,6 @@ class Runtime is export {
         
     END_OF_CODE
       $source-code ~= $snippet;
-
-
-
-
 
       $snippet = q:to/END_OF_CODE/;
         method insert-table(Str $tabname, Str :$key, Str :$values) {
@@ -4277,10 +4159,6 @@ class Runtime is export {
     END_OF_CODE
       $source-code ~= $snippet;
 
-
-
-
-
       $snippet = q:to/END_OF_CODE/;
         method db-execute(Str :$sql) {
             my Str $db-file = '';
@@ -4297,10 +4175,6 @@ class Runtime is export {
         
     END_OF_CODE
       $source-code ~= $snippet;
-
-
-
-
 
       $snippet = q:to/END_OF_CODE/;
         method create-table-index(Str :$tabname, Bool :$reindex = True) {
@@ -4411,10 +4285,6 @@ class Runtime is export {
     END_OF_CODE
       $source-code ~= $snippet;
 
-
-
-
-
       $snippet = q:to/END_OF_CODE/;
         method is-shortcut(Str :$shortcut = '') {
             my Str $program = '';
@@ -4469,10 +4339,6 @@ class Runtime is export {
     END_OF_CODE
       $source-code ~= $snippet;
 
-
-
-
-
       $snippet = q:to/END_OF_CODE/;
 
         #-------- END: DATABASE utilities
@@ -4483,9 +4349,6 @@ class Runtime is export {
     END_OF_CODE
       $source-code ~= $snippet;
 
-
-
-
       self.write-string-to-file(file-name => $file,
                                   data => $source-code);
 
@@ -4494,7 +4357,6 @@ class Runtime is export {
   ##################################################################
   ################## GENERATE SYSTEM MODULE ########################
   ##################################################################
-
 
   method generate-system-module(Str :$shortcut,
                                 Str :$module,
@@ -4507,8 +4369,6 @@ class Runtime is export {
     my $snippet = '';
     my $exception-text = 'S1';
 
-
-
     #-------------------------------------------------------------
     #-- BEGIN --------------- AUTO-GENERATED SYSTEM CODE ---------
     #-------------------------------------------------------------
@@ -4519,25 +4379,16 @@ class Runtime is export {
     ~ "\n";
     $source-code ~= $snippet;
 
-
-
-
     $snippet = q:to/END_OF_CODE/;
     use Sys::Database;
     use Template::Mustache;
 END_OF_CODE
     $source-code ~= $snippet;
 
-
-
-
     $snippet = "\n"
     ~ "\n" ~ '  class X::' ~ $module ~ ' is Exception {'
     ~ "\n";
     $source-code ~= $snippet;
-
-
-
 
     $snippet = q:to/END_OF_CODE/;
         has $.msg-id; #message class
@@ -4559,7 +4410,6 @@ END_OF_CODE
 END_OF_CODE
     $source-code ~= $snippet;
 
-
     $snippet = "\n" 
         ~ "\n" ~ 'class ' ~ $module ~ ' is export {'
         ~ "\n";
@@ -4577,6 +4427,8 @@ END_OF_CODE
         constant $C_ICON_NEXT = 'themes/img/icons/resultset_next.png';
         constant $C_ICON_LAST = 'themes/img/icons/resultset_last.png';
         constant $C_ICON_LOGIN = 'themes/img/icons/key.png';
+        constant $C_ICON_REGISTER = 'themes/img/icons/user_add.png';
+        constant $C_ICON_SAVEREG = 'themes/img/icons/disk.png';
 
         constant $C_INIT = 'INIT';
 
@@ -4612,14 +4464,12 @@ END_OF_CODE
           'LOGOUT' => '1000',
         );
 
-
         #has Str %.APPTEXTS = ( #-- for the Exception
         #  'DB00' => 'D0',
         #  'SCUT' => 'S2',
         #  'TEST' => 'T1',
         #);
         #-- BEGIN - While DATBAE  NOT YET EXISTING
-
 
         has %.PAGEVARS = #-- Page variable for Template::Mustache
         ( POPUP_MENU      => '{{POPUP_MENU}}',
@@ -4681,9 +4531,6 @@ END_OF_CODE
 END_OF_CODE
     $source-code ~= $snippet;
 
-
-
-
     $snippet = q:to/END_OF_CODE/;
         method main($App, Str :$userid, Str :$ucomm, :%params) {
           self.TRACE: 'SYS00.main: ' 
@@ -4717,8 +4564,6 @@ END_OF_CODE
 END_OF_CODE
     $source-code ~= $snippet;
 
-
-
     $snippet = q:to/END_OF_CODE/;
         method goto-screen(Str :$app) {
           my Str $next-screen = '';
@@ -4737,9 +4582,6 @@ END_OF_CODE
 END_OF_CODE
     $source-code ~= $snippet;
 
-
-
-
     $snippet = q:to/END_OF_CODE/;
         method SCREEN_not_found(Str :$app='') {
           my Str $home-link = '';
@@ -4750,7 +4592,6 @@ END_OF_CODE
 
           $home-link = '<a href="/">home</a>' ~ '&nbsp;';
 
-
           self.FT(tag => 'PAGE_TITLE', text => 'Error: method <b>' ~ $app ~ '</b> implementation not found');
           self.FT(tag => 'SITE_LOGO', text => self.site-logo());
           self.FT(tag => 'PAGE_EDITOR', text => $.UserID);
@@ -4760,10 +4601,6 @@ END_OF_CODE
         }
 END_OF_CODE
     $source-code ~= $snippet;
-
-
-
-
 
     $snippet = q:to/END_OF_CODE/;
         method HOME-screen_1000() { #-- System Module
@@ -4779,7 +4616,6 @@ END_OF_CODE
           $login-link = '|&nbsp;<a href="/login">login</a>' ~ '&nbsp;' if $.UserID eq '';
           $logout-link = '|&nbsp;<a href="/logout">logout</a>' ~ '&nbsp;' if $.UserID ne '';
 
-
           self.FT(tag => 'PAGE_TITLE', text => 'app: System');
           self.FT(tag => 'SITE_LOGO', text => self.site-logo());
           self.FT(tag => 'PAGE_EDITOR', text => $.UserID);
@@ -4793,22 +4629,21 @@ END_OF_CODE
           if $.UserID ne '' {
             self.BEGIN-FORM(appgroup => $C_WEBFORM);
 
-            self.FORM-IMG-BUTTON(key => 'press-first',
-              src => $C_ICON_FIRST,
-              alt => 'First');
+          #  self.FORM-IMG-BUTTON(key => 'press-first',
+          #    src => $C_ICON_FIRST,
+          #    alt => 'First');
 
-            self.FORM-IMG-BUTTON(key => 'press-prev',
-              src => $C_ICON_PREV,
-              alt => 'Previous');
+          #  self.FORM-IMG-BUTTON(key => 'press-prev',
+          #    src => $C_ICON_PREV,
+          #    alt => 'Previous');
 
-            self.FORM-IMG-BUTTON(key => 'press-next',
-              src => $C_ICON_NEXT,
-              alt => 'Next');
+          #  self.FORM-IMG-BUTTON(key => 'press-next',
+          #    src => $C_ICON_NEXT,
+          #    alt => 'Next');
 
-            self.FORM-IMG-BUTTON(key => 'press-last',
-              src => $C_ICON_LAST,
-              alt => 'Last');
-
+          #  self.FORM-IMG-BUTTON(key => 'press-last',
+          #    src => $C_ICON_LAST,
+          #    alt => 'Last');
 
             self.FORM-BREAK();
             self.FORM-BREAK();      
@@ -4817,10 +4652,6 @@ END_OF_CODE
         }
 END_OF_CODE
     $source-code ~= $snippet;
-
-
-
-
 
     $snippet = q:to/END_OF_CODE/;
         method LOGIN-screen_1000() { #-- System Module
@@ -4837,7 +4668,6 @@ END_OF_CODE
           self.FT(tag => 'SITE_LOGO', text => self.site-logo());
           self.FT(tag => 'PAGE_EDITOR', text => $.UserID);
 
-
           self.FT(tag => 'MENU_BAR', text => $home-link);
           self.FT(tag => 'MENU_BAR', text => $login-link);
 
@@ -4846,24 +4676,75 @@ END_OF_CODE
           self.FORM-IMG-BUTTON(key => 'press-login',
             src => $C_ICON_LOGIN,
             alt => 'Login');
+          self.FORM-SPACE();
 
-          
+          self.FORM-IMG-BUTTON(key => 'press-register',
+                      src => $C_ICON_REGISTER,
+                      alt => 'Register');
 
 
           self.FORM-BREAK();
           self.FORM-BREAK();      
 
-          self.FORM-STRING(text => 'Username');
+          my $clntnum-text = $.Dbu.field-text(field => 'CLNTUSER-CLNTNUM', type => 'S');
+          self.FORM-STRING(text => $clntnum-text);
           self.FORM-SPACE;
-          self.FORM-TEXT(key => 'username', value => '', size => '30', length => '35'); 
+
+          my %wSelectOptions = ();
+          self.FORM-SELECT(key => 'CLNTUSER-CLNTNUM',
+                            value => '000',
+                            options => %wSelectOptions,
+                            label => 'Client number');
+
           self.FORM-BREAK();
-          
+
+          my $usercod-text = $.Dbu.field-text(field => 'CLNTUSER-USERCOD', type => 'S');
+          self.FORM-STRING(text => $usercod-text);
+
+          self.FORM-SPACE;
+          self.FORM-TEXT(key => 'CLNTUSER-USERCOD', value => '', size => '18', length => '18'); 
 
 
-          self.FORM-STRING(text => 'Password');
-          self.FORM-SPACE;
-          self.FORM-TEXT(key => 'password', value => '', size => '30', length => '10'); 
+
+          my $password-field = self.encrypt-field('PASSWORD');
+          my $javascript = '<script type="text/javascript">' 
+                        ~ "\n"
+                        ~ '//<![CDATA[' 
+                        ~ "\n";
+            $javascript ~= $password-field 
+                        ~ "\n";
+            $javascript ~= self.encrypt-md5();
+            $javascript ~= '//]]'
+                        ~ "\n" 
+                        ~ '</script>';
+          self.FT(tag => 'JAVASCRIPT', text => $javascript); #-- This will insert javascript code header
+
+
           self.FORM-BREAK();
+
+          my $passwrd-text = $.Dbu.field-text(field => 'CLNTUSER-PASSWRD', type => 'S');
+          self.FORM-STRING(text => $passwrd-text);
+          self.FORM-SPACE;
+
+          #-- encoded password is 32 characters
+          self.FORM-PASSWORD(key => 'PASSWORD',
+                              value => '',
+                              size => '32',
+                              length => '15',
+                              event => 'onChange',
+                              action => 'javascript:encryptPassword_' 
+                                        ~ 'PASSWORD' ~ '();'
+                    );
+
+          self.FORM-BREAK();
+          my $langiso-text = $.Dbu.field-text(field => 'CLNTUSER-LANGISO', type => 'S');
+          self.FORM-STRING(text => $langiso-text);
+          self.FORM-SPACE;
+          %wSelectOptions = ();
+          self.FORM-SELECT(key => 'CLNTUSER-LANGISO',
+                            value => 'E',
+                            options => %wSelectOptions,
+                            label => 'Language');
 
 
           self.END-FORM(app => $.App, appgroup => $C_WEBFORM);
@@ -4871,10 +4752,6 @@ END_OF_CODE
         }
 END_OF_CODE
     $source-code ~= $snippet;
-
-
-
-
 
     $snippet = q:to/END_OF_CODE/;
         method message(Str $info, Str :$type = 'I') {
@@ -4898,10 +4775,6 @@ END_OF_CODE
 END_OF_CODE
     $source-code ~= $snippet;
 
-
-
-
-
     $snippet = q:to/END_OF_CODE/;
        method BEGIN-FORM(Str :$appgroup = '') {
           if $appgroup eq $C_WEBFORM { #-- form based screen
@@ -4923,10 +4796,6 @@ END_OF_CODE
 END_OF_CODE
     $source-code ~= $snippet;
 
-
-
-
-
     $snippet = q:to/END_OF_CODE/;
        method END-FORM(Str :$app = '', Str :$appgroup = '') {
           if $appgroup eq $C_WEBFORM {
@@ -4936,20 +4805,13 @@ END_OF_CODE
 END_OF_CODE
     $source-code ~= $snippet;
 
-
-
-
-
     $snippet = q:to/END_OF_CODE/;
-        method initialize-config(:%cfg) {
+        method initialize-config($Dbu, :%cfg) {
+          $.Dbu = $Dbu;
           %.Config = %cfg;
          }
 END_OF_CODE
     $source-code ~= $snippet;
-
-
-
-
 
     $snippet = q:to/END_OF_CODE/;
         method load-module($AppModule is rw, Str :$module) {
@@ -4990,10 +4852,6 @@ END_OF_CODE
 END_OF_CODE
     $source-code ~= $snippet;
 
-
-
-
-
     $snippet = q:to/END_OF_CODE/;
      method get(Str :$key) {
                 my $sVar = '';
@@ -5011,10 +4869,6 @@ END_OF_CODE
 END_OF_CODE
     $source-code ~= $snippet;
 
-
-
-
-
     $snippet = q:to/END_OF_CODE/;
       method getenv(Str :$key) {
                 my $sVar =  '';
@@ -5023,10 +4877,6 @@ END_OF_CODE
               }
 END_OF_CODE
     $source-code ~= $snippet;
-
-
-
-
 
     $snippet = q:to/END_OF_CODE/;
       method getparam(Str :$key = '') {
@@ -5039,17 +4889,12 @@ END_OF_CODE
 END_OF_CODE
     $source-code ~= $snippet;
 
-
-
-
-
     $snippet = q:to/END_OF_CODE/;
       method site-logo() {
         return '<img src="./favicon.ico"/>';
       }
 END_OF_CODE
     $source-code ~= $snippet;
-
 
     $snippet = "\n"
     ~ "\n" ~ '    method TRACE(Str $msg, :$id = "' ~ $exception-text ~ '", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = "", :$t3 = "", :$t4 = "" ) {' 
@@ -5068,16 +4913,10 @@ END_OF_CODE
 END_OF_CODE
     $source-code ~= $snippet;
 
-
-
-
     $snippet = "\n" 
     ~ "\n" ~ '      my $e = X::' ~ $module ~ '.new('
     ~ "\n";
     $source-code ~= $snippet;
-
-
-
 
     $snippet = q:to/END_OF_CODE/;
             msg-id => $id, msg-no => $no, msg-ty => $ty,
@@ -5087,10 +4926,6 @@ END_OF_CODE
 
 END_OF_CODE
     $source-code ~= $snippet;
-
-
-
-
 
     $snippet = q:to/END_OF_CODE/;
       method FT(Str :$tag, Str :$text, Int :$last) { #-- FILL-TEMPLATE
@@ -5122,10 +4957,6 @@ END_OF_CODE
 END_OF_CODE
     $source-code ~= $snippet;
 
-
-
-
-
     $snippet = q:to/END_OF_CODE/;
         multi method render(Str :$web-part) {
           my Str $sPage = '';
@@ -5151,10 +4982,6 @@ END_OF_CODE
 END_OF_CODE
     $source-code ~= $snippet;
 
-
-
-
-
     $snippet = q:to/END_OF_CODE/;
         method FORM-OPEN(Bool :$multipart) {
           my Str $app = '';
@@ -5178,20 +5005,12 @@ END_OF_CODE
 END_OF_CODE
     $source-code ~= $snippet;
 
-
-
-
-
     $snippet = q:to/END_OF_CODE/;
         method FORM-TABLE(Str :$tag) {
           $.FORM ~= $tag;
         }
 END_OF_CODE
     $source-code ~= $snippet;
-
-
-
-
 
     $snippet = q:to/END_OF_CODE/;
         method FORM-LINE() {
@@ -5200,10 +5019,6 @@ END_OF_CODE
 END_OF_CODE
     $source-code ~= $snippet;
 
-
-
-
-
     $snippet = q:to/END_OF_CODE/;
         method FORM-BREAK() {
           $.FORM ~= '<br/>';
@@ -5211,20 +5026,12 @@ END_OF_CODE
 END_OF_CODE
     $source-code ~= $snippet;
 
-
-
-
-
     $snippet = q:to/END_OF_CODE/;
         method FORM-SKIP() {
           $.FORM ~= '<br/><br/>';
         }
 END_OF_CODE
     $source-code ~= $snippet;
-
-
-
-
 
     $snippet = q:to/END_OF_CODE/;
         method FORM-SPACE(Int :$length) {
@@ -5245,10 +5052,6 @@ END_OF_CODE
 END_OF_CODE
     $source-code ~= $snippet;
 
-
-
-
-
     $snippet = q:to/END_OF_CODE/;
         method FORM-FILE(:$file) {
           $.FORM ~= '<input type="file" '
@@ -5256,10 +5059,6 @@ END_OF_CODE
         }
 END_OF_CODE
     $source-code ~= $snippet;
-
-
-
-
 
     $snippet = q:to/END_OF_CODE/;
         method FORM-HIDDEN(Str :$key, Str :$value) {
@@ -5270,10 +5069,6 @@ END_OF_CODE
 END_OF_CODE
     $source-code ~= $snippet;
 
-
-
-
-
     $snippet = q:to/END_OF_CODE/;
         method FORM-LABEL(Str :$key, Str :$value) {
           $.FORM ~= '<label for="' ~ $key ~ '">'
@@ -5281,10 +5076,6 @@ END_OF_CODE
         }
 END_OF_CODE
     $source-code ~= $snippet;
-
-
-
-
 
     $snippet = q:to/END_OF_CODE/;
         method FORM-TEXT(Str :$key, Str :$value, Str :$size, Str :$length, Bool :$hide = False) {
@@ -5301,20 +5092,12 @@ END_OF_CODE
 END_OF_CODE
     $source-code ~= $snippet;
 
-
-
-
-
     $snippet = q:to/END_OF_CODE/;
         method FORM-STRING(Str :$text = '') {
           $.FORM ~= $text if $text ne '';
         }
 END_OF_CODE
     $source-code ~= $snippet;
-
-
-
-
 
     $snippet = q:to/END_OF_CODE/;
       method FORM-TEXTAREA(Str :$key, Str :$value, Int :$rows, Int :$cols) {
@@ -5331,10 +5114,6 @@ END_OF_CODE
 END_OF_CODE
     $source-code ~= $snippet;
 
-
-
-
-
     $snippet = q:to/END_OF_CODE/;
         method FORM-PASSWORD(Str :$key, Str :$value, Str :$size, Str :$length, Str :$event, Str :$action) {
           $.FORM ~= '<input type="password" '
@@ -5349,10 +5128,6 @@ END_OF_CODE
         }
 END_OF_CODE
     $source-code ~= $snippet;
-
-
-
-
 
     $snippet = q:to/END_OF_CODE/;
         method FORM-IMG-BUTTON(Str :$key, Str :$src, Str :$alt, Str :$event, Str :$action, Str :$type = 'image') {
@@ -5369,10 +5144,6 @@ END_OF_CODE
 END_OF_CODE
     $source-code ~= $snippet;
 
-
-
-
-
     $snippet = q:to/END_OF_CODE/;
         method FORM-BUTTON(Str :$key, Str :$value, Str :$event, Str :$action, Str :$type = 'submit') {
           $.FORM ~= '<input type="' ~ $type ~ '" '
@@ -5386,10 +5157,6 @@ END_OF_CODE
 END_OF_CODE
     $source-code ~= $snippet;
 
-
-
-
-
     $snippet = q:to/END_OF_CODE/;
       method FORM-CHECKBOX(Str :$key, Str :$value, Str :$label) {
           my $checked = '';
@@ -5401,10 +5168,6 @@ END_OF_CODE
         }
 END_OF_CODE
     $source-code ~= $snippet;
-
-
-
-
 
     $snippet = q:to/END_OF_CODE/;
         method FORM-OPTION(Str :$key, Str :$value, :%options, Str :$label) {
@@ -5424,10 +5187,6 @@ END_OF_CODE
         }
 END_OF_CODE
     $source-code ~= $snippet;
-
-
-
-
 
     $snippet = q:to/END_OF_CODE/;
         method FORM-SELECT(Str :$key, Str :$value, :%options, Str :$label) {
@@ -5470,10 +5229,6 @@ END_OF_CODE
 END_OF_CODE
     $source-code ~= $snippet;
 
-
-
-
-
     $snippet = q:to/END_OF_CODE/;
         method FORM-CLOSE(Str :$section, Str :$app = '') {
           my Str $application-id = '';
@@ -5494,10 +5249,6 @@ END_OF_CODE
 END_OF_CODE
     $source-code ~= $snippet;
 
-
-
-
-
     $snippet = q:to/END_OF_CODE/;
         method space(Int :$length) {
           my Str $sBlank = '';
@@ -5513,10 +5264,6 @@ END_OF_CODE
         }
 END_OF_CODE
     $source-code ~= $snippet;
-
-
-
-
 
     $snippet = q:to/END_OF_CODE/;
         #--- begin: JAVASCRIPT - MD5
@@ -5563,10 +5310,6 @@ END_OF_CODE
       }
 END_OF_CODE
     $source-code ~= $snippet;
-
-
-
-
 
     $snippet = q:to/END_OF_CODE/;
       method encrypt-md5 {
@@ -5850,24 +5593,17 @@ END_OF_CODE
 END_OF_CODE
     $source-code ~= $snippet;
 
-
-
-
     $snippet = q:to/END_OF_CODE/;
     };
 END_OF_CODE
     $source-code ~= $snippet;
 
-
     #-------------------------------------------------------------
     #-- END ----------------- AUTO-GENERATED SYSTEM CODE ---------
     #-------------------------------------------------------------
 
-
-
     self.write-string-to-file(file-name => $file,
                                data => $source-code);
-
 
   }
 
