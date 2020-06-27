@@ -171,7 +171,6 @@ class Sys::System is export {
                   $next-screen = '1000';
                 }
                 when 'VERIFY' {
-                 
                   if %.Params<register> {
                     $.UserCommand = 'REGISTER';
                     $next-screen = '2000';
@@ -180,6 +179,9 @@ class Sys::System is export {
                     $.UserCommand = 'INVALID_PASSWORD';
                     $next-screen = '1000';
                   }
+                }
+                when 'LOGOUT' {
+                  $next-screen = '1000';
                 }
               }
             }  
@@ -197,6 +199,7 @@ class Sys::System is export {
           }
           else {
             $next-screen = %.APPSCREEN{$app};
+            $next-screen = '1000' if $next-screen eq '';
           }
           $application-screen = $app ~ '-screen_' ~ $next-screen;
           if self.can($application-screen) {
@@ -204,6 +207,9 @@ class Sys::System is export {
             self."$application-screen"();
           }
           else {
+            self.TRACE: 'TODO: Generate module for shortcut ' ~ $app; 
+            #-- todo: Generate application module
+
             self.TRACE: 'METHOD_NOT_FOUND: ' ~ $application-screen;
             self.SCREEN_not_found(app => $application-screen);
           }
@@ -230,22 +236,26 @@ class Sys::System is export {
           my Str $help-link = '';
           my Str $login-link = '';
           my Str $logout-link = '';
+          my Str $wiki-link = '';
 
           $home-link = '<a href="/">home</a>' ~ '&nbsp;';
-          $index-link = '|&nbsp;<a href="/index">index</a>' ~ '&nbsp;' if $.UserID ne '';
-          $help-link = '|&nbsp;<a href="/help">help</a>' ~ '&nbsp;' if $.UserID ne '';
+          $index-link = '&nbsp;<a href="/index">index</a>' ~ '&nbsp;'; # if $.UserID ne '';
           $login-link = '|&nbsp;<a href="/login">login</a>' ~ '&nbsp;' if $.UserID eq '';
           $logout-link = '|&nbsp;<a href="/logout">logout</a>' ~ '&nbsp;' if $.UserID ne '';
+          $help-link = '|&nbsp;<a href="/help">help</a>' ~ '&nbsp;';# if $.UserID ne '';
+          $wiki-link = '|&nbsp;<a href="/wiki">wiki</a>' ~ '&nbsp;';# if $.UserID ne '';
 
           self.FT(tag => 'PAGE_TITLE', text => 'app: System');
           self.FT(tag => 'SITE_LOGO', text => self.site-logo());
           self.FT(tag => 'PAGE_EDITOR', text => $.UserID);
 
           self.FT(tag => 'MENU_BAR', text => $home-link);
-          self.FT(tag => 'MENU_BAR', text => $index-link);
-          self.FT(tag => 'MENU_BAR', text => $help-link);
-          self.FT(tag => 'MENU_BAR', text => $login-link);
-          self.FT(tag => 'MENU_BAR', text => $logout-link);
+          self.FT(tag => 'MENU_BAR', text => $wiki-link);
+          
+          self.FT(tag => 'WIKIMENU_BAR', text => $index-link);
+          self.FT(tag => 'WIKIMENU_BAR', text => $help-link);
+          self.FT(tag => 'WIKIMENU_BAR', text => $login-link);
+          self.FT(tag => 'WIKIMENU_BAR', text => $logout-link);
 
           if $.UserID ne '' {
             self.BEGIN-FORM(appgroup => $C_WEBFORM);
@@ -379,6 +389,9 @@ class Sys::System is export {
             }
             when 'INVALID_PASSWORD' {
               self.message('INVALID PASSWORD, please login again');
+            }
+            when 'LOGOUT' {
+              self.message('Log-out is successful');
             }
 
           }

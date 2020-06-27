@@ -232,8 +232,8 @@ sub routes() is export {
           my Str $userid = '';
           $user.username = '';
           content 'text/html', 
-            $oRuntime.dispatch(app => 'logout',
-                                cmd => 'INIT', 
+            $oRuntime.dispatch(app => 'login',
+                                cmd => 'LOGOUT', 
                                 userid => $userid, 
                                 :%params);
         }
@@ -275,11 +275,25 @@ sub routes() is export {
           #                      userid => $userid, 
           #                      :%params);
           content 'text/html', 
-            $oRuntime.dispatch(app => 'home',
+            $oRuntime.dispatch(app => $default.lc,
                                 cmd => 'INIT', 
                                 userid => $userid, 
                                 :%params);
         }
+
+        #get -> $default, :%params {
+        #    my Str $userid = '';
+        #  #content 'text/html', 
+        #  #  $oRuntime.dispatch(app => 'home',
+        #  #                      cmd => 'INIT', 
+        #  #                      userid => $userid, 
+        #  #                      :%params);
+        #  content 'text/html', 
+        #    $oRuntime.dispatch(app => 'home',
+        #                        cmd => 'INIT', 
+        #                        userid => $userid, 
+        #                        :%params);
+        #}
 
         post -> UserSession $user, 'login' {
           #request-body -> (:$username, :$password, *%params) 
