@@ -299,11 +299,11 @@ sub routes() is export {
             else {
               my Str $userid = '';          
               content 'text/html', 
-                $oRuntime.dispatch(app => 'relogin',
-                                    cmd => 'WRONG-PASSWORD', 
+                $oRuntime.dispatch(app => 'login',
+                                    cmd => 'VERIFY', 
                                     userid => $userid, 
                                     :%params);
-
+              
             }
           }
         }
