@@ -1,9 +1,9 @@
 
-unit module Sys::W::WikiPage:ver<0.0.0>:auth<Domingo Areola (dareola@gmail.com)>;
+unit module Sys::U::UserSession:ver<0.0.0>:auth<Domingo Areola (dareola@gmail.com)>;
 
   use Sys::Database;
 
-  class X::Sys::W::WikiPage is Exception {
+  class X::Sys::U::UserSession is Exception {
     has $.msg-id; #message class
     has $.msg-no; #message number
     has $.msg-ty; #message type = [A, E, I, S, W]
@@ -22,7 +22,7 @@ unit module Sys::W::WikiPage:ver<0.0.0>:auth<Domingo Areola (dareola@gmail.com)>
   }
 
 
-class Sys::W::WikiPage is export {
+class Sys::U::UserSession is export {
     has %.Params = ();
     has $.Sys is rw =  '';
     has $.DebugInfo is rw = "";
@@ -140,7 +140,7 @@ method TRACE(Str $msg, :$id = "", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = ""
       $.DebugInfo ~= $msg ~ "<br/>" if $msg ne "";
 
 
-  my $e = X::Sys::W::WikiPage.new(
+  my $e = X::Sys::U::UserSession.new(
         msg-id => $id, msg-no => $no, msg-ty => $ty,
         msg-t1 => $sInfo, msg-t2 => $t2, msg-t3 => $t3,msg-t4 => $t4);
         note $e.message;

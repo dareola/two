@@ -311,13 +311,24 @@ sub routes() is export {
                 
             }
             else {
-              my Str $userid = '';          
-              content 'text/html', 
-                $oRuntime.dispatch(app => 'login',
-                                    cmd => 'VERIFY', 
-                                    userid => $userid, 
-                                    :%params);
+              my Str $userid = '';
+              if %params<press-register.x> ne '' { #-- pressed Register button
+                content 'text/html', 
+                  $oRuntime.dispatch(app => 'user',
+                                      cmd => 'INIT', 
+                                      userid => $userid, 
+                                      :%params);
+                redirect '/user', :see-other;
+              }
+              else {          
+               content 'text/html', 
+                  $oRuntime.dispatch(app => 'login',
+                                      cmd => 'INVALID_PASSWORD', 
+                                      userid => $userid, 
+                                      :%params);
               
+                #redirect '/user', :see-other;
+              }
             }
           }
         }
@@ -409,12 +420,20 @@ sub routes() is export {
         }
 
 
-        sub valid-user-pass(:$clntnum, :$langiso, :$usercod, :$passwrd) {
+        sub valid-user-pass(:$clntnum='', :$langiso='', :$usercod='', :$passwrd='') {
           my Bool $ok = False;
+          my Str $clnt = '';
+          my Str $lang = '';
+          my Str $user = '';
+          my Str $pass = '';
+          $clnt = $clntnum.Str;
+          $lang = $langiso.Str;
+          $user = $usercod.Str;
+          $pass = $passwrd.Str;
 
-          $ok = $oRuntime.is-login(clntnum => $clntnum,
-                                   usercod => $usercod,
-                                   passwrd => $passwrd);
+          $ok = $oRuntime.is-login(clntnum => $clnt,
+                                   usercod => $user,
+                                   passwrd => $pass);
           return $ok; #$username eq 'system' && $password eq 'pass';
         }
 

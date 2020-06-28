@@ -136,11 +136,11 @@ class Runtime is export {
     return self.build-html-page(); #$text;
   }
 
-  method TWEAK() { #-- last method called to intialize instance variables 
-  }
+  #method TWEAK() { #-- last method called to intialize instance variables 
+  #}
 
-  submethod DESTROY { #-- called when instance is garbage collected
-  }
+  #submethod DESTROY { #-- called when instance is garbage collected
+  #}
 
   multi method TRACE(Str $msg, 
                      Str :$id = 'R1', Str :$no = '001', 
@@ -170,8 +170,10 @@ class Runtime is export {
     #self.TRACE: 'input USERCOD = ' ~ $usercod;
     #self.TRACE: 'input PASSWRD = ' ~ $passwrd;
 
-    my $db-file = $.Dbu.db-filename(type => $C_DBTYPE_SQLITE);
-    my $dbh = $.Dbu.db-connect(dbtype => $C_DBTYPE_SQLITE, dbname => $db-file);
+    my $db-file = '';
+    $db-file = $.Dbu.db-filename(type => $C_DBTYPE_SQLITE);
+    my $dbh = '';
+    $dbh = $.Dbu.db-connect(dbtype => $C_DBTYPE_SQLITE, dbname => $db-file);
     if defined $dbh {
       my $sth = $dbh.prepare(qq:to/SQL/);
         SELECT clntnum, usercod, passwrd
@@ -295,9 +297,9 @@ class Runtime is export {
     my Str $module-name = '';
     my Str $module-path = '';
 
-    $app-id = $app.uc if $app ne '';
+    $app-id = $app if $app ne '';
 
-    ($module-id, $module, $module-name, $module-path) = self.get-module-name-from-db(module-id => $app-id);
+    ($module-id, $module, $module-name, $module-path) = self.get-module-name-from-db(module-id => $app-id.uc);
 
     #self.TRACE: 'TODO: Generate application module if not exists : ' ~ $app-id;
     #self.TRACE: 'Expected module name will be ' ~ $module-name;
@@ -5854,7 +5856,7 @@ END_OF_CODE
     $source-code ~= $snippet;
 
     $snippet = q:to/END_OF_CODE/;
-    has %.params = ();
+    has %.Params = ();
     has $.Sys is rw =  '';
     has $.DebugInfo is rw = "";
     has %.Config is rw;
@@ -5878,7 +5880,7 @@ END_OF_CODE
     	$.Sys = $App;
     	$.UserID = $userid;
     	$.UserCommand = $ucomm;
-    	%.params = %params;
+    	%.Params = %params;
     	given $ucomm {
     		when %.CMD<init> {
     			#self.initialize-db();
@@ -5905,11 +5907,11 @@ END_OF_CODE
     $snippet = q:to/END_OF_CODE/;
     method screen_1000 {
       my Str $comment = '';
-      my $button-pressed = %.params<BUTTON>;
+      my $button-pressed = %.Params<BUTTON>;
       my Str $home = '<a href="/home">home</a>';
 
-      if %.params<COMMENT> ne '' {
-        $comment = %.params<COMMENT>; 
+      if %.Params<COMMENT> ne '' {
+        $comment = %.Params<COMMENT>; 
       }
 
       $.Sys.FT(tag => 'PAGE_TITLE', text => 'The quick brown fox jumps over the lazy dog');
