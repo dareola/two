@@ -83,12 +83,12 @@ class Sys::U::UserManager is export {
         $next-screen = '1000' if $next-screen eq '';
       }
 
-      self.TRACE: 'NEXT SCREEN TO CALL: ' ~ $next-screen;
-      self.TRACE: 'PARAMS: ' ~ $.Params.Str;
+      #self.TRACE: 'NEXT SCREEN TO CALL: ' ~ $next-screen;
+      #self.TRACE: 'PARAMS: ' ~ $.Params.Str;
 
       $method-to-call = 'SCREEN_'~ $cmd.uc ~ '_' ~ $next-screen;
 
-      self.TRACE: 'METHOD TO CALL: ' ~ $method-to-call;
+      #self.TRACE: 'METHOD TO CALL: ' ~ $method-to-call;
 
       if self.can($method-to-call) {
         self."$method-to-call"();
@@ -234,10 +234,16 @@ class Sys::U::UserManager is export {
 
     method SCREEN_REGISTER_1000() {
       my Str $home-link = '';
+      my Str $home-base-link = '';
       my Str $index-link = '';
       my Str $help-link = '';
       my Str $login-link = '';
       my Str $logout-link = '';
+
+      $home-base-link = '<a href="/home">home</a>' ~ '&nbsp;';
+
+      my Str $system-date = $.Sys.Dbu.system-date();
+      my Str $system-time = $.Sys.Dbu.system-time();
 
       my %wRegister = $.Sys.Dbu.structure( #- input/output structure
         fields => ['clntnum', 'langiso', 'usercod', 'passwrd', 'firstnm', 'lastnam'] 
@@ -245,12 +251,43 @@ class Sys::U::UserManager is export {
 
       $.Sys.Dbu.clear(fields => %wRegister);
 
+      #-- Capture input from parameter
       %wRegister<clntnum> = %.Params<CLNTUSER-CLNTNUM>.Str if defined %.Params<CLNTUSER-CLNTNUM>;
       %wRegister<langiso> = %.Params<CLNTUSER-LANGISO>.Str if defined %.Params<CLNTUSER-LANGISO>;
       %wRegister<usercod> = %.Params<CLNTUSER-USERCOD>.Str if defined %.Params<CLNTUSER-USERCOD>;
       %wRegister<passwrd> = %.Params<PASSWORD>.Str if defined %.Params<PASSWORD>;
       %wRegister<firstnm> = %.Params<USERMSTR-FIRSTNM>.Str if defined %.Params<USERMSTR-FIRSTNM>;
       %wRegister<lastnam> = %.Params<USERMSTR-LASTNAM>.Str if defined %.Params<USERMSTR-LASTNAM>;
+
+      #-- Move the input to table structures
+      my %wCLNTUSER = $.Sys.Dbu.table-structure(tabname => 'CLNTUSER');
+      my %wUSERMSTR = $.Sys.Dbu.table-structure(tabname => 'USERMSTR');
+      my %wCLNTUSER_WHERE = $.Sys.Dbu.structure(fields =>['clntnum', 'actvatd', 'usercod']);
+
+      #-- populate USERMSTR
+      %wUSERMSTR<usercod> = %wRegister<usercod>;
+      %wUSERMSTR<firstnm> = %wRegister<firstnm>;
+      %wUSERMSTR<lastnam> = %wRegister<lastnam>;
+      %wUSERMSTR<actvatd> = 'A';
+      %wUSERMSTR<changby> = 'SYSTEM'; 
+      %wUSERMSTR<changdt> = $system-date;
+      %wUSERMSTR<changtm> = $system-time;
+
+      #-- populate CLNTUSER
+      %wCLNTUSER<clntnum> = %wRegister<clntnum>;
+      %wCLNTUSER<actvatd> = 'A';
+      %wCLNTUSER<usercod> = %wRegister<usercod>;
+      %wCLNTUSER<usrlock> = '0';
+      %wCLNTUSER<langiso> = %wRegister<langiso>;
+      %wCLNTUSER<passwrd> = %wRegister<passwrd>;
+      %wCLNTUSER<changby> = 'SYSTEM';
+      %wCLNTUSER<changdt> = $system-date;
+      %wCLNTUSER<changtm> = $system-time;
+
+      #-- set primary keys
+      %wCLNTUSER_WHERE<clntnum> = %wCLNTUSER<clntnum>;
+      %wCLNTUSER_WHERE<actvatd> = %wCLNTUSER<actvatd>;
+      %wCLNTUSER_WHERE<usercod> = %wCLNTUSER<usercod>;
 
 
       $home-link = '<a href="/user">Register</a>' ~ '&nbsp;';
@@ -270,10 +307,69 @@ class Sys::U::UserManager is export {
       $save-data = False if $save-data && %wRegister<firstnm> eq '';
       $save-data = False if $save-data && %wRegister<lastnam> eq '';
       if $save-data {
-        self.message: 'TODO: SAVE DATA';
+
+        $.Sys.FORM-BREAK();
+        $.Sys.FORM-BREAK();
+
+        my @iCLNTUSER = ();
+        my @iUSERMSTR = ();
+
+        @iCLNTUSER = $.Sys.Dbu.table-query(tabname => 'CLNTUSER',
+                                      fields => %wCLNTUSER,
+                                      where => %wCLNTUSER_WHERE);
+
+        if (@iCLNTUSER.elems) {
+          $.Sys.FORM-STRING( text => 'User record for ' ~ %wCLNTUSER<clntnum> ~ '/' 
+                              ~ %wCLNTUSER<usercod> ~ ' found');
+
+          self.message: 'Save failed, data already exists in the database';
+          $.Sys.FT(tag => 'WIKIMENU_BAR', text => $home-base-link);
+
+        }
+        else {
+          @iUSERMSTR = ();
+          $.Sys.Dbu.append-table(@iUSERMSTR, %wUSERMSTR);
+          my Str $insert-usermstr = $.Sys.Dbu.db-insert(table => 'USERMSTR', data => @iUSERMSTR);
+          #self.TRACE: 'SQL: ' ~ $insert-usermstr;
+          $.Sys.Dbu.db-execute(sql => $insert-usermstr);
+
+          @iCLNTUSER = ();
+          $.Sys.Dbu.append-table(@iCLNTUSER, %wCLNTUSER);
+          my Str $insert-clntuser = $.Sys.Dbu.db-insert(table => 'CLNTUSER', data => @iCLNTUSER);
+          $.Sys.Dbu.db-execute(sql => $insert-clntuser);
+          #self.TRACE: 'SQL: ' ~ $insert-clntuser;
+
+          $.Sys.FORM-STRING( text => 'User record ' ~ %wCLNTUSER<clntnum> ~ '/' 
+                              ~ %wCLNTUSER<usercod> ~ ' saved successfully.');
+          
+          $.Sys.FT(tag => 'WIKIMENU_BAR', text => $home-base-link);
+
+          self.message: 'Data saved successfully.';
+
+        }
+
       }
       else {
-        self.message: 'TODO: CANNOT SAVE, INCOMPLETE DATA';
+        $.Sys.FORM-BREAK();
+        $.Sys.FORM-BREAK();
+        for %wRegister -> $kv {
+          if $kv.value eq '' {
+            my Str $fldname = '';
+            if $kv.key eq 'lastnam' || $kv.key eq 'firstnm' {
+              $fldname = 'USERMSTR-' ~ $kv.key.uc;
+            }
+            else {
+              $fldname = 'CLNTUSER-' ~ $kv.key.uc;
+            }
+            my $short-text = '';
+            $short-text = $.Sys.Dbu.field-text(field => $fldname, type => 'S');
+            $.Sys.FORM-STRING(text => 'Error: <b>' ~ $short-text ~ '</b> field is blank, input is required');
+            $.Sys.FORM-BREAK(); 
+          }
+        }
+        $.Sys.FT(tag => 'WIKIMENU_BAR', text => $home-base-link);
+
+        self.message: 'Error saving data - required input fiels are not complete';
       }
       
     }

@@ -229,7 +229,7 @@ class Runtime is export {
 		my Str $html-body = '';
 		$.Page = $.Sys.render(web-part => 'BODY');
 		$html-body = $.HtmlBodyBegin;
-		$html-body ~= '<tt>' ~ $.DebugInfo ~ '</tt><hr/>' if $.DebugInfo ne '';
+		$html-body ~= '<tt>' ~ $.DebugInfo ~ '</tt>' if $.DebugInfo ne '';
     $html-body ~= $text;
 		$html-body ~= $.Page;
 		$html-body ~= $.HtmlBodyEnd;

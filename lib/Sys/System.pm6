@@ -203,12 +203,12 @@ class Sys::System is export {
           $application-screen = $app ~ '-screen_' ~ $next-screen;
           if self.can($application-screen) {
             
-            self.TRACE: 'Calling method ' ~ $application-screen;
+            #self.TRACE: 'Calling method ' ~ $application-screen;
             
             self."$application-screen"();
           }
           else {
-            self.TRACE: 'TODO: Generate module for shortcut ' ~ $app; 
+            #self.TRACE: 'TODO: Generate module for shortcut ' ~ $app; 
 
             #-- begin - attempt to load an application
             my Str $program = '',
@@ -216,7 +216,7 @@ class Sys::System is export {
             my Str $app-group = '';
             ($program, $progtxt, $app-group) = $.Dbu.is-shortcut(shortcut => $app);
 
-            self.TRACE: 'FOUND program ' ~ $program ~ '; text ' ~ $progtxt ~ '; group = ' ~ $app-group;
+            #self.TRACE: 'FOUND program ' ~ $program ~ '; text ' ~ $progtxt ~ '; group = ' ~ $app-group;
 
             if $program ne '' {
               if self.load-module($App, module => $program) {
