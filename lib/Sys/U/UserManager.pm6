@@ -108,7 +108,7 @@ class Sys::U::UserManager is export {
       my Str $login-link = '';
       my Str $logout-link = '';
 
-      $home-link = '<a href="/">home</a>' ~ '&nbsp;';
+      $home-link = '<a href="/home">Exit</a>' ~ '&nbsp;';
 
       $.Sys.FT(tag => 'PAGE_TITLE', text => 'Error: method <b>' ~ $cmd ~ '</b> not implemented');
       $.Sys.FT(tag => 'SITE_LOGO', text => $.Sys.site-logo());
@@ -116,7 +116,24 @@ class Sys::U::UserManager is export {
       $.Sys.FT(tag => 'MENU_BAR', text => $home-link);       
     }
 
-    method screen_1000 {
+
+    method SCREEN_REGISTER_1000() {
+      my Str $home-link = '';
+      my Str $index-link = '';
+      my Str $help-link = '';
+      my Str $login-link = '';
+      my Str $logout-link = '';
+
+      $home-link = '<a href="/user">Home</a>' ~ '&nbsp;';
+
+      $.Sys.FT(tag => 'PAGE_TITLE', text => 'INITIAL SCREEN - 1000');
+      $.Sys.FT(tag => 'SITE_LOGO', text => $.Sys.site-logo());
+      $.Sys.FT(tag => 'PAGE_EDITOR', text => $.UserID);
+      $.Sys.FT(tag => 'MENU_BAR', text => $home-link);       
+      
+    }
+
+    method SCREEN_INIT_1000 {
       my Str $comment = '';
       my $button-pressed = %.Params<BUTTON>;
       my Str $home = '<a href="/home">home</a>';
