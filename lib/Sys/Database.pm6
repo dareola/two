@@ -1612,7 +1612,7 @@ method TRACE(Str $msg, :$id = "D0", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
         self.insert-table($tabname, key => 'HELO|HelloWorld|A', values => 'Test program - Hello world');
         self.insert-table($tabname, key => 'DATA|DataBrowser|A', values => 'Database table browser');
         self.insert-table($tabname, key => 'TEST|TestProgram|A', values => 'Testing program - safe to delete');
-        self.insert-table($tabname, key => 'USER|UserSession|A', values => 'User registry manager');
+        self.insert-table($tabname, key => 'USER|UserSession|A', values => 'User login manager');
         self.insert-table($tabname, key => 'HOME|HomePage|A', values => 'Home front page');
         self.insert-table($tabname, key => 'WIKI|WikiPage|A', values => 'Wiki page application');
       }

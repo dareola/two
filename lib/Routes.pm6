@@ -336,7 +336,7 @@ sub routes() is export {
         post -> LoggedIn $user {
           request-body -> ( *%params ) {
             my Str $userid = '';
-            $userid = $user.username if defined $user.username && $user.username ne '';
+            $userid = $user.username if defined $user.username && $user.username ne '';#
 
             if %params<ucomm> ne '' && %params<press-enter.x> ne '' { 
               #-- TODO: how to detect when not safe to jump?
@@ -347,7 +347,7 @@ sub routes() is export {
             else {
               content 'text/html', 
                 $oRuntime.dispatch(app => 'home',
-                                   cmd => 'INIT', 
+                                   cmd => 'INITx', 
                                    userid => $userid, 
                                    :%params);
             }

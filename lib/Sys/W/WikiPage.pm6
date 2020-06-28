@@ -62,15 +62,15 @@ class Sys::W::WikiPage is export {
       my $button-pressed = %.Params<BUTTON>;
       my Str $home = '<a href="/home">home</a>';
 
-      if %.Params<COMMENT> ne '' {
-        $comment = %.Params<COMMENT>; 
+      if defined %.Params<COMMENT> && %.Params<COMMENT> ne '' {
+        $comment = %.Params<COMMENT>.Str; 
       }
 
       $.Sys.FT(tag => 'PAGE_TITLE', text => 'The quick brown fox jumps over the lazy dog');
 
-      $.Sys.FT(tag => 'SITE_LOGO', text => 'site-logo');
+      $.Sys.FT(tag => 'SITE_LOGO', text => $.Sys.site-logo());
       $.Sys.FT(tag => 'MENU_BAR', text => $home);
-      $.Sys.FT(tag => 'PAGE_EDITOR', text => 'whoami');
+      $.Sys.FT(tag => 'PAGE_EDITOR', text => $.UserID);
       #$.Sys.FT(tag => 'WIKIMENU_BAR', text => 'Something WIKIMENU_BAR');
 
 
