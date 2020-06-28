@@ -33,6 +33,7 @@ class Sys::U::UserManager is export {
     constant $C_ICON_LOGIN = 'themes/img/icons/key.png';
     constant $C_ICON_REGISTER = 'themes/img/icons/user_add.png';
     constant $C_ICON_SAVEREG = 'themes/img/icons/disk.png';
+    constant $C_ICON_FIND = 'themes/img/icons/find.png';
 
     has Str %.CMD = (
         "init" => "INIT"
@@ -64,6 +65,12 @@ class Sys::U::UserManager is export {
           if defined %.Params<save> { #-- button "Save" was pressed
             $.UserCommand = 'REGISTER';
           } 
+          elsif defined %.Params<find> { #-- button "Find" was pressed
+            $.UserCommand = 'SEARCH';
+          }
+          elsif defined %.Params<search> { #-- button "Display user" was pressed
+            $.UserCommand = 'SEARCH';
+          }
     		}
     	}
       
@@ -86,7 +93,7 @@ class Sys::U::UserManager is export {
       #self.TRACE: 'NEXT SCREEN TO CALL: ' ~ $next-screen;
       #self.TRACE: 'PARAMS: ' ~ $.Params.Str;
 
-      $method-to-call = 'SCREEN_'~ $cmd.uc ~ '_' ~ $next-screen;
+      $method-to-call = $cmd.uc ~ '_SCREEN_' ~ $next-screen;
 
       #self.TRACE: 'METHOD TO CALL: ' ~ $method-to-call;
 
@@ -120,7 +127,7 @@ class Sys::U::UserManager is export {
     }
 
 
-    method SCREEN_INIT_1000 {
+    method INIT_SCREEN_1000 {
       my Str $home = '<a href="/home">home</a>';
       my %wRegister = $.Sys.Dbu.structure( #- input/output structure
         fields => ['clntnum', 'langiso', 'usercod', 'passwrd', 'firstnm', 'lastnam'] 
@@ -135,8 +142,8 @@ class Sys::U::UserManager is export {
       %wRegister<firstnm> = %.Params<USERMSTR-FIRSTNM>.Str if defined %.Params<USERMSTR-FIRSTNM>;
       %wRegister<lastnam> = %.Params<USERMSTR-LASTNAM>.Str if defined %.Params<USERMSTR-LASTNAM>;
 
-
       $.Sys.FT(tag => 'PAGE_TITLE', text => 'Register user');
+      
 
       $.Sys.FT(tag => 'SITE_LOGO', text => $.Sys.site-logo());
       $.Sys.FT(tag => 'MENU_BAR', text => $home);
@@ -146,6 +153,17 @@ class Sys::U::UserManager is export {
                             src => $C_ICON_SAVEREG,
                             alt => 'Save');
 
+      $.Sys.FORM-SPACE;
+
+      $.Sys.FORM-IMG-BUTTON(key => 'press-find',
+                            src => $C_ICON_FIND,
+                            alt => 'Search user');
+
+
+      $.Sys.FORM-BREAK();
+      $.Sys.FORM-BREAK();
+
+      $.Sys.FORM-STRING(text => 'Please key in user registration data:');
       $.Sys.FORM-BREAK();
       $.Sys.FORM-BREAK();
 
@@ -232,7 +250,7 @@ class Sys::U::UserManager is export {
     }
 
 
-    method SCREEN_REGISTER_1000() {
+    method REGISTER_SCREEN_1000() {
       my Str $home-link = '';
       my Str $home-base-link = '';
       my Str $index-link = '';
@@ -292,7 +310,7 @@ class Sys::U::UserManager is export {
 
       $home-link = '<a href="/user">Register</a>' ~ '&nbsp;';
 
-      $.Sys.FT(tag => 'PAGE_TITLE', text => 'INITIAL SCREEN - 1000');
+      $.Sys.FT(tag => 'PAGE_TITLE', text => 'Save user registration data');
       $.Sys.FT(tag => 'SITE_LOGO', text => $.Sys.site-logo());
       $.Sys.FT(tag => 'PAGE_EDITOR', text => $.UserID);
       $.Sys.FT(tag => 'MENU_BAR', text => $home-link);       
@@ -374,6 +392,74 @@ class Sys::U::UserManager is export {
       
     }
 
+
+    method SEARCH_SCREEN_1000() {
+      my Str $home = '<a href="/home">home</a>';
+      
+      if defined %.Params<find> {
+        $.Sys.FT(tag => 'PAGE_TITLE', text => 'Find user');
+      }
+      elsif defined %.Params<search> {
+        $.Sys.FT(tag => 'PAGE_TITLE', text => 'Display user data');
+      }
+      $.Sys.FT(tag => 'SITE_LOGO', text => $.Sys.site-logo());
+      $.Sys.FT(tag => 'MENU_BAR', text => $home);
+      $.Sys.FT(tag => 'PAGE_EDITOR', text => $.UserID);
+
+      if defined %.Params<find> {
+        $.Sys.FORM-IMG-BUTTON(key => 'press-search',
+                              src => $C_ICON_FIND,
+                              alt => 'Display user');
+        $.Sys.FORM-SPACE();
+        $.Sys.FORM-IMG-BUTTON(key => 'press-register',
+                          src => $C_ICON_REGISTER,
+                          alt => 'Register new user');
+
+        $.Sys.FORM-BREAK();
+        $.Sys.FORM-BREAK();
+        $.Sys.FORM-STRING(text => 'DISPLAY CLIENT, USER fields');
+
+        $.Sys.FORM-BREAK();
+        $.Sys.FORM-BREAK();
+
+        my $clntnum-text = $.Sys.Dbu.field-text(field => 'CLNTUSER-CLNTNUM', type => 'S');
+        $.Sys.FORM-STRING(text => $clntnum-text);
+        $.Sys.FORM-SPACE;
+
+        my %wSelectOptions = ();
+        $.Sys.FORM-SELECT(key => 'CLNTUSER-CLNTNUM',
+                          value => '000',
+                          options => %wSelectOptions,
+                          label => 'Client number');
+
+        $.Sys.FORM-BREAK();
+
+        my $usercod-text = $.Sys.Dbu.field-text(field => 'CLNTUSER-USERCOD', type => 'S');
+        $.Sys.FORM-STRING(text => $usercod-text);
+
+        $.Sys.FORM-SPACE;
+        $.Sys.FORM-TEXT(key => 'CLNTUSER-USERCOD', value => '', size => '18', length => '18'); 
+
+
+      }
+      elsif defined %.Params<search> {
+        $.Sys.FORM-IMG-BUTTON(key => 'press-find',
+                              src => $C_ICON_FIND,
+                              alt => 'Find user');
+        $.Sys.FORM-SPACE();
+        $.Sys.FORM-IMG-BUTTON(key => 'press-register',
+                          src => $C_ICON_REGISTER,
+                          alt => 'Register new user');
+
+
+        $.Sys.FORM-BREAK();
+        $.Sys.FORM-BREAK();
+
+        $.Sys.FORM-STRING(text => 'Query database and display user information');
+
+      }
+
+    }
 
     method initialize-config(:%cfg) {
     	%.Config = %cfg;

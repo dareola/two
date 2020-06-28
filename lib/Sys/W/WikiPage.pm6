@@ -80,7 +80,7 @@ method main($App, Str :$userid, Str :$ucomm, :%params) {
       self.TRACE: 'NEXT SCREEN TO CALL: ' ~ $next-screen;
       self.TRACE: 'PARAMS: ' ~ $.Params.Str;
 
-      $method-to-call = 'SCREEN_'~ $cmd.uc ~ '_' ~ $next-screen;
+      $method-to-call = $cmd.uc ~ '_SCREEN_' ~ $next-screen;
 
       self.TRACE: 'METHOD TO CALL: ' ~ $method-to-call;
 
