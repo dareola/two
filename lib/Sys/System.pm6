@@ -272,6 +272,7 @@ class Sys::System is export {
 
           self.FT(tag => 'MENU_BAR', text => $home-link);
           
+          
         }
         method HOME-screen_1000() { #-- System Module
           my Str $home-link = '';

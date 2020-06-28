@@ -296,10 +296,11 @@ class Runtime is export {
     my Str $module = '';
     my Str $module-name = '';
     my Str $module-path = '';
+    my Str $module-text = '';
 
     $app-id = $app if $app ne '';
 
-    ($module-id, $module, $module-name, $module-path) = self.get-module-name-from-db(module-id => $app-id.uc);
+    ($module-id, $module, $module-name, $module-path, $module-text) = self.get-module-name-from-db(module-id => $app-id.uc);
 
     #self.TRACE: 'TODO: Generate application module if not exists : ' ~ $app-id;
     #self.TRACE: 'Expected module name will be ' ~ $module-name;
@@ -307,7 +308,8 @@ class Runtime is export {
     if $module-name ne '' {
       self.generate-module(module => $module-id,
                            name => $module-name,
-                           path => $module-path);
+                           path => $module-path,
+                           text => $module-text);
     }
   }
 
@@ -337,6 +339,7 @@ class Runtime is export {
     my Str $module = '';
     my Str $module-name = '';
     my Str $module-path = '';
+    my Str $module-text = '';
     my Str $program = '';
     my Str $progtxt = '';
     my Str $progtyp = '';
@@ -347,6 +350,7 @@ class Runtime is export {
 
     ($program, $progtxt, $progtyp) = $.Dbu.is-shortcut(shortcut => $module-id);
     $module = $program if $program ne '';
+    $module-text = $progtxt if $progtxt ne '';
     if $module ne '' {
       $id = $module-id;
       $dir = $module.substr(0,1).uc;
@@ -371,11 +375,11 @@ class Runtime is export {
         self.create-directory(path => $dir);
 
     }
-    return ($id, $module, $module-name, $module-path);
+    return ($id, $module, $module-name, $module-path, $module-text);
   }
 
 
-  method generate-module(Str :$module, Str :$name, Str :$path) {
+  method generate-module(Str :$module, Str :$name, Str :$path, Str :$text = '') {
     if $path.IO.e {
       #-- do nothing
       #self.TRACE: 'Module file ' ~ $path ~ ' already exists - DO NOTHING';
@@ -383,31 +387,34 @@ class Runtime is export {
     else {
       #self.TRACE: 'TODO: Create module file ' ~ $path;
 
-      my Str $text = %.APPTEXTS{"$module"};
+      my Str $module-text = '';
+      $module-text = %.APPTEXTS{"$module"};
 
       given $module {
         when 'SY00' {
           self.generate-system-module(shortcut => $module,
                                     module => $name,
                                     file => $path,
-                                    text => $text);
+                                    text => $module-text);
         }
         when 'DB00' {
           self.generate-database-utility-module(shortcut => $module,
                                     module => $name,
                                     file => $path,
-                                    text => $text);
+                                    text => $module-text);
         }
         default {
           #self.TRACE: 'TODO: Generate module ' ~ $path ~ ' for shortcut ' ~ $module;
           #self.TRACE: 'module-id = ' ~ $module;
           #self.TRACE: 'module-name = ' ~ $name;
           #self.TRACE: 'module-path = ' ~ $path;
+          
+          $module-text = $text if $text ne '';
 
           self.generate-application-module(shortcut => $module,
                                     module => $name,
                                     file => $path,
-                                    text => $text);
+                                    text => $module-text);
 
         }
       }

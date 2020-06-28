@@ -130,7 +130,7 @@ class Sys::W::WikiPage is export {
     }
 
 
-method TRACE(Str $msg, :$id = "", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = "", :$t3 = "", :$t4 = "" ) {
+method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = "", :$t3 = "", :$t4 = "" ) {
       my Str $sInfo = "";
 
       $sInfo = $t1;
