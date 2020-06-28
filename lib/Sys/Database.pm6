@@ -1588,7 +1588,7 @@ method TRACE(Str $msg, :$id = "D0", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     method initialize-PROGTABL(Str :$tabname) {
         self.insert-table($tabname, key => 'DataBrowser|A', values => 'D1|WEBC'); 
         self.insert-table($tabname, key => 'TestProgram|A', values => 'T9|WEBC'); 
-        self.insert-table($tabname, key => 'UserSession|A', values => 'U1|WEBC');
+        self.insert-table($tabname, key => 'UserManager|A', values => 'U1|WEBC');
         self.insert-table($tabname, key => 'HomePage|A', values => 'S2|WEBC'); 
         self.insert-table($tabname, key => 'WikiPage|A', values => 'W1|WEBC'); 
         self.insert-table($tabname, key => 'Shortcut|A', values => 'S3|WEBC'); 
@@ -1599,7 +1599,7 @@ method TRACE(Str $msg, :$id = "D0", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     method initialize-PROGTABT(Str :$tabname) {
         self.insert-table($tabname, key => 'DataBrowser|A|E', values => 'Database table browser');
         self.insert-table($tabname, key => 'TestProgram|A|E', values => 'Test program - safe to delete');
-        self.insert-table($tabname, key => 'UserSession|A|E', values => 'User Login Session'); 
+        self.insert-table($tabname, key => 'UserManager|A|E', values => 'User Login Session'); 
         self.insert-table($tabname, key => 'HomePage|A|E', values => 'Default front page');
         self.insert-table($tabname, key => 'WikiPage|A|E', values => 'Wiki page application');
         self.insert-table($tabname, key => 'Shortcut|A|E', values => 'Program shortcuts');
@@ -1612,7 +1612,7 @@ method TRACE(Str $msg, :$id = "D0", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
         self.insert-table($tabname, key => 'HELO|HelloWorld|A', values => 'Test program - Hello world');
         self.insert-table($tabname, key => 'DATA|DataBrowser|A', values => 'Database table browser');
         self.insert-table($tabname, key => 'TEST|TestProgram|A', values => 'Testing program - safe to delete');
-        self.insert-table($tabname, key => 'USER|UserSession|A', values => 'User login manager');
+        self.insert-table($tabname, key => 'USER|UserManager|A', values => 'User login manager');
         self.insert-table($tabname, key => 'HOME|HomePage|A', values => 'Home front page');
         self.insert-table($tabname, key => 'WIKI|WikiPage|A', values => 'Wiki page application');
       }

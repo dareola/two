@@ -1,9 +1,9 @@
 
-unit module Sys::U::UserSession:ver<0.0.0>:auth<Domingo Areola (dareola@gmail.com)>;
+unit module Sys::U::UserManager:ver<0.0.0>:auth<Domingo Areola (dareola@gmail.com)>;
 
   use Sys::Database;
 
-  class X::Sys::U::UserSession is Exception {
+  class X::Sys::U::UserManager is Exception {
     has $.msg-id; #message class
     has $.msg-no; #message number
     has $.msg-ty; #message type = [A, E, I, S, W]
@@ -22,7 +22,7 @@ unit module Sys::U::UserSession:ver<0.0.0>:auth<Domingo Areola (dareola@gmail.co
   }
 
 
-class Sys::U::UserSession is export {
+class Sys::U::UserManager is export {
     has %.Params = ();
     has $.Sys is rw =  '';
     has $.DebugInfo is rw = "";
@@ -62,8 +62,8 @@ class Sys::U::UserSession is export {
       my $button-pressed = %.Params<BUTTON>;
       my Str $home = '<a href="/home">home</a>';
 
-      if %.Params<COMMENT> ne '' {
-        $comment = %.Params<COMMENT>; 
+      if defined %.Params<COMMENT> && %.Params<COMMENT> ne '' {
+        $comment = %.Params<COMMENT>.Str; 
       }
 
       $.Sys.FT(tag => 'PAGE_TITLE', text => 'The quick brown fox jumps over the lazy dog');
@@ -140,7 +140,7 @@ method TRACE(Str $msg, :$id = "", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = ""
       $.DebugInfo ~= $msg ~ "<br/>" if $msg ne "";
 
 
-  my $e = X::Sys::U::UserSession.new(
+  my $e = X::Sys::U::UserManager.new(
         msg-id => $id, msg-no => $no, msg-ty => $ty,
         msg-t1 => $sInfo, msg-t2 => $t2, msg-t3 => $t3,msg-t4 => $t4);
         note $e.message;
