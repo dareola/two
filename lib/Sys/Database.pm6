@@ -2230,13 +2230,20 @@ method TRACE(Str $msg, :$id = "D0", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
       }
 
     
-    method structure(Str :@iFieldlist) {
+    method structure(:@fields) {
         my Str %wFieldStructure = ();
-        for @iFieldlist -> $fldname {
+        for @fields -> $fldname {
           %wFieldStructure{"$fldname"} = '';
         }
         return %wFieldStructure; 
       }
+
+    method clear(:%fields) {
+      for %fields -> $fld {
+        #self.TRACE: 'key = ' ~ $fld.key;
+        %fields{$fld.key} = '';
+      }
+    }
 
     
     method table-query(Str :$tabname, :%fields, :%where) {

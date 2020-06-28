@@ -59,8 +59,11 @@ class Sys::U::UserManager is export {
       my $next-screen = '';
     	given $ucomm {
     		when %.CMD<init> {
-    			#self.initialize-db();
     			$SCREEN = '1000';
+          #-- Detect Pressed button
+          if defined %.Params<save> { #-- button "Save" was pressed
+            $.UserCommand = 'REGISTER';
+          } 
     		}
     	}
       
@@ -117,6 +120,118 @@ class Sys::U::UserManager is export {
     }
 
 
+    method SCREEN_INIT_1000 {
+      my Str $home = '<a href="/home">home</a>';
+      my %wRegister = $.Sys.Dbu.structure( #- input/output structure
+        fields => ['clntnum', 'langiso', 'usercod', 'passwrd', 'firstnm', 'lastnam'] 
+      );
+
+      $.Sys.Dbu.clear(fields => %wRegister);
+
+      %wRegister<clntnum> = %.Params<CLNTUSER-CLNTNUM>.Str if defined %.Params<CLNTUSER-CLNTNUM>;
+      %wRegister<langiso> = %.Params<CLNTUSER-LANGISO>.Str if defined %.Params<CLNTUSER-LANGISO>;
+      %wRegister<usercod> = %.Params<CLNTUSER-USERCOD>.Str if defined %.Params<CLNTUSER-USERCOD>;
+      %wRegister<passwrd> = %.Params<PASSWORD>.Str if defined %.Params<PASSWORD>;
+      %wRegister<firstnm> = %.Params<USERMSTR-FIRSTNM>.Str if defined %.Params<USERMSTR-FIRSTNM>;
+      %wRegister<lastnam> = %.Params<USERMSTR-LASTNAM>.Str if defined %.Params<USERMSTR-LASTNAM>;
+
+
+      $.Sys.FT(tag => 'PAGE_TITLE', text => 'Register user');
+
+      $.Sys.FT(tag => 'SITE_LOGO', text => $.Sys.site-logo());
+      $.Sys.FT(tag => 'MENU_BAR', text => $home);
+      $.Sys.FT(tag => 'PAGE_EDITOR', text => $.UserID);
+
+      $.Sys.FORM-IMG-BUTTON(key => 'press-save',
+                            src => $C_ICON_SAVEREG,
+                            alt => 'Save');
+
+      $.Sys.FORM-BREAK();
+      $.Sys.FORM-BREAK();
+
+      #-- begin: Display registration form
+      #--------- clntnum    
+      my $clntnum-text = $.Sys.Dbu.field-text(field => 'CLNTUSER-CLNTNUM', type => 'S');
+      $.Sys.FORM-STRING(text => $clntnum-text ~ '&nbsp;*');
+      $.Sys.FORM-SPACE;
+
+      #$.Sys.FORM-TEXT(key => 'CLNTUSER-CLNTNUM', value => '', size => '3', length => '3'); 
+      my %wSelectOptions = ();
+      $.Sys.FORM-SELECT(key => 'CLNTUSER-CLNTNUM',
+                        value => %wRegister<clntnum>,
+                        options => %wSelectOptions,
+                        label => 'Client number');
+      #--------- usercod
+      $.Sys.FORM-BREAK();
+      my $usercod-text = $.Sys.Dbu.field-text(field => 'CLNTUSER-USERCOD', type => 'S');
+      $.Sys.FORM-STRING(text => $usercod-text ~ '&nbsp;*');
+
+      $.Sys.FORM-SPACE;
+      $.Sys.FORM-TEXT(key => 'CLNTUSER-USERCOD', value => %wRegister<usercod>, size => '18', length => '18'); 
+
+      #--------- firstname
+      $.Sys.FORM-BREAK();
+
+      my $firstnm-text = $.Sys.Dbu.field-text(field => 'USERMSTR-FIRSTNM', type => 'S');
+      $.Sys.FORM-STRING(text => $firstnm-text ~ '&nbsp;*');
+
+      $.Sys.FORM-SPACE;
+      $.Sys.FORM-TEXT(key => 'USERMSTR-FIRSTNM', value => %wRegister<firstnm>, size => '18', length => '18'); 
+
+      #--------- lastname
+      $.Sys.FORM-BREAK();
+
+      my $lastnam-text = $.Sys.Dbu.field-text(field => 'USERMSTR-LASTNAM', type => 'S');
+      $.Sys.FORM-STRING(text => $lastnam-text ~ '&nbsp;*');
+
+      $.Sys.FORM-SPACE;
+      $.Sys.FORM-TEXT(key => 'USERMSTR-LASTNAM', value => %wRegister<lastnam>, size => '18', length => '18'); 
+
+      #--------- passwrd
+      $.Sys.FORM-BREAK();
+
+      my $password-field = $.Sys.encrypt-field('PASSWORD');
+      my $javascript = '<script type="text/javascript">' 
+                    ~ "\n"
+                    ~ '//<![CDATA[' 
+                    ~ "\n";
+        $javascript ~= $password-field 
+                    ~ "\n";
+        $javascript ~= $.Sys.encrypt-md5();
+        $javascript ~= '//]]'
+                    ~ "\n" 
+                    ~ '</script>';
+      $.Sys.FT(tag => 'JAVASCRIPT', text => $javascript); #-- This will insert javascript code header
+
+      my $passwrd-text = $.Sys.Dbu.field-text(field => 'CLNTUSER-PASSWRD', type => 'S');
+      $.Sys.FORM-STRING(text => $passwrd-text ~ '&nbsp;*');
+      $.Sys.FORM-SPACE;
+
+      #-- encoded password is 32 characters
+      $.Sys.FORM-PASSWORD(key => 'PASSWORD',
+                          value => '',
+                          size => '32',
+                          length => '15',
+                          event => 'onChange',
+                          action => 'javascript:encryptPassword_' 
+                                    ~ 'PASSWORD' ~ '();'
+                );
+
+      $.Sys.FORM-BREAK();
+      my $langiso-text = $.Sys.Dbu.field-text(field => 'CLNTUSER-LANGISO', type => 'S');
+      $.Sys.FORM-STRING(text => $langiso-text ~ '&nbsp;*');
+      $.Sys.FORM-SPACE;
+      %wSelectOptions = ();
+      $.Sys.FORM-SELECT(key => 'CLNTUSER-LANGISO',
+                        value => 'E',
+                        options => %wSelectOptions,
+                        label => 'Language');
+
+
+      return True;
+    }
+
+
     method SCREEN_REGISTER_1000() {
       my Str $home-link = '';
       my Str $index-link = '';
@@ -124,63 +239,46 @@ class Sys::U::UserManager is export {
       my Str $login-link = '';
       my Str $logout-link = '';
 
-      $home-link = '<a href="/user">Home</a>' ~ '&nbsp;';
+      my %wRegister = $.Sys.Dbu.structure( #- input/output structure
+        fields => ['clntnum', 'langiso', 'usercod', 'passwrd', 'firstnm', 'lastnam'] 
+      );
+
+      $.Sys.Dbu.clear(fields => %wRegister);
+
+      %wRegister<clntnum> = %.Params<CLNTUSER-CLNTNUM>.Str if defined %.Params<CLNTUSER-CLNTNUM>;
+      %wRegister<langiso> = %.Params<CLNTUSER-LANGISO>.Str if defined %.Params<CLNTUSER-LANGISO>;
+      %wRegister<usercod> = %.Params<CLNTUSER-USERCOD>.Str if defined %.Params<CLNTUSER-USERCOD>;
+      %wRegister<passwrd> = %.Params<PASSWORD>.Str if defined %.Params<PASSWORD>;
+      %wRegister<firstnm> = %.Params<USERMSTR-FIRSTNM>.Str if defined %.Params<USERMSTR-FIRSTNM>;
+      %wRegister<lastnam> = %.Params<USERMSTR-LASTNAM>.Str if defined %.Params<USERMSTR-LASTNAM>;
+
+
+      $home-link = '<a href="/user">Register</a>' ~ '&nbsp;';
 
       $.Sys.FT(tag => 'PAGE_TITLE', text => 'INITIAL SCREEN - 1000');
       $.Sys.FT(tag => 'SITE_LOGO', text => $.Sys.site-logo());
       $.Sys.FT(tag => 'PAGE_EDITOR', text => $.UserID);
       $.Sys.FT(tag => 'MENU_BAR', text => $home-link);       
+
+
+      my Bool $save-data = True;
+      
+      $save-data = False if $save-data && %wRegister<clntnum> eq '';
+      $save-data = False if $save-data && %wRegister<langiso> eq '';
+      $save-data = False if $save-data && %wRegister<usercod> eq '';
+      $save-data = False if $save-data && %wRegister<passwrd> eq '';
+      $save-data = False if $save-data && %wRegister<firstnm> eq '';
+      $save-data = False if $save-data && %wRegister<lastnam> eq '';
+      if $save-data {
+        self.message: 'TODO: SAVE DATA';
+      }
+      else {
+        self.message: 'TODO: CANNOT SAVE, INCOMPLETE DATA';
+      }
       
     }
 
-    method SCREEN_INIT_1000 {
-      my Str $comment = '';
-      my $button-pressed = %.Params<BUTTON>;
-      my Str $home = '<a href="/home">home</a>';
 
-      if defined %.Params<COMMENT> && %.Params<COMMENT> ne '' {
-        $comment = %.Params<COMMENT>.Str; 
-      }
-
-      $.Sys.FT(tag => 'PAGE_TITLE', text => 'The quick brown fox jumps over the lazy dog');
-
-      $.Sys.FT(tag => 'SITE_LOGO', text => $.Sys.site-logo());
-      $.Sys.FT(tag => 'MENU_BAR', text => $home);
-      $.Sys.FT(tag => 'PAGE_EDITOR', text => $.UserID);
-      #$.Sys.FT(tag => 'WIKIMENU_BAR', text => 'Something WIKIMENU_BAR');
-
-
-      $.Sys.FORM-STRING(text => '&nbsp;');
-      $.Sys.FORM-BUTTON(key => 'BUTTON', 
-                       value => 'First', 
-                       type => 'submit'); 
-      $.Sys.FORM-STRING(text => '&nbsp;');
-      $.Sys.FORM-BUTTON(key => 'BUTTON', 
-                       value => 'Previous', 
-                       type => 'submit'); 
-      $.Sys.FORM-STRING(text => '&nbsp;');
-      $.Sys.FORM-BUTTON(key => 'BUTTON', 
-                       value => 'Next', 
-                       type => 'submit'); 
-      $.Sys.FORM-STRING(text => '&nbsp;');
-      $.Sys.FORM-BUTTON(key => 'BUTTON', 
-                       value => 'Last', 
-                       type => 'submit'); 
-      $.Sys.FORM-BREAK();
-      $.Sys.FORM-BREAK();
-      $.Sys.FORM-STRING(text => 'Say something');
-      $.Sys.FORM-BREAK();
-      $.Sys.FORM-LABEL(key => 'USER-COMMENT', value => 'Comment: ');
-      $.Sys.FORM-SPACE();
-      $.Sys.FORM-TEXT(key => 'COMMENT', value => $comment, size => '75', length => '50'); 
-      $.Sys.FORM-BREAK();
-      $.Sys.FORM-STRING(text => 'You pressed button <b>' ~ $button-pressed ~ '</b>');
-
-      self.message('You pressed button <b>' ~ $button-pressed ~ '</b>');
-
-
-      return True;
-    }
     method initialize-config(:%cfg) {
     	%.Config = %cfg;
     }

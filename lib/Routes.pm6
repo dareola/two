@@ -313,11 +313,11 @@ sub routes() is export {
             else {
               my Str $userid = '';
               if %params<press-register.x> ne '' { #-- pressed Register button
-                content 'text/html', 
-                  $oRuntime.dispatch(app => 'user',
-                                      cmd => 'INIT', 
-                                      userid => $userid, 
-                                      :%params);
+#                content 'text/html', 
+#                  $oRuntime.dispatch(app => 'user',
+#                                      cmd => 'REGISTER', 
+#                                      userid => $userid, 
+#                                      :%params);
                 redirect '/user', :see-other;
               }
               else {          
@@ -347,7 +347,7 @@ sub routes() is export {
             else {
               content 'text/html', 
                 $oRuntime.dispatch(app => 'home',
-                                   cmd => 'INITx', 
+                                   cmd => 'INIT', 
                                    userid => $userid, 
                                    :%params);
             }

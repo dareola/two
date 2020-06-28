@@ -3618,17 +3618,28 @@ class Runtime is export {
       $source-code ~= $snippet;
 
       $snippet = q:to/END_OF_CODE/;
-        method structure(Str :@iFieldlist) {
-            my Str %wFieldStructure = ();
-            for @iFieldlist -> $fldname {
-              %wFieldStructure{"$fldname"} = '';
-            }
-            return %wFieldStructure; 
+        method structure(:@fields) {
+          my Str %wFieldStructure = ();
+          for @fields -> $fldname {
+            %wFieldStructure{"$fldname"} = '';
           }
-
+          return %wFieldStructure; 
+        }
         
     END_OF_CODE
       $source-code ~= $snippet;
+
+
+      $snippet = q:to/END_OF_CODE/;
+        method clear(:%fields) {
+          for %fields -> $fld {
+            #self.TRACE: 'key = ' ~ $fld.key;
+            %fields{$fld.key} = '';
+          }
+        }
+    END_OF_CODE
+      $source-code ~= $snippet;
+
 
       $snippet = q:to/END_OF_CODE/;
         method table-query(Str :$tabname, :%fields, :%where) {
