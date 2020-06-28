@@ -171,6 +171,7 @@ class Sys::System is export {
                   $next-screen = '1000';
                 }
                 when 'VERIFY' {
+                 
                   if %.Params<register> {
                     $.UserCommand = 'REGISTER';
                     $next-screen = '2000';
@@ -179,9 +180,6 @@ class Sys::System is export {
                     $.UserCommand = 'INVALID_PASSWORD';
                     $next-screen = '1000';
                   }
-                }
-                when 'LOGOUT' {
-                  $next-screen = '1000';
                 }
               }
             }  
@@ -194,6 +192,7 @@ class Sys::System is export {
         method goto-screen(Str :$app, Str :$screen = '') {
           my Str $next-screen = '';
           my Str $application-screen = '';
+          my $App = '';
           if $screen ne '' {
             $next-screen = $screen;
           }
@@ -203,15 +202,59 @@ class Sys::System is export {
           }
           $application-screen = $app ~ '-screen_' ~ $next-screen;
           if self.can($application-screen) {
-            self.TRACE: 'Calling method ' ~ $application-screen;
+            
+            #self.TRACE: 'Calling method ' ~ $application-screen;
+            
             self."$application-screen"();
           }
           else {
-            self.TRACE: 'TODO: Generate module for shortcut ' ~ $app; 
-            #-- todo: Generate application module
+            #self.TRACE: 'TODO: Generate module for shortcut ' ~ $app; 
 
-            self.TRACE: 'METHOD_NOT_FOUND: ' ~ $application-screen;
-            self.SCREEN_not_found(app => $application-screen);
+            #-- begin - attempt to load an application
+            my Str $program = '',
+            my Str $progtxt = '';
+            my Str $app-group = '';
+            ($program, $progtxt, $app-group) = $.Dbu.is-shortcut(shortcut => $app);
+
+            #self.TRACE: 'FOUND program ' ~ $program ~ '; text ' ~ $progtxt ~ '; group = ' ~ $app-group;
+
+            if $program ne '' {
+              if self.load-module($App, module => $program) {
+                #self.TRACE: 'Successfully loaded ' ~ $program;
+
+                self.BEGIN-FORM(appgroup => $app-group);
+
+                #-- Try calling the main program of $App
+                try $App.main(self, userid => $.UserID,
+                                ucomm => $.UserCommand,
+                                params => %.Params);
+                if ($!) {
+                  self.TRACE: 'Error occured on module ' ~ $program ~ '; ' 
+                             ~ $!.message ~ '; ' 
+                             ~ $!.gist;
+                }
+                else {
+                    #self.FT(tag => 'MESSAGE_BAR', 
+                    #        text => 'i: Module <b>' ~ $program 
+                    #                                ~ '</b> was loaded successfully', last => 1);
+                    $.DebugInfo ~= $App.DebugInfo if $App.DebugInfo ne '';
+                }
+
+                self.END-FORM(app => $.App, appgroup => $app-group);
+
+              }
+            } 
+            
+            #-- end - attempt to load an application
+            else {
+
+              #-- todo: Generate application module
+
+              #self.TRACE: 'METHOD_NOT_FOUND: ' ~ $application-screen;
+              
+              self.SCREEN_not_found(app => $application-screen);
+            
+            }
           }
         }
         method SCREEN_not_found(Str :$app='') {
@@ -259,23 +302,27 @@ class Sys::System is export {
 
           if $.UserID ne '' {
             self.BEGIN-FORM(appgroup => $C_WEBFORM);
+            self.FORM-BREAK();
+            self.FORM-BREAK();      
+            self.END-FORM(app => $.App, appgroup => $C_WEBFORM);
+          }
+          else {
+            self.BEGIN-FORM(appgroup => $C_WEBFORM);
+            self.FORM-IMG-BUTTON(key => 'press-first',
+              src => $C_ICON_FIRST,
+              alt => 'First');
 
-          #  self.FORM-IMG-BUTTON(key => 'press-first',
-          #    src => $C_ICON_FIRST,
-          #    alt => 'First');
+            self.FORM-IMG-BUTTON(key => 'press-prev',
+              src => $C_ICON_PREV,
+              alt => 'Previous');
 
-          #  self.FORM-IMG-BUTTON(key => 'press-prev',
-          #    src => $C_ICON_PREV,
-          #    alt => 'Previous');
+            self.FORM-IMG-BUTTON(key => 'press-next',
+              src => $C_ICON_NEXT,
+              alt => 'Next');
 
-          #  self.FORM-IMG-BUTTON(key => 'press-next',
-          #    src => $C_ICON_NEXT,
-          #    alt => 'Next');
-
-          #  self.FORM-IMG-BUTTON(key => 'press-last',
-          #    src => $C_ICON_LAST,
-          #    alt => 'Last');
-
+            self.FORM-IMG-BUTTON(key => 'press-last',
+              src => $C_ICON_LAST,
+              alt => 'Last');
             self.FORM-BREAK();
             self.FORM-BREAK();      
             self.END-FORM(app => $.App, appgroup => $C_WEBFORM);
@@ -390,9 +437,6 @@ class Sys::System is export {
             when 'INVALID_PASSWORD' {
               self.message('INVALID PASSWORD, please login again');
             }
-            when 'LOGOUT' {
-              self.message('Log-out is successful');
-            }
 
           }
 
@@ -460,6 +504,7 @@ class Sys::System is export {
           #self.TRACE: 'Module name: ' ~ $module-name ~ '; ModulePath = ' ~ $module-path;
           #-- Attempt to load module:
           if $module-path.IO.e {
+            #self.TRACE: 'Attempting to load ' ~ $module-name;
             try require ::($module-name);
             if ::($module-name) ~~ Failure {
               #-- generate module
@@ -468,13 +513,13 @@ class Sys::System is export {
             }
             else {
               #-- create an instance of $sModuleName
-              $AppModule = ::($module-name)::App.new;
-              #self.TRACE: 'Loading ' ~ $sModuleName ~ '::App ...' ~ $AppModule.OK;
+              $AppModule = ::($module-name).new;
+              #self.TRACE: 'Loading... OK';
               $return-code = True;
             }
           }
           else {
-            #self.TRACE: 'Generate module ' ~ $module-path;
+            self.TRACE: 'Module file not found: ' ~ $module-path;
             $return-code = False;
           }
           return $return-code;

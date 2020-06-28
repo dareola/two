@@ -114,7 +114,7 @@ class Runtime is export {
                         Str :$userid,
                         :%params) {
     self.detect-button(:%params);
-    self.initialize();
+    self.initialize(app => $app);
     #self.TRACE: 'Parameters: ' ~ %.Params;
 
     try self.run(signature => '1',
@@ -247,9 +247,13 @@ class Runtime is export {
     %.Config = from-json(slurp($file));
   }
 
-  method initialize() {
+  method initialize(Str :$app = '') {
+    
+    #-- $app is used in "generate-application-modules"
+
     $.Page = '';
     $.DebugInfo = '';
+
 
     #-- create default system directories
     self.create-default-directories();
@@ -261,6 +265,9 @@ class Runtime is export {
 
     #-- load default modules
     self.load-default-modules();
+
+    #-- generate "application" modules
+    self.generate-application-modules(app => $app);
   }
 
   method generate-default-modules() {
@@ -279,6 +286,27 @@ class Runtime is export {
                          name => $module-name,
                          path => $module-path);
 
+  }
+
+  method generate-application-modules(Str :$app = '') {
+    my Str $app-id = '';
+    my Str $module-id = '';
+    my Str $module = '';
+    my Str $module-name = '';
+    my Str $module-path = '';
+
+    $app-id = $app.uc if $app ne '';
+
+    ($module-id, $module, $module-name, $module-path) = self.get-module-name-from-db(module-id => $app-id);
+
+    #self.TRACE: 'TODO: Generate application module if not exists : ' ~ $app-id;
+    #self.TRACE: 'Expected module name will be ' ~ $module-name;
+    #self.TRACE: 'detect existence of database: ' ~ $.Dbu.hello();
+    if $module-name ne '' {
+      self.generate-module(module => $module-id,
+                           name => $module-name,
+                           path => $module-path);
+    }
   }
 
   method get-module-name(Str :$module-id = '') {
@@ -301,13 +329,54 @@ class Runtime is export {
     return ($id, $module, $module-name, $module-path);
   }
 
+  method get-module-name-from-db(Str :$module-id = '') {
+    #-- check first for internally-defined shortcuts
+    my Str $id = '';
+    my Str $module = '';
+    my Str $module-name = '';
+    my Str $module-path = '';
+    my Str $program = '';
+    my Str $progtxt = '';
+    my Str $progtyp = '';
+    my Str $dir = '';
+    #$module = %.APPTABLE{"$module-id"};
+    
+    # $.Dbu was instantiated by method load-default-modules earlier
+
+    ($program, $progtxt, $progtyp) = $.Dbu.is-shortcut(shortcut => $module-id);
+    $module = $program if $program ne '';
+    if $module ne '' {
+      $id = $module-id;
+      $dir = $module.substr(0,1).uc;
+      $module-name = $C_NAMESPACE ~ '::' ~ $dir ~ '::' ~ $module;
+      
+      $module-path = $C_LIBPATH 
+                   ~ '/' 
+                   ~ $C_NAMESPACE
+                   ~ '/'
+                   ~ $dir
+                   ~ '/'
+                   ~ $module
+                   ~ '.pm6';
+
+  
+        #-- Make sure target directory exists
+        $dir = $C_LIBPATH 
+                   ~ '/' 
+                   ~ $C_NAMESPACE
+                   ~ '/'
+                   ~ $dir;
+        self.create-directory(path => $dir);
+
+    }
+    return ($id, $module, $module-name, $module-path);
+  }
+
+
   method generate-module(Str :$module, Str :$name, Str :$path) {
-    #self.TRACE: 'module-id = ' ~ $module;
-    #self.TRACE: 'module-name = ' ~ $name;
-    #self.TRACE: 'module-path = ' ~ $path;
     if $path.IO.e {
       #-- do nothing
-      #self.TRACE: 'Module file ' ~ $path ~ ' already exists';
+      #self.TRACE: 'Module file ' ~ $path ~ ' already exists - DO NOTHING';
     }
     else {
       #self.TRACE: 'TODO: Create module file ' ~ $path;
@@ -326,6 +395,18 @@ class Runtime is export {
                                     module => $name,
                                     file => $path,
                                     text => $text);
+        }
+        default {
+          #self.TRACE: 'TODO: Generate module ' ~ $path ~ ' for shortcut ' ~ $module;
+          #self.TRACE: 'module-id = ' ~ $module;
+          #self.TRACE: 'module-name = ' ~ $name;
+          #self.TRACE: 'module-path = ' ~ $path;
+
+          self.generate-application-module(shortcut => $module,
+                                    module => $name,
+                                    file => $path,
+                                    text => $text);
+
         }
       }
 
@@ -4592,20 +4673,69 @@ END_OF_CODE
         method goto-screen(Str :$app, Str :$screen = '') {
           my Str $next-screen = '';
           my Str $application-screen = '';
+          my $App = '';
           if $screen ne '' {
             $next-screen = $screen;
           }
           else {
             $next-screen = %.APPSCREEN{$app};
+            $next-screen = '1000' if $next-screen eq '';
           }
           $application-screen = $app ~ '-screen_' ~ $next-screen;
           if self.can($application-screen) {
-            self.TRACE: 'Calling method ' ~ $application-screen;
+            
+            #self.TRACE: 'Calling method ' ~ $application-screen;
+            
             self."$application-screen"();
           }
           else {
-            self.TRACE: 'METHOD_NOT_FOUND: ' ~ $application-screen;
-            self.SCREEN_not_found(app => $application-screen);
+            #self.TRACE: 'TODO: Generate module for shortcut ' ~ $app; 
+
+            #-- begin - attempt to load an application
+            my Str $program = '',
+            my Str $progtxt = '';
+            my Str $app-group = '';
+            ($program, $progtxt, $app-group) = $.Dbu.is-shortcut(shortcut => $app);
+
+            #self.TRACE: 'FOUND program ' ~ $program ~ '; text ' ~ $progtxt ~ '; group = ' ~ $app-group;
+
+            if $program ne '' {
+              if self.load-module($App, module => $program) {
+                #self.TRACE: 'Successfully loaded ' ~ $program;
+
+                self.BEGIN-FORM(appgroup => $app-group);
+
+                #-- Try calling the main program of $App
+                try $App.main(self, userid => $.UserID,
+                                ucomm => $.UserCommand,
+                                params => %.Params);
+                if ($!) {
+                  self.TRACE: 'Error occured on module ' ~ $program ~ '; ' 
+                             ~ $!.message ~ '; ' 
+                             ~ $!.gist;
+                }
+                else {
+                    #self.FT(tag => 'MESSAGE_BAR', 
+                    #        text => 'i: Module <b>' ~ $program 
+                    #                                ~ '</b> was loaded successfully', last => 1);
+                    $.DebugInfo ~= $App.DebugInfo if $App.DebugInfo ne '';
+                }
+
+                self.END-FORM(app => $.App, appgroup => $app-group);
+
+              }
+            } 
+            
+            #-- end - attempt to load an application
+            else {
+
+              #-- todo: Generate application module
+
+              #self.TRACE: 'METHOD_NOT_FOUND: ' ~ $application-screen;
+              
+              self.SCREEN_not_found(app => $application-screen);
+            
+            }
           }
         }
 END_OF_CODE
@@ -4638,42 +4768,50 @@ END_OF_CODE
           my Str $help-link = '';
           my Str $login-link = '';
           my Str $logout-link = '';
+          my Str $wiki-link = '';
 
           $home-link = '<a href="/">home</a>' ~ '&nbsp;';
-          $index-link = '|&nbsp;<a href="/index">index</a>' ~ '&nbsp;' if $.UserID ne '';
-          $help-link = '|&nbsp;<a href="/help">help</a>' ~ '&nbsp;' if $.UserID ne '';
+          $index-link = '&nbsp;<a href="/index">index</a>' ~ '&nbsp;'; # if $.UserID ne '';
           $login-link = '|&nbsp;<a href="/login">login</a>' ~ '&nbsp;' if $.UserID eq '';
           $logout-link = '|&nbsp;<a href="/logout">logout</a>' ~ '&nbsp;' if $.UserID ne '';
+          $help-link = '|&nbsp;<a href="/help">help</a>' ~ '&nbsp;';# if $.UserID ne '';
+          $wiki-link = '|&nbsp;<a href="/wiki">wiki</a>' ~ '&nbsp;';# if $.UserID ne '';
 
           self.FT(tag => 'PAGE_TITLE', text => 'app: System');
           self.FT(tag => 'SITE_LOGO', text => self.site-logo());
           self.FT(tag => 'PAGE_EDITOR', text => $.UserID);
 
           self.FT(tag => 'MENU_BAR', text => $home-link);
-          self.FT(tag => 'MENU_BAR', text => $index-link);
-          self.FT(tag => 'MENU_BAR', text => $help-link);
-          self.FT(tag => 'MENU_BAR', text => $login-link);
-          self.FT(tag => 'MENU_BAR', text => $logout-link);
+          self.FT(tag => 'MENU_BAR', text => $wiki-link);
+          
+          self.FT(tag => 'WIKIMENU_BAR', text => $index-link);
+          self.FT(tag => 'WIKIMENU_BAR', text => $help-link);
+          self.FT(tag => 'WIKIMENU_BAR', text => $login-link);
+          self.FT(tag => 'WIKIMENU_BAR', text => $logout-link);
 
           if $.UserID ne '' {
             self.BEGIN-FORM(appgroup => $C_WEBFORM);
+            self.FORM-BREAK();
+            self.FORM-BREAK();      
+            self.END-FORM(app => $.App, appgroup => $C_WEBFORM);
+          }
+          else {
+            self.BEGIN-FORM(appgroup => $C_WEBFORM);
+            self.FORM-IMG-BUTTON(key => 'press-first',
+              src => $C_ICON_FIRST,
+              alt => 'First');
 
-          #  self.FORM-IMG-BUTTON(key => 'press-first',
-          #    src => $C_ICON_FIRST,
-          #    alt => 'First');
+            self.FORM-IMG-BUTTON(key => 'press-prev',
+              src => $C_ICON_PREV,
+              alt => 'Previous');
 
-          #  self.FORM-IMG-BUTTON(key => 'press-prev',
-          #    src => $C_ICON_PREV,
-          #    alt => 'Previous');
+            self.FORM-IMG-BUTTON(key => 'press-next',
+              src => $C_ICON_NEXT,
+              alt => 'Next');
 
-          #  self.FORM-IMG-BUTTON(key => 'press-next',
-          #    src => $C_ICON_NEXT,
-          #    alt => 'Next');
-
-          #  self.FORM-IMG-BUTTON(key => 'press-last',
-          #    src => $C_ICON_LAST,
-          #    alt => 'Last');
-
+            self.FORM-IMG-BUTTON(key => 'press-last',
+              src => $C_ICON_LAST,
+              alt => 'Last');
             self.FORM-BREAK();
             self.FORM-BREAK();      
             self.END-FORM(app => $.App, appgroup => $C_WEBFORM);
@@ -4879,6 +5017,7 @@ END_OF_CODE
           #self.TRACE: 'Module name: ' ~ $module-name ~ '; ModulePath = ' ~ $module-path;
           #-- Attempt to load module:
           if $module-path.IO.e {
+            #self.TRACE: 'Attempting to load ' ~ $module-name;
             try require ::($module-name);
             if ::($module-name) ~~ Failure {
               #-- generate module
@@ -4887,13 +5026,13 @@ END_OF_CODE
             }
             else {
               #-- create an instance of $sModuleName
-              $AppModule = ::($module-name)::App.new;
-              #self.TRACE: 'Loading ' ~ $sModuleName ~ '::App ...' ~ $AppModule.OK;
+              $AppModule = ::($module-name).new;
+              #self.TRACE: 'Loading... OK';
               $return-code = True;
             }
           }
           else {
-            #self.TRACE: 'Generate module ' ~ $module-path;
+            self.TRACE: 'Module file not found: ' ~ $module-path;
             $return-code = False;
           }
           return $return-code;
@@ -5655,6 +5794,251 @@ END_OF_CODE
                                data => $source-code);
 
   }
+
+  ##################################################################
+  ################## GENERATE APPLICATION MODULE ###################
+  ##################################################################
+
+
+
+
+  method generate-application-module(Str :$shortcut,
+                                Str :$module,
+                                Str :$file,
+                                Str :$text) {
+
+    my $source-code = '';
+    my $snippet = '';
+    my $exception-text = $text;
+
+
+
+    $snippet = "\n" 
+    ~ 'unit module ' ~ $module ~ ':ver<' ~ $C_VERSION ~ '>:auth<' ~ $C_AUTHOR ~ '>;' 
+    ~ "\n"
+    ~ "\n" ~ '  use Sys::Database;'
+    ~ "\n" 
+    ~ "\n" ~ '  class X::' ~ $module ~ ' is Exception {'
+    ~ "\n";
+    $source-code ~= $snippet;
+
+
+    $snippet = q:to/END_OF_CODE/;
+    has $.msg-id; #message class
+    has $.msg-no; #message number
+    has $.msg-ty; #message type = [A, E, I, S, W]
+    has $.msg-t1; #message text 1
+    has $.msg-t2; #message text 2
+    has $.msg-t3; #message text 3
+    has $.msg-t4; #message text 4
+
+END_OF_CODE
+    $source-code ~= $snippet;
+
+
+    $snippet = q:to/END_OF_CODE/;
+    method message() {
+      #-- TODO: Get the message from the data dictionary
+
+      "$.msg-id" ~ "-" ~ $.msg-no ~ " " ~
+      "$.msg-ty " ~
+      "$.msg-t1 $.msg-t2 $.msg-t3 $.msg-t4"; # Generic error
+    }
+  }
+END_OF_CODE
+    $source-code ~= $snippet;
+
+    $snippet = "\n" 
+        ~ "\n" ~ 'class ' ~ $module ~ ' is export {'
+        ~ "\n";
+    $source-code ~= $snippet;
+
+    $snippet = q:to/END_OF_CODE/;
+    has %.params = ();
+    has $.Sys is rw =  '';
+    has $.DebugInfo is rw = "";
+    has %.Config is rw;
+    has $.UserID is rw;
+    has $.UserCommand is rw;
+
+    has Str %.CMD = (
+        "init" => "INIT"
+    );
+
+    has $SCREEN = "";
+    has %SCREEN_TITLE = (
+      1000 => "TESTING_1000";
+    );
+END_OF_CODE
+    $source-code ~= $snippet;
+
+
+    $snippet = q:to/END_OF_CODE/;
+    method main($App, Str :$userid, Str :$ucomm, :%params) {
+    	$.Sys = $App;
+    	$.UserID = $userid;
+    	$.UserCommand = $ucomm;
+    	%.params = %params;
+    	given $ucomm {
+    		when %.CMD<init> {
+    			#self.initialize-db();
+    			$SCREEN = '1000';
+    		}
+    	}
+    	self.goto-screen(screen => $SCREEN);
+    }
+END_OF_CODE
+    $source-code ~= $snippet;
+
+
+    $snippet = q:to/END_OF_CODE/;
+    method goto-screen(Str :$screen) {
+      my Str $sNextScreen = 'screen_' ~ $screen;
+      if self.can($sNextScreen) {
+        self."$sNextScreen"();
+      }
+    }
+END_OF_CODE
+    $source-code ~= $snippet;
+
+
+    $snippet = q:to/END_OF_CODE/;
+    method screen_1000 {
+      my Str $comment = '';
+      my $button-pressed = %.params<BUTTON>;
+      my Str $home = '<a href="/home">home</a>';
+
+      if %.params<COMMENT> ne '' {
+        $comment = %.params<COMMENT>; 
+      }
+
+      $.Sys.FT(tag => 'PAGE_TITLE', text => 'The quick brown fox jumps over the lazy dog');
+
+      $.Sys.FT(tag => 'SITE_LOGO', text => 'site-logo');
+      $.Sys.FT(tag => 'MENU_BAR', text => $home);
+      $.Sys.FT(tag => 'PAGE_EDITOR', text => 'whoami');
+      #$.Sys.FT(tag => 'WIKIMENU_BAR', text => 'Something WIKIMENU_BAR');
+
+
+      $.Sys.FORM-STRING(text => '&nbsp;');
+      $.Sys.FORM-BUTTON(key => 'BUTTON', 
+                       value => 'First', 
+                       type => 'submit'); 
+      $.Sys.FORM-STRING(text => '&nbsp;');
+      $.Sys.FORM-BUTTON(key => 'BUTTON', 
+                       value => 'Previous', 
+                       type => 'submit'); 
+      $.Sys.FORM-STRING(text => '&nbsp;');
+      $.Sys.FORM-BUTTON(key => 'BUTTON', 
+                       value => 'Next', 
+                       type => 'submit'); 
+      $.Sys.FORM-STRING(text => '&nbsp;');
+      $.Sys.FORM-BUTTON(key => 'BUTTON', 
+                       value => 'Last', 
+                       type => 'submit'); 
+      $.Sys.FORM-BREAK();
+      $.Sys.FORM-BREAK();
+      $.Sys.FORM-STRING(text => 'Say something');
+      $.Sys.FORM-BREAK();
+      $.Sys.FORM-LABEL(key => 'USER-COMMENT', value => 'Comment: ');
+      $.Sys.FORM-SPACE();
+      $.Sys.FORM-TEXT(key => 'COMMENT', value => $comment, size => '75', length => '50'); 
+      $.Sys.FORM-BREAK();
+      $.Sys.FORM-STRING(text => 'You pressed button <b>' ~ $button-pressed ~ '</b>');
+
+      self.message('You pressed button <b>' ~ $button-pressed ~ '</b>');
+
+
+      return True;
+    }
+END_OF_CODE
+    $source-code ~= $snippet;
+
+
+    $snippet = q:to/END_OF_CODE/;
+    method initialize-config(:%cfg) {
+    	%.Config = %cfg;
+    }
+END_OF_CODE
+    $source-code ~= $snippet;
+
+
+    $snippet = q:to/END_OF_CODE/;
+    method message(Str $info, Str :$type = 'I') {
+      $.Sys.message($info, type => $type);
+    }
+END_OF_CODE
+    $source-code ~= $snippet;
+
+
+    $snippet = q:to/END_OF_CODE/;
+   method get(Str :$key) {
+      my $sVar = '';
+      $sVar ~~ s:g/\{\{$key\}\}//;
+      if $sVar eq '' {
+        #-- get $sVar from config file
+        $sVar = %.Config{$key} if defined %.Config{$key};
+        $sVar ~~ s:g/\{(.*?)\}/{ #-- Convert embedded variables
+          self.get(key => $0.Str);    #-- for example: data_dir = ./{SID}{SID_NR}/some_value
+        }/;                      #--    translates to:        ./DEV00/some_value
+      }
+    return $sVar;
+    }
+END_OF_CODE
+    $source-code ~= $snippet;
+
+
+    $snippet = q:to/END_OF_CODE/;
+    method getenv(Str :$key) {
+      my $sVar =  '';
+      $sVar = %*ENV{$key.uc} if defined %*ENV{$key};
+      return $sVar;
+    }
+END_OF_CODE
+    $source-code ~= $snippet;
+
+
+    $snippet = "\n" 
+    ~ "\n" ~ 'method TRACE(Str $msg, :$id = "' ~ $exception-text ~ '", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = "", :$t3 = "", :$t4 = "" ) {'
+    ~ "\n";
+    $source-code ~= $snippet;
+
+
+    $snippet = q:to/END_OF_CODE/;  
+      my Str $sInfo = "";
+
+      $sInfo = $t1;
+      $sInfo = $t1 ~ $msg.Str if $msg ne "";
+
+      $.DebugInfo ~= $id ~ "-" ~ $no ~ " " ~ $ty ~ " ";
+      $.DebugInfo ~= $msg ~ "<br/>" if $msg ne "";
+END_OF_CODE
+    $source-code ~= $snippet;
+
+
+    $snippet = "\n" 
+    ~ "\n" ~ '  my $e = X::' ~ $module ~ '.new('
+    ~ "\n";
+    $source-code ~= $snippet;
+
+
+    $snippet = q:to/END_OF_CODE/;
+        msg-id => $id, msg-no => $no, msg-ty => $ty,
+        msg-t1 => $sInfo, msg-t2 => $t2, msg-t3 => $t3,msg-t4 => $t4);
+        note $e.message;
+    }
+};
+END_OF_CODE
+    $source-code ~= $snippet;
+
+
+
+    self.write-string-to-file(file-name => $file,
+                               data => $source-code);
+
+  }
+
+
 
 #-- END-OF-CLASS --
 

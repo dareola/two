@@ -281,19 +281,19 @@ sub routes() is export {
                                 :%params);
         }
 
-        #get -> $default, :%params {
-        #    my Str $userid = '';
-        #  #content 'text/html', 
-        #  #  $oRuntime.dispatch(app => 'home',
-        #  #                      cmd => 'INIT', 
-        #  #                      userid => $userid, 
-        #  #                      :%params);
-        #  content 'text/html', 
-        #    $oRuntime.dispatch(app => 'home',
-        #                        cmd => 'INIT', 
-        #                        userid => $userid, 
-        #                        :%params);
-        #}
+        get -> $default, :%params {
+            my Str $userid = '';
+          #content 'text/html', 
+          #  $oRuntime.dispatch(app => 'home',
+          #                      cmd => 'INIT', 
+          #                      userid => $userid, 
+          #                      :%params);
+          content 'text/html', 
+            $oRuntime.dispatch(app => 'home',
+                                cmd => 'INIT', 
+                                userid => $userid, 
+                                :%params);
+        }
 
         post -> UserSession $user, 'login' {
           #request-body -> (:$username, :$password, *%params) 
@@ -326,11 +326,85 @@ sub routes() is export {
           request-body -> ( *%params ) {
             my Str $userid = '';
             $userid = $user.username if defined $user.username && $user.username ne '';
-            content 'text/html', 
-              $oRuntime.dispatch(app => 'home',
-                                 cmd => 'INIT', 
-                                 userid => $userid, 
-                                 :%params);
+
+            if %params<ucomm> ne '' && %params<press-enter.x> ne '' { 
+              #-- TODO: how to detect when not safe to jump?
+              my Str $jump-to = '';
+              $jump-to = %params<ucomm>.lc;
+              redirect '/' ~ $jump-to, :see-other;
+            }
+            else {
+              content 'text/html', 
+                $oRuntime.dispatch(app => 'home',
+                                   cmd => 'INIT', 
+                                   userid => $userid, 
+                                   :%params);
+            }
+          }
+        }
+
+        post -> UserSession $user, $whatever {
+          #request-body -> (:$username, :$password, *%params) 
+          request-body -> (*%params) {
+
+            if %params<ucomm> ne '' && %params<press-enter.x> ne '' { 
+              #-- TODO: how to detect when not safe to jump?
+              my Str $jump-to = '';
+              $jump-to = %params<ucomm>.lc;
+              redirect '/' ~ $jump-to, :see-other;
+            }
+            else {
+
+              my Str $userid = '';
+              $userid = $user.username if defined $user.username && $user.username ne '';
+
+              content 'text/html', 
+                $oRuntime.dispatch(app => $whatever,
+                                    cmd => 'INIT', 
+                                    userid => $userid, 
+                                    :%params);
+            }            
+          }
+        }
+
+        post -> {
+          request-body -> ( *%params ) {
+
+            if %params<ucomm> ne '' && %params<press-enter.x> ne '' { 
+              #-- TODO: how to detect when not safe to jump?
+              my Str $jump-to = '';
+              $jump-to = %params<ucomm>.lc;
+              redirect '/' ~ $jump-to, :see-other;
+            }
+            else {
+              content 'text/html', 
+                $oRuntime.dispatch(app => 'home',
+                                   cmd => 'INIT', 
+                                   userid => '', 
+                                   :%params);
+#              redirect '/', :see-other;
+
+            }
+          }
+        }
+
+
+        post -> $whatever {
+          request-body -> ( *%params ) {
+
+            if %params<ucomm> ne '' && %params<press-enter.x> ne '' { 
+              #-- TODO: how to detect when not safe to jump?
+              my Str $jump-to = '';
+              $jump-to = %params<ucomm>.lc;
+              redirect '/' ~ $jump-to, :see-other;
+            }
+            else {
+              content 'text/html', 
+                $oRuntime.dispatch(app => $whatever,
+                                   cmd => 'INIT', 
+                                   userid => '', 
+                                   :%params);
+            }
           }
         }
 
