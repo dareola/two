@@ -283,6 +283,7 @@ class Sys::System is export {
           my Str $login-link = '';
           my Str $logout-link = '';
           my Str $wiki-link = '';
+          my Str $wiki-edit-link = '';
 
           $home-link = '<a href="/">home</a>' ~ '&nbsp;';
           $index-link = '&nbsp;<a href="/index">index</a>' ~ '&nbsp;'; # if $.UserID ne '';
@@ -290,14 +291,15 @@ class Sys::System is export {
           $logout-link = '|&nbsp;<a href="/logout">logout</a>' ~ '&nbsp;' if $.UserID ne '';
           $help-link = '|&nbsp;<a href="/help">help</a>' ~ '&nbsp;';# if $.UserID ne '';
           $wiki-link = '|&nbsp;<a href="/wiki">wiki</a>' ~ '&nbsp;';# if $.UserID ne '';
-
+          $wiki-edit-link = '|&nbsp;<a href="/wiki/edit">edit</a>' ~ '&nbsp;';# if $.UserID ne '';
           self.FT(tag => 'PAGE_TITLE', text => 'app: System');
           self.FT(tag => 'SITE_LOGO', text => self.site-logo());
           self.FT(tag => 'PAGE_EDITOR', text => $.UserID);
 
           self.FT(tag => 'MENU_BAR', text => $home-link);
           self.FT(tag => 'MENU_BAR', text => $wiki-link);
-          
+          self.FT(tag => 'MENU_BAR', text => $wiki-edit-link);
+
           self.FT(tag => 'WIKIMENU_BAR', text => $index-link);
           self.FT(tag => 'WIKIMENU_BAR', text => $help-link);
           self.FT(tag => 'WIKIMENU_BAR', text => $login-link);

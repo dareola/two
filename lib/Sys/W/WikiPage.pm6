@@ -29,6 +29,7 @@ class Sys::W::WikiPage is export {
     has %.Config is rw;
     has $.UserID is rw;
     has $.UserCommand is rw;
+    has $.CurrentWikiPage is rw = '';
 
     constant $C_ICON_LOGIN = 'themes/img/icons/key.png';
     constant $C_ICON_REGISTER = 'themes/img/icons/user_add.png';
@@ -115,6 +116,12 @@ method main($App, Str :$userid, Str :$ucomm, :%params) {
       $.Sys.FT(tag => 'MENU_BAR', text => $home);
       $.Sys.FT(tag => 'PAGE_EDITOR', text => $.UserID);
       $.Sys.FT(tag => 'WIKIMENU_BAR', text => $login-link ~ $logout-link);
+
+      $.CurrentWikiPage = $.Sys.get(key => 'WIKI_HOME');
+      $.CurrentWikiPage = %.Params<p> if defined %.Params<p> && %.Params<p> ne '';
+
+      
+
 
       return True;
     }
