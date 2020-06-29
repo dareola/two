@@ -28,6 +28,7 @@ unit module Sys::System:ver<0.0.0>:auth<Domingo Areola (dareola@gmail.com)>;
 class Sys::System is export {
         constant $C_NAMESPACE = 'Sys';
         constant $C_LIBPATH = './lib';
+        constant $C_WEBAPP = 'WEBA';
         constant $C_WEBFORM = 'WEBC';
         constant $C_DBTYPE_SQLITE = 'SQLite';
         constant $C_OK = 'OK';
@@ -429,22 +430,12 @@ class Sys::System is export {
                                 value => 'E',
                                 options => %wSelectOptions,
                                 label => 'Language');
-
-
-
-
-
               self.END-FORM(app => $.App, appgroup => $C_WEBFORM);
             }
             when 'INVALID_PASSWORD' {
               self.message('INVALID PASSWORD, please login again');
             }
-
           }
-
-
-
-
         }
         method message(Str $info, Str :$type = 'I') {
           my Str $icon = '';
@@ -480,9 +471,15 @@ class Sys::System is export {
               self.FORM-SPACE();
             }
           }
+          elsif $appgroup eq $C_WEBAPP {
+            self.FORM-OPEN();
+          }
         }
        method END-FORM(Str :$app = '', Str :$appgroup = '') {
           if $appgroup eq $C_WEBFORM {
+            self.FORM-CLOSE(app => $app);
+          }
+          elsif $appgroup eq $C_WEBAPP {
             self.FORM-CLOSE(app => $app);
           }
         }

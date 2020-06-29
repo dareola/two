@@ -2927,7 +2927,7 @@ class Runtime is export {
             self.insert-table($tabname, key => 'TestProgram|A', values => 'T9|WEBC'); 
             self.insert-table($tabname, key => 'UserManager|A', values => 'U1|WEBC');
             self.insert-table($tabname, key => 'HomePage|A', values => 'S2|WEBC'); 
-            self.insert-table($tabname, key => 'WikiPage|A', values => 'W1|WEBC'); 
+            self.insert-table($tabname, key => 'WikiPage|A', values => 'W1|WEBA'); 
             self.insert-table($tabname, key => 'Shortcut|A', values => 'S3|WEBC'); 
             self.insert-table($tabname, key => 'HelloWorld|A', values => 'H1|WEBA'); 
           }
@@ -4522,6 +4522,7 @@ END_OF_CODE
     $snippet = q:to/END_OF_CODE/;
         constant $C_NAMESPACE = 'Sys';
         constant $C_LIBPATH = './lib';
+        constant $C_WEBAPP = 'WEBA';
         constant $C_WEBFORM = 'WEBC';
         constant $C_DBTYPE_SQLITE = 'SQLite';
         constant $C_OK = 'OK';
@@ -5000,6 +5001,9 @@ END_OF_CODE
               self.FORM-SPACE();
             }
           }
+          elsif $appgroup eq $C_WEBAPP {
+            self.FORM-OPEN();
+          }
         }
 END_OF_CODE
     $source-code ~= $snippet;
@@ -5007,6 +5011,9 @@ END_OF_CODE
     $snippet = q:to/END_OF_CODE/;
        method END-FORM(Str :$app = '', Str :$appgroup = '') {
           if $appgroup eq $C_WEBFORM {
+            self.FORM-CLOSE(app => $app);
+          }
+          elsif $appgroup eq $C_WEBAPP {
             self.FORM-CLOSE(app => $app);
           }
         }
@@ -5984,7 +5991,7 @@ END_OF_CODE
 
 
     $snippet = q:to/END_OF_CODE/;
-    method SCREEN_INIT_1000 {
+    method INIT_SCREEN_1000 {
       my Str $comment = '';
       my $button-pressed = %.Params<BUTTON>;
       my Str $home = '<a href="/home">home</a>';

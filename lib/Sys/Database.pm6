@@ -1590,7 +1590,7 @@ method TRACE(Str $msg, :$id = "D0", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
         self.insert-table($tabname, key => 'TestProgram|A', values => 'T9|WEBC'); 
         self.insert-table($tabname, key => 'UserManager|A', values => 'U1|WEBC');
         self.insert-table($tabname, key => 'HomePage|A', values => 'S2|WEBC'); 
-        self.insert-table($tabname, key => 'WikiPage|A', values => 'W1|WEBC'); 
+        self.insert-table($tabname, key => 'WikiPage|A', values => 'W1|WEBA'); 
         self.insert-table($tabname, key => 'Shortcut|A', values => 'S3|WEBC'); 
         self.insert-table($tabname, key => 'HelloWorld|A', values => 'H1|WEBA'); 
       }
@@ -2231,21 +2231,19 @@ method TRACE(Str $msg, :$id = "D0", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
 
     
     method structure(:@fields) {
-        my Str %wFieldStructure = ();
-        for @fields -> $fldname {
-          %wFieldStructure{"$fldname"} = '';
-        }
-        return %wFieldStructure; 
+      my Str %wFieldStructure = ();
+      for @fields -> $fldname {
+        %wFieldStructure{"$fldname"} = '';
       }
-
+      return %wFieldStructure; 
+    }
+    
     method clear(:%fields) {
       for %fields -> $fld {
         #self.TRACE: 'key = ' ~ $fld.key;
         %fields{$fld.key} = '';
       }
     }
-
-    
     method table-query(Str :$tabname, :%fields, :%where) {
         my @iTableRecords = ();
         my Int $index = 0;
@@ -2285,12 +2283,6 @@ method TRACE(Str $msg, :$id = "D0", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
           $db-file =  self.db-filename(dbtype => $C_DBTYPE_SQLITE);
           my $dbh = self.db-connect(dbtype => $C_DBTYPE_SQLITE, dbname => $db-file);
           if defined $dbh {
-            #my $sth_temp = qq:to/SQL/;
-            #  SELECT $fldname-list
-            #  FROM $tabname
-            #  WHERE $where-list            
-            #SQL
-            #self.TRACE: 'method table-query: ' ~ $sth_temp;
             my $sth = $dbh.prepare(qq:to/SQL/);
               SELECT $fldname-list
               FROM $tabname
@@ -2305,7 +2297,7 @@ method TRACE(Str $msg, :$id = "D0", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
       }
 
     
-    method table-structure(Str :$tabname = '', Bool :$keyonly = False) {
+    method table-structure(Str :$tabname = '', Bool :$keyonly = True) {
         my Str %wTableStructure = ();
         if $tabname ne '' {
           if self.is-table(tabname => $tabname) {
@@ -2322,7 +2314,7 @@ method TRACE(Str $msg, :$id = "D0", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
               %wWhere<primkey> = 'X';
             }
             else {
-              %wWhere = self.structure( fields => ['tabname', 'actvatd', 'version'] );
+              %wWhere = self.structue( fields => ['tabname', 'acvtatd', 'version'] );
               %wWhere<tabname> = $tabname;
               %wWhere<actvatd> = 'A';
               %wWhere<version> = '0';
