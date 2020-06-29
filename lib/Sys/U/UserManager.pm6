@@ -455,6 +455,73 @@ class Sys::U::UserManager is export {
         $.Sys.FORM-BREAK();
         $.Sys.FORM-BREAK();
 
+
+        my %wUser = $.Sys.Dbu.structure( #- input/output structure
+          fields => ['clntnum', 'usercod', 'actvatd'] 
+        );
+
+        %wUser<clntnum> = %.Params<CLNTUSER-CLNTNUM>.Str if defined %.Params<CLNTUSER-CLNTNUM>;
+        %wUser<usercod> = %.Params<CLNTUSER-USERCOD>.Str if defined %.Params<CLNTUSER-USERCOD>;
+        %wUser<actvatd> = 'A';
+
+        #$.Sys.FORM-BREAK();
+        #$.Sys.FORM-STRING(text => %wUser<clntnum>);
+        #$.Sys.FORM-STRING(text => %wUser<usercod>);
+        #$.Sys.FORM-STRING(text => %wUser<actvatd>);
+
+        my %wCLNTUSER = $.Sys.Dbu.table-structure(tabname => 'CLNTUSER');
+        my %wUSERMSTR = $.Sys.Dbu.table-structure(tabname => 'USERMSTR');
+
+        my %wCLNTUSER_WHERE = $.Sys.Dbu.structure(fields =>['clntnum', 'actvatd', 'usercod']);
+        my %wUSERMSTR_WHERE = $.Sys.Dbu.structure(fields =>['usercod', 'actvatd']);
+
+        %wCLNTUSER_WHERE<clntnum> = %wUser<clntnum>;
+        %wCLNTUSER_WHERE<actvatd> = %wUser<actvatd>;
+        %wCLNTUSER_WHERE<usercod> = %wUser<usercod>;
+
+        %wUSERMSTR_WHERE<usercod> = %wUser<usercod>;
+        %wUSERMSTR_WHERE<actvatd> = %wUser<actvatd>;
+
+        my @iCLNTUSER = ();
+        my @iUSERMSTR = ();
+
+        @iCLNTUSER = $.Sys.Dbu.table-query(tabname => 'CLNTUSER',
+                                      fields => %wCLNTUSER,
+                                      where => %wCLNTUSER_WHERE);
+
+        if (@iCLNTUSER.elems) {
+          $.Sys.FORM-BREAK();
+          for @iCLNTUSER -> $clntuser {
+            my %clntuser = $clntuser;
+            for %clntuser -> $kv {
+              $.Sys.FORM-STRING(text => $kv.Str);
+              $.Sys.FORM-BREAK();
+            }
+          }
+          $.Sys.FORM-BREAK();
+
+
+          @iUSERMSTR = $.Sys.Dbu.table-query(tabname => 'USERMSTR',
+                                             fields => %wUSERMSTR,
+                                             where => %wUSERMSTR_WHERE);
+          $.Sys.FORM-BREAK();
+          if (@iUSERMSTR.elems) {
+            for @iUSERMSTR -> $usermstr {
+              my %usermstr = $usermstr;
+              for %usermstr -> $kv {
+                $.Sys.FORM-STRING(text => $kv.Str);
+                $.Sys.FORM-BREAK();
+              }
+            }
+          }
+        }
+        else {
+          $.Sys.FORM-BREAK();
+          $.Sys.FORM-STRING(text => 'USER DATA DOES NOT EXISTS');
+        }
+
+        $.Sys.FORM-BREAK();
+        $.Sys.FORM-BREAK();
         $.Sys.FORM-STRING(text => 'Query database and display user information');
 
       }
