@@ -104,6 +104,7 @@ class Runtime is export {
       self.TRACE: 'Error calling application ' ~ $app ~ '; ' ~ $!.message ~ '; ' ~ $!.gist;
     }
     else {
+      $.DebugInfo ~= $.Dbu.DebugInfo if $.Dbu.DebugInfo ne ''; #-- Dbu TRACES
       $.DebugInfo ~= $.Sys.DebugInfo if $.Sys.DebugInfo ne ''; #-- Sys TRACES
     }
     return True;

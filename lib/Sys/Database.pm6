@@ -2285,6 +2285,12 @@ method TRACE(Str $msg, :$id = "D0", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
           $db-file =  self.db-filename(dbtype => $C_DBTYPE_SQLITE);
           my $dbh = self.db-connect(dbtype => $C_DBTYPE_SQLITE, dbname => $db-file);
           if defined $dbh {
+            #my $sth_temp = qq:to/SQL/;
+            #  SELECT $fldname-list
+            #  FROM $tabname
+            #  WHERE $where-list            
+            #SQL
+            #self.TRACE: 'method table-query: ' ~ $sth_temp;
             my $sth = $dbh.prepare(qq:to/SQL/);
               SELECT $fldname-list
               FROM $tabname
@@ -2299,7 +2305,7 @@ method TRACE(Str $msg, :$id = "D0", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
       }
 
     
-    method table-structure(Str :$tabname = '', Bool :$keyonly = True) {
+    method table-structure(Str :$tabname = '', Bool :$keyonly = False) {
         my Str %wTableStructure = ();
         if $tabname ne '' {
           if self.is-table(tabname => $tabname) {
@@ -2316,7 +2322,7 @@ method TRACE(Str $msg, :$id = "D0", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
               %wWhere<primkey> = 'X';
             }
             else {
-              %wWhere = self.structue( fields => ['tabname', 'acvtatd', 'version'] );
+              %wWhere = self.structure( fields => ['tabname', 'actvatd', 'version'] );
               %wWhere<tabname> = $tabname;
               %wWhere<actvatd> = 'A';
               %wWhere<version> = '0';

@@ -237,6 +237,7 @@ class Sys::System is export {
                     #self.FT(tag => 'MESSAGE_BAR', 
                     #        text => 'i: Module <b>' ~ $program 
                     #                                ~ '</b> was loaded successfully', last => 1);
+                    
                     $.DebugInfo ~= $App.DebugInfo if $App.DebugInfo ne '';
                 }
 

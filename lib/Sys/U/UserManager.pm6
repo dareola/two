@@ -494,8 +494,16 @@ class Sys::U::UserManager is export {
           for @iCLNTUSER -> $clntuser {
             my %clntuser = $clntuser;
             for %clntuser -> $kv {
-              $.Sys.FORM-STRING(text => $kv.Str);
-              $.Sys.FORM-BREAK();
+              if $kv.key ne 'passwrd' {
+                my $short-text = '';
+                my $fldname = 'CLNTUSER-' ~ $kv.key.uc;
+                $short-text = $.Sys.Dbu.field-text(field => $fldname, type => 'S');
+                $.Sys.FORM-STRING(text => $short-text);
+                $.Sys.FORM-SPACE();
+                $.Sys.FORM-STRING(text => '&nbsp;&nbsp;=&nbsp;&nbsp;');
+                $.Sys.FORM-STRING(text => $kv.value);
+                $.Sys.FORM-BREAK();
+              }
             }
           }
           $.Sys.FORM-BREAK();
@@ -509,8 +517,18 @@ class Sys::U::UserManager is export {
             for @iUSERMSTR -> $usermstr {
               my %usermstr = $usermstr;
               for %usermstr -> $kv {
-                $.Sys.FORM-STRING(text => $kv.Str);
+                
+
+                my $short-text = '';
+                my $fldname = 'USERMSTR-' ~ $kv.key.uc;
+                $short-text = $.Sys.Dbu.field-text(field => $fldname, type => 'S');
+
+                $.Sys.FORM-STRING(text => $short-text);
+                $.Sys.FORM-SPACE();
+                $.Sys.FORM-STRING(text => '&nbsp;&nbsp;=&nbsp;&nbsp;');
+                $.Sys.FORM-STRING(text => $kv.value);
                 $.Sys.FORM-BREAK();
+
               }
             }
           }
@@ -520,9 +538,9 @@ class Sys::U::UserManager is export {
           $.Sys.FORM-STRING(text => 'USER DATA DOES NOT EXISTS');
         }
 
-        $.Sys.FORM-BREAK();
-        $.Sys.FORM-BREAK();
-        $.Sys.FORM-STRING(text => 'Query database and display user information');
+        #$.Sys.FORM-BREAK();
+        #$.Sys.FORM-BREAK();
+        #$.Sys.FORM-STRING(text => 'Query database and display user information');
 
       }
 
