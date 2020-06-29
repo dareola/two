@@ -248,6 +248,16 @@ sub routes() is export {
                                 :%params);
         }
 
+        get -> LoggedIn $user, $wiki, $cmd, :%params {
+          my Str $userid = '';
+          $userid = $user.username if defined $user.username && $user.username ne '';
+          content 'text/html', 
+            $oRuntime.dispatch(app => $wiki,
+                                cmd => $cmd.uc, 
+                                userid => $userid, 
+                                :%params);
+        }
+
         get -> 'login', :%params {
           my Str $userid = '';
           content 'text/html', 
@@ -291,6 +301,16 @@ sub routes() is export {
           content 'text/html', 
             $oRuntime.dispatch(app => 'home',
                                 cmd => 'INIT', 
+                                userid => $userid, 
+                                :%params);
+        }
+
+
+        get -> $wiki, $cmd, :%params {
+            my Str $userid = '';
+          content 'text/html', 
+            $oRuntime.dispatch(app => $wiki,
+                                cmd => $cmd.uc, 
                                 userid => $userid, 
                                 :%params);
         }
@@ -420,6 +440,26 @@ sub routes() is export {
         }
 
 
+
+        post -> 'wiki', $whatever {
+          request-body -> ( *%params ) {
+
+            if %params<ucomm> ne '' && %params<press-enter.x> ne '' { 
+              #-- TODO: how to detect when not safe to jump?
+              my Str $jump-to = '';
+              $jump-to = %params<ucomm>.lc;
+              redirect '/' ~ $jump-to, :see-other;
+            }
+            else {
+              content 'text/html', 
+                $oRuntime.dispatch(app => 'wiki',
+                                   cmd => $whatever, 
+                                   userid => '', 
+                                   :%params);
+            }
+          }
+        }
+
         sub valid-user-pass(:$clntnum='', :$langiso='', :$usercod='', :$passwrd='') {
           my Bool $ok = False;
           my Str $clnt = '';
@@ -451,6 +491,20 @@ sub routes() is export {
           static $logo;
         }
 
+        get -> 'wiki', 'favicon.ico' {
+          my Str $logo = #'./pub/ONE00/themes/img/DEV00_logo.gif';
+                  $oRuntime.Config<PUBLIC_DIR> 
+                  ~ '/' 
+                  ~ $oRuntime.Config<SID> 
+                  ~ $oRuntime.Config<SID_NR>
+                  ~ '/themes/img/' 
+                  ~ $oRuntime.Config<SID> 
+                  ~ $oRuntime.Config<SID_NR> 
+                  ~ '_logo.gif';
+          static $logo;
+        }
+
+
         #-- THEMES
 
         get -> 'themes', 'img', *@path {
@@ -459,6 +513,15 @@ sub routes() is export {
                         ~ '/themes/img/';
           static $themes-dir, @path;
         }
+
+
+        get -> 'wiki', 'themes', 'img', *@path {
+          #/themes/img/common/home.gif
+          my $themes-dir = $oRuntime.Config<PUBLIC_DIR> 
+                        ~ '/themes/img/';
+          static $themes-dir, @path;
+        }
+
 
         #-- UPLOADS
         get -> 'file', $dir, *@path {

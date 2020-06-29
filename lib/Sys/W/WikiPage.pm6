@@ -1,6 +1,6 @@
 
 unit module Sys::W::WikiPage:ver<0.0.0>:auth<Domingo Areola (dareola@gmail.com)>;
-
+  use Base64::Native;
   use Sys::Database;
 
   class X::Sys::W::WikiPage is Exception {
@@ -31,9 +31,10 @@ class Sys::W::WikiPage is export {
     has $.UserCommand is rw;
     has $.CurrentWikiPage is rw = '';
 
-    constant $C_ICON_LOGIN = 'themes/img/icons/key.png';
-    constant $C_ICON_REGISTER = 'themes/img/icons/user_add.png';
-    constant $C_ICON_SAVEREG = 'themes/img/icons/disk.png';
+    constant $C_ICON_EDIT = 'themes/img/icons/page_edit.png';
+    constant $C_ICON_SAVC = 'themes/img/icons/script_save.png';
+    constant $C_ICON_SAVE = 'themes/img/icons/disk.png';
+    constant $C_ICON_CANC = 'themes/img/icons/cross.png';
 
     has Str %.CMD = (
         "init" => "INIT"
@@ -62,7 +63,11 @@ method main($App, Str :$userid, Str :$ucomm, :%params) {
 		    #self.initialize-db();
 		    $SCREEN = '1000';
 	    }
-    }  
+    }
+    if defined %.Params<save> {
+      $.UserCommand = 'INIT';
+    }
+  
     self.goto-screen(cmd => $.UserCommand, screen => $next-screen);
 }
 
@@ -100,8 +105,10 @@ method main($App, Str :$userid, Str :$ucomm, :%params) {
       $.Sys.FT(tag => 'MENU_BAR', text => $home-link);       
     }
 
+
     method INIT_SCREEN_1000 {
       my Str $home = '<a href="/home">home</a>';
+      my Str $edit = ''; 
       my Str $logout-link = '';
       my Str $login-link = '';
       my Str $wiki-name = '';
@@ -120,11 +127,99 @@ method main($App, Str :$userid, Str :$ucomm, :%params) {
       $.CurrentWikiPage = $.Sys.get(key => 'WIKI_HOME');
       $.CurrentWikiPage = %.Params<p> if defined %.Params<p> && %.Params<p> ne '';
 
-      
-
+      $edit = '&nbsp;|&nbsp;<a href="/wiki/edit?p=' 
+            ~ $.CurrentWikiPage ~ '">edit</a>';
+      $.Sys.FT(tag => 'MENU_BAR', text => $edit); # if $.UserID ne '';
 
       return True;
     }
+
+
+method EDIT_SCREEN_1000() {
+        my Str $home = '<a href="/wiki">home</a>';
+      my Str $cancel = ''; 
+      my Str $logout-link = '';
+      my Str $login-link = '';
+      my Str $wiki-name = '';
+      $wiki-name = $.Sys.get(key => 'WIKI_NAME');
+
+      $logout-link = '<a href="/logout">Logout</a>' if $.UserID ne '';
+      $login-link = '<a href="/login">Login</a>' if $.UserID eq '';
+
+      $.Sys.FT(tag => 'PAGE_TITLE', text => $wiki-name);
+
+      $.Sys.FT(tag => 'SITE_LOGO', text => $.Sys.site-logo());
+      $.Sys.FT(tag => 'MENU_BAR', text => $home);
+      $.Sys.FT(tag => 'PAGE_EDITOR', text => $.UserID);
+      $.Sys.FT(tag => 'WIKIMENU_BAR', text => $login-link ~ $logout-link);
+
+      $.CurrentWikiPage = $.Sys.get(key => 'WIKI_HOME');
+      $.CurrentWikiPage = %.Params<p> if defined %.Params<p> && %.Params<p> ne '';
+  
+  
+
+      #$.Sys.FORM-SPACE();
+
+      $.Sys.FORM-IMG-BUTTON(key => 'press-savc',
+                            src => $C_ICON_SAVC,
+                            alt => 'Save and continue editing');
+      
+      $.Sys.FORM-SPACE();
+
+      $.Sys.FORM-IMG-BUTTON(key => 'press-save',
+                            src => $C_ICON_SAVE,
+                            alt => 'Save then exit editor');
+
+      $.Sys.FORM-BREAK();
+      $.Sys.FORM-BREAK();
+
+      $.Sys.FORM-TEXTAREA(key => 'text', 
+                        value => 'BLANK for now',
+                        rows => 25,
+                        cols => 65);
+
+
+      $cancel = '&nbsp;|&nbsp;<a href="/wiki/display?p=' 
+            ~ $.CurrentWikiPage ~ '">cancel</a>';
+      $.Sys.FT(tag => 'MENU_BAR', text => $cancel); # if $.UserID ne '';
+
+
+  return True;
+}
+
+
+
+
+    method DISPLAY_SCREEN_1000 {
+      my Str $home = '<a href="/home">home</a>';
+      my Str $edit = ''; 
+      my Str $logout-link = '';
+      my Str $login-link = '';
+      my Str $wiki-name = '';
+      $wiki-name = $.Sys.get(key => 'WIKI_NAME');
+
+      $logout-link = '<a href="/logout">Logout</a>' if $.UserID ne '';
+      $login-link = '<a href="/login">Login</a>' if $.UserID eq '';
+
+      $.Sys.FT(tag => 'PAGE_TITLE', text => $wiki-name);
+
+      $.Sys.FT(tag => 'SITE_LOGO', text => $.Sys.site-logo());
+      $.Sys.FT(tag => 'MENU_BAR', text => $home);
+      $.Sys.FT(tag => 'PAGE_EDITOR', text => $.UserID);
+      $.Sys.FT(tag => 'WIKIMENU_BAR', text => $login-link ~ $logout-link);
+
+      $.CurrentWikiPage = $.Sys.get(key => 'WIKI_HOME');
+      $.CurrentWikiPage = %.Params<p> if defined %.Params<p> && %.Params<p> ne '';
+
+      $edit = '&nbsp;|&nbsp;<a href="/wiki/edit?p=' 
+            ~ $.CurrentWikiPage ~ '">edit</a>';
+      $.Sys.FT(tag => 'MENU_BAR', text => $edit); # if $.UserID ne '';
+
+      return True;
+    }
+
+
+
     method initialize-config(:%cfg) {
     	%.Config = %cfg;
     }

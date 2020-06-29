@@ -291,7 +291,6 @@ class Sys::System is export {
           $logout-link = '|&nbsp;<a href="/logout">logout</a>' ~ '&nbsp;' if $.UserID ne '';
           $help-link = '|&nbsp;<a href="/help">help</a>' ~ '&nbsp;';# if $.UserID ne '';
           $wiki-link = '|&nbsp;<a href="/wiki">wiki</a>' ~ '&nbsp;';# if $.UserID ne '';
-          $wiki-edit-link = '|&nbsp;<a href="/wiki/edit">edit</a>' ~ '&nbsp;';# if $.UserID ne '';
           self.FT(tag => 'PAGE_TITLE', text => 'app: System');
           self.FT(tag => 'SITE_LOGO', text => self.site-logo());
           self.FT(tag => 'PAGE_EDITOR', text => $.UserID);
