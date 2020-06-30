@@ -160,14 +160,13 @@ method main($App, Str :$userid, Str :$ucomm, :%params) {
       $.Sys.FT(tag => 'PAGE_EDITOR', text => $.UserID);
       $.Sys.FT(tag => 'WIKIMENU_BAR', text => $login-link ~ $logout-link);
 
-
       $edit = '&nbsp;|&nbsp;<a href="/wiki/edit?p=' 
             ~ $.CurrentWikiPage ~ '">edit</a>';
       $.Sys.FT(tag => 'MENU_BAR', text => $edit); # if $.UserID ne '';
 
-      $.Sys.FORM-STRING(text => 'Page: ' ~ $.CurrentWikiPage);
-      $.Sys.FORM-BREAK();
-      $.Sys.FORM-BREAK();
+      #$.Sys.FORM-STRING(text => 'Page: ' ~ $.CurrentWikiPage);
+      #$.Sys.FORM-BREAK();
+      #$.Sys.FORM-BREAK();
 
       my Str $wiki-to-html = '';
       $wiki-to-html = self.wiki-translate(text => $wiki-text);
@@ -189,15 +188,17 @@ method EDIT_SCREEN_1000() {
       $logout-link = '<a href="/logout">Logout</a>' if $.UserID ne '';
       $login-link = '<a href="/login">Login</a>' if $.UserID eq '';
 
-
-
       my Int $status = 0;
       my Str $wiki-text = '';
       my Str $summary = '';
+
+      $.CurrentWikiPage = $.Sys.get(key => 'WIKI_HOME');
+      $.CurrentWikiPage = %.Params<p> if defined %.Params<p> && %.Params<p> ne '';
+
+      
       $status = self.wiki-open-page(id => $.CurrentWikiPage);
       $wiki-text = %.Text<txtdata>.Str;      
       $summary = %.Text<summary>.Str;
-
 
       if defined %.Params<savc> {
         self.message('Detected SAVE command, then continue editing');
@@ -205,9 +206,6 @@ method EDIT_SCREEN_1000() {
         $wiki-text = %.Text<txtdata>.Str;
         $summary = %.Text<summary>.Str;
       }
-
-
-
 
       my Int $edit-rows = 15;
       my Int $edit-cols = 80;
@@ -228,39 +226,24 @@ method EDIT_SCREEN_1000() {
       #$.Sys.FT(tag => 'PAGE_TITLE', text => $wiki-name);
       $.Sys.FT(tag => 'PAGE_TITLE', text => $.CurrentWikiPage);
 
-
       $.Sys.FT(tag => 'SITE_LOGO', text => $.Sys.site-logo());
       $.Sys.FT(tag => 'MENU_BAR', text => $home);
       $.Sys.FT(tag => 'PAGE_EDITOR', text => $.UserID);
       $.Sys.FT(tag => 'WIKIMENU_BAR', text => $login-link ~ $logout-link);
 
-      $.CurrentWikiPage = $.Sys.get(key => 'WIKI_HOME');
-      $.CurrentWikiPage = %.Params<p> if defined %.Params<p> && %.Params<p> ne '';
   
-  
-
-      #$.Sys.FORM-SPACE();
-
       $.Sys.FORM-IMG-BUTTON(key => 'press-savc',
                             src => $C_ICON_SAVC,
-                            alt => 'Save and continue editing');
-      
+                            alt => 'Save and continue editing');    
       $.Sys.FORM-SPACE();
-
       $.Sys.FORM-IMG-BUTTON(key => 'press-save',
                             src => $C_ICON_SAVE,
                             alt => 'Save then exit editor');
-      $.Sys.FORM-BREAK();
-      $.Sys.FORM-BREAK();
-
-      $.Sys.FORM-STRING(text => 'Summary');
+      #$.Sys.FORM-BREAK();
+      #$.Sys.FORM-BREAK();
       $.Sys.FORM-SPACE();
-      $.Sys.FORM-TEXT(key => 'summary', value => $summary, 
-                                    size => $edit-cols.Str, length => '80');
-      $.Sys.FORM-BREAK();
-      $.Sys.FORM-BREAK();
-
-      $.Sys.FORM-STRING(text => 'Page: ' ~ $.CurrentWikiPage);
+      $.Sys.FORM-SPACE();
+      #$.Sys.FORM-STRING(text => 'Page: ' ~ $.CurrentWikiPage);
       $.Sys.FORM-SPACE(spaces => 5);
       $.Sys.FORM-STRING(text => 'Rows');
       $.Sys.FORM-SPACE();
@@ -272,6 +255,13 @@ method EDIT_SCREEN_1000() {
       $.Sys.FORM-TEXT(key => 'COLS', value => $edit-cols.Str, 
                                    size => '3', length => '3');
 
+      $.Sys.FORM-BREAK();
+      $.Sys.FORM-BREAK();
+
+      $.Sys.FORM-STRING(text => 'Summary');
+      $.Sys.FORM-SPACE();
+      $.Sys.FORM-TEXT(key => 'summary', value => $summary, 
+                                    size => $edit-cols.Str, length => '80');
 
 
 
@@ -292,6 +282,42 @@ method EDIT_SCREEN_1000() {
 }
 
 
+
+  method wiki-display-page-metadata() {
+    $.Sys.FORM-STRING(text => '<tt>');
+    for %.Page.sort -> (:$key, :$value) {
+      if $key ne '' {
+        if $key ne 'text_default' { #-- skip the text
+          $.Sys.FORM-STRING(text => 'PAGE.<b>' ~ $key ~ '</b> = ' ~ $value.Str);
+          $.Sys.FORM-BREAK();
+        }
+      }
+    }
+    $.Sys.FORM-BREAK();
+    for %.Section.sort -> (:$key, :$value) {
+      if $key ne '' {
+        if $key ne 'secdata' { #-- skip the text
+          $.Sys.FORM-STRING(text => 'SECTION.<b>' ~ $key ~ '</b> = ' ~ $value.Str);
+          $.Sys.FORM-BREAK();
+        }
+      }
+    }
+    $.Sys.FORM-BREAK();
+    for %.Text.sort -> (:$key, :$value) {
+      if $key ne '' {
+        if $key eq 'txtdata' { #-- skip the text
+          $.Sys.FORM-STRING(text => 'TEXT.<b>' ~ $key ~ '</b> = ... [skip text]');
+          $.Sys.FORM-BREAK();
+        }
+        else {
+          $.Sys.FORM-STRING(text => 'TEXT.<b>' ~ $key ~ '</b> = ' ~ $value.Str);
+          $.Sys.FORM-BREAK();
+        }
+      }
+    }
+    $.Sys.FORM-STRING(text => '</tt>');
+
+  }
 
 
     method initialize-config(:%cfg) {
@@ -338,7 +364,7 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
 
   method wiki-translate(Str :$text) {
     my Str $wiki-text = '';
-    $wiki-text = $text;
+    $wiki-text = $text ~ "\n\n";
 
     #-- quote html
     $wiki-text = self.wiki-quote-html(text => $wiki-text);
@@ -1802,7 +1828,7 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
 
   method debug-mode() {
     my Bool $debug-mode = False;
-    $debug-mode = True if $.Sys.getenv(key => 'DEBUG_MODE') eq 'true';
+    $debug-mode = True if $.Sys.getenv(key => 'DEBUG_MODE') eq 'TRUE';
     return $debug-mode;
   }
 
