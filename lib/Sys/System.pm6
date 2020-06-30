@@ -648,10 +648,10 @@ class Sys::System is export {
         method FORM-SKIP() {
           $.FORM ~= '<br/><br/>';
         }
-        method FORM-SPACE(Int :$length) {
-          if defined $length {
-            if $length > 0 {
-              for 1..$length {
+        method FORM-SPACE(Int :$spaces) {
+          if defined $spaces {
+            if $spaces > 0 {
+              for 1..$spaces {
                 $.FORM ~= self.space;
               }
             }
