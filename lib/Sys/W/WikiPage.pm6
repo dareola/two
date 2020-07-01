@@ -38,6 +38,14 @@ class Sys::W::WikiPage is export {
     has Int $.PreformattedIndex is rw = 0;
     has %.SaveUrl = ();
     has Int $.SaveUrlIndex is rw = 0;
+  
+    # Tags that must be in <tag> ... </tag> pairs:
+    has @.HtmlPairs = <b i u font big small sub sup h1 h2 h3 h4 h5 h6 cite code
+  em s strike strong tt var div center blockquote ol ul dl table tr td caption 
+  br p hr li dt dd th>;
+
+    # Single tags (that do not require a closing /tag)
+    has @.HtmlSingle  = <br p hr li dt dd th>;
 
 
     constant $C_APP_NAME = "WIKI";
@@ -46,8 +54,6 @@ class Sys::W::WikiPage is export {
     constant $C_FS2 = "\xb3" ~ '2';
     constant $C_FS3 = "\xb3" ~ '3';
     constant $C_NEW_TEXT = "Blank page";
-
-
 
     constant $C_ICON_EDIT = 'themes/img/icons/page_edit.png';
     constant $C_ICON_SAVC = 'themes/img/icons/script_save.png';
@@ -517,6 +523,29 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     return self.store-raw(text => "<$tag>" ~ $wiki-text ~ "</$tag>");
   }
 
+  method store-pre(Str :$text, Str :$tag) {
+    my $wiki-text = '';
+    $wiki-text = $text;
+    return self.store-raw(text => "<$tag>" ~ $wiki-text ~ "</$tag>");
+  }
+
+
+  method store-sap-note(Str :$text, Str :$tag) {
+    my $wiki-text = '';
+    $wiki-text = $text;
+
+    $wiki-text = '<a href="' 
+                    ~ 'https://launchpad.support.sap.com/#/notes/'
+                    ~ $wiki-text 
+                    ~ '" target=sapnote_"'  
+                    ~ $wiki-text 
+                    ~ '">' 
+                    ~ $wiki-text 
+                    ~ '</a>';
+    return self.store-raw(text => "<$tag>" ~ $wiki-text ~ "</$tag>");
+  }
+
+
   method wiki-quote-html(Str :$text) {
     my Str $qtext = '';
     $qtext = $text;
@@ -894,9 +923,11 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     my $wiki-text = $text;
 
     #- begin: localdir
+
     #- end: localdir
 
     #- begin: nowiki
+
     #- end: nowiki
 
     #- begin: wikiproc
@@ -943,18 +974,72 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     $wiki-text ~~ s:g/\&lt\;code\&gt\;(.*?)\&lt\;\/code\&gt\;/{
     self.store-code(text => $0.Str, tag => 'nowiki');
     }/;
-
-
     #- end: code
 
     #- begin: sapnote
+    $wiki-text ~~ s:g/\&lt\;sapnote\&gt\;(.*?)\&lt\;\/sapnote\&gt\;/{
+    self.store-sap-note(text => $0.Str, tag => 'nowiki');
+    }/;
     #- end: sapnote
 
     #- begin: pre
+    $wiki-text ~~ s:g/\&lt\;pre\&gt\;(.*?)\&lt\;\/pre\&gt\;/{
+    self.store-pre(text => $0.Str, tag => 'pre');
+    }/;
     #- end: pre
 
-    #- begin: center
+    #-- begin: html pairs
+    for @.HtmlPairs -> $tag {
+      $wiki-text ~~ s:g/
+        \&lt\;$tag\&gt\;
+        (.*?)
+        \&lt\;\/$tag\&gt\;
+        /
+        \<$tag\>$0\<\/$tag\>
+        /;
+    }
+    #-- end: html pairs
+
+    #-- begin: html single
+    # :FIXME
+    #-- end: html single
+
+
+    #- begin: center, strong, em, tt
+    for <b i center strong em tt> -> $tag {
+      $wiki-text ~~ s:g/
+        \&lt\;$tag\&gt\;
+        (.*?)
+        \&lt\;\/$tag\&gt\;
+        /
+        \<$tag\>$0\<\/$tag\>
+        /;
+    }
     #- end: center
+
+    #- begin: line break
+      $wiki-text ~~ s:g/
+        \&lt\;br\&gt\;
+        /
+        \<br\>
+        /;
+    #- end: line break
+
+    #- begin: tt
+      $wiki-text ~~ s:g/
+        \&lt\;tt\&gt\;
+        (.*?)
+        \&lt\;\/tt\&gt\;
+        /
+        \<tt\>$0\<\/tt\>
+        /;
+    #- end: tt
+
+    #begin: counter
+    #end: counter
+
+    #begin: pod
+    #end: pod
 
     #Hide: #pattern = <nowiki>text<nowiki>
     #Hide: $wikitext ~~ s:g/\&lt\;nowiki\&gt\;(.*?)\&lt\;\/nowiki\&gt\;/{
