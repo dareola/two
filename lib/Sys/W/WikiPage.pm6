@@ -397,8 +397,8 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
 
     #-- begin: <back> tag
     $wiki-text ~~ s:g/\&lt\;'back'\&gt\;/{
-      self.store-raw(text => 'back to ' ~ $.CurrentWikiPage);
-      }/;
+    self.store-raw(text => 'back to ' ~ $.CurrentWikiPage);
+    }/;
     #Ref: $pageText =~
     #Ref: s/&lt;back&gt;/$self->StoreRaw("<b>" 
     #Ref: . $self->Ts('Backlinks for: %s', $MainPage) 
@@ -411,16 +411,35 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
 
     #pattern = <nowiki>text<nowiki>
     $wiki-text ~~ s:g/\&lt\;nowiki\&gt\;(.*?)\&lt\;\/nowiki\&gt\;/{
-      self.store-raw(text => $0.Str);
+    self.store-raw(text => $0.Str);
     }/;
     #-- end: nowiki tag
-   
 
 
-    #Ref: $pageText =~
-    #Ref: s/&lt;back\s+(.*?)&gt;/$self->StoreRaw("<b>" 
-    #Ref: . $self->Ts('Backlinks for: %s', $self->QuoteHtml($1)) 
-    #Ref: . "<\/b><br \/>\n" . $self->GetPageList($self->SearchTitleAndBody($1)))/ige;
+    #-- begin: code
+    $wiki-text ~~ s:g/\&lt\;code\&gt\;(.*?)\&lt\;\/code\&gt\;/{
+    self.store-raw-tag(text => $0.Str, tag => 'code');
+    }/;
+
+    #Hide:$wiki-text ~~ s:g/\&lt\;'code'\&gt\;(.*)\&lt\;\/'code'\&gt\;/{
+    #Hide:  self.wiki-source-code(text => $0);
+    #Hide:}/;
+    #-- end: code
+
+    #-- begin: pre
+    #Hide:#-- save PRE tags to buffer (for further parsing later in code)
+    $wiki-text ~~ s:g/\&lt\;'pre'\&gt\;(.*?)\&lt\;\/'pre'\&gt\;/{
+    self.store-raw-tag(text => $0.Str, tag => 'pre');
+    #Hide:  self.wiki-pre-formatted_text(text => $0);
+    }/;
+    #-- end: pre
+
+    #-- begin: paragraph
+    #-- split text by paragraph marked by \n
+    $wiki-text ~~ s:g/[^^|\n](.*?)\n$$/{
+    self.wiki-parse-paragraph(text => $0); 
+    }/;
+    #-- end: paragraph
 
 
 
@@ -430,10 +449,6 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     #Hide:#-- join lines terminated with backslash
     #Hide:$wiki-text ~~ s:g/\\' '*\r?\n//; #' comment needed to editor color
     #Hide:
-    #Hide:#-- save PRE tags to buffer (for further parsing later in code)
-    #Hide:$wiki-text ~~ s:g/\&lt\;'pre'\&gt\;(.*?)\&lt\;\/'pre'\&gt\;/{
-    #Hide:  self.wiki-pre-formatted_text(text => $0);
-    #Hide:}/;
     #Hide:
     #Hide:#-- save TABLE data to buffer
     #Hide:$wiki-text ~~ s:g/^^(\|\|.*?\|\|)\n\n/{
@@ -468,10 +483,6 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     #Hide:  self.wiki-set-page-title(title => $0.Str);
     #Hide:}/;
     #Hide:
-    #Hide:#-- code
-    #Hide:$wiki-text ~~ s:g/\&lt\;'code'\&gt\;(.*)\&lt\;\/'code'\&gt\;/{
-    #Hide:  self.wiki-source-code(text => $0);
-    #Hide:}/;
     #Hide:
     #Hide:#-- Bring back PREformatted texts
     #Hide:#-- The preformatted text buffer is %.Preformatted
@@ -493,6 +504,17 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
   method store-raw(Str :$text) {
     %.SaveUrl{$.SaveUrlIndex} = $text;
     return $C_FS ~ $.SaveUrlIndex++ ~ $C_FS;
+  }
+
+  method store-raw-tag(Str :$text, Str :$tag) {
+    return self.store-raw(text => "<$tag>" ~ $text ~ "</$tag>");
+  }
+
+  method store-code(Str :$text, Str :$tag) {
+    my $wiki-text = '';
+    $wiki-text = $text;
+    $wiki-text ~~ s:g/\n/\r\n/;
+    return self.store-raw(text => "<$tag>" ~ $wiki-text ~ "</$tag>");
   }
 
   method wiki-quote-html(Str :$text) {
@@ -681,6 +703,12 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     return $para;
   }
 
+  method wiki-parse-paragraph(:$text) {
+    my $para = '';
+    $para = self.wiki-common-markup(text => $text);
+    return '<p>' ~ $para ~ '</p>';
+  }
+
   method wiki-paragraph(:$text) {
     return '' if $text eq '' || $text eq "\n";
     my $para = $text;
@@ -863,36 +891,99 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
   }
 
   method wiki-common-markup(:$text) {
-    my $wikitext = $text;
+    my $wiki-text = $text;
 
-    #pattern = <nowiki>text<nowiki>
-    $wikitext ~~ s:g/\&lt\;nowiki\&gt\;(.*?)\&lt\;\/nowiki\&gt\;/{
-      self.wiki-nowiki(text => $0);
+    #- begin: localdir
+    #- end: localdir
+
+    #- begin: nowiki
+    #- end: nowiki
+
+    #- begin: wikiproc
+    #- end: wikiproc
+
+    #- begin: training
+    #- end: training
+
+    #- begin: postit
+    #- end: postit
+
+    #- begin: scroll
+    #- end: scroll
+
+    #- begin: sidebar
+    #- end: sidebar
+
+    #- begin: sidemenu
+    #- end: sidemenu
+
+    #- begin: menubar
+    #- end: menubar
+
+    #- begin: sitemenubar
+    #- end: sitemenubar
+
+    #- begin: menugroup
+    #- end: menugroup
+
+    #- begin: insertpage
+    #- end: insertpage
+
+    #- begin: banner
+    #- end: banner
+
+    #- begin: pagetitle
+    #- end: pagetitle
+
+    #- begin: picture
+    #- end: picture
+
+    #- begin: code
+    #-- begin: code
+    $wiki-text ~~ s:g/\&lt\;code\&gt\;(.*?)\&lt\;\/code\&gt\;/{
+    self.store-code(text => $0.Str, tag => 'nowiki');
     }/;
 
-    #pattern = Bold, italics, emphasized etc -- passed
-    $wikitext ~~ s:g/\&lt\;(<[BbIiUu]>)\&gt\;(.*?)\&lt\;\/(<[BbIiUu]>)\&gt\;/{
-      '<' ~ $0 ~ '>' ~ $1 ~ '</' ~ $0 ~ '>';
-    }/;
 
-    #pattern = <tt>some text</tt>
-    $wikitext ~~ s:g/\&lt\;('tt')\&gt\;(.*?)\&lt\;\/('tt')\&gt\;/{
-      '<' ~ $0 ~ '>' ~ $1 ~ '</' ~ $0 ~ '>';
-    }/;
+    #- end: code
 
-    #pattern = [[UpperAndAnything]]
-    $wikitext ~~ s:g/\[\[(<upper>*<alpha>*.*?)\]\]/{
-       self.wiki-bracket-link(subpage => '', 
-                              page => self.wiki-free-to-normal(text => $0), 
-                              desc => self.wiki-expand-word(text => $0.Str));
-    }/;
+    #- begin: sapnote
+    #- end: sapnote
 
-    #-- menugroup
-    $wikitext ~~ s:g/\&lt\;menugroup\&gt\;(.*?)\&lt\;\/menugroup\&gt\;/{
-      self.wiki-side-menu-group(text => $0);
-    }/;
+    #- begin: pre
+    #- end: pre
 
-    return $wikitext;
+    #- begin: center
+    #- end: center
+
+    #Hide: #pattern = <nowiki>text<nowiki>
+    #Hide: $wikitext ~~ s:g/\&lt\;nowiki\&gt\;(.*?)\&lt\;\/nowiki\&gt\;/{
+    #Hide:   self.wiki-nowiki(text => $0);
+    #Hide: }/;
+
+    #Hide: #pattern = Bold, italics, emphasized etc -- passed
+    #Hide: $wikitext ~~ s:g/\&lt\;(<[BbIiUu]>)\&gt\;(.*?)\&lt\;\/(<[BbIiUu]>)\&gt\;/{
+    #Hide:   '<' ~ $0 ~ '>' ~ $1 ~ '</' ~ $0 ~ '>';
+    #Hide: }/;
+
+    #Hide: #pattern = <tt>some text</tt>
+    #Hide: $wikitext ~~ s:g/\&lt\;('tt')\&gt\;(.*?)\&lt\;\/('tt')\&gt\;/{
+    #Hide:   '<' ~ $0 ~ '>' ~ $1 ~ '</' ~ $0 ~ '>';
+    #Hide: }/;
+
+    #Hide: #pattern = [[UpperAndAnything]]
+    #Hide: $wikitext ~~ s:g/\[\[(<upper>*<alpha>*.*?)\]\]/{
+    #Hide:    self.wiki-bracket-link(subpage => '', 
+    #Hide:                           page => self.wiki-free-to-normal(text => $0), 
+    #Hide:                           desc => self.wiki-expand-word(text => $0.Str));
+    #Hide: }/;
+
+    #Hide: -- menugroup
+    #Hide: $wikitext ~~ s:g/\&lt\;menugroup\&gt\;(.*?)\&lt\;\/menugroup\&gt\;/{
+    #Hide:   self.wiki-side-menu-group(text => $0);
+    #Hide: }/;
+
+    return $wiki-text;
   }
 
   method wiki-nowiki(:$text) {
