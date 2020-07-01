@@ -36,6 +36,8 @@ class Sys::W::WikiPage is export {
     has %.TranslatedText = ();
     has %.Preformatted = ();
     has Int $.PreformattedIndex is rw = 0;
+    has %.SaveUrl = ();
+    has Int $.SaveUrlIndex is rw = 0;
 
 
     constant $C_APP_NAME = "WIKI";
@@ -124,7 +126,10 @@ method main($App, Str :$userid, Str :$ucomm, :%params) {
 
 
     method DISPLAY_SCREEN_1000 {
-      my Str $home = '<a href="/home">home</a>';
+      my Str $home = '';
+
+      $home = '<a href="/home">exit</a>';
+      
       my Str $edit = ''; 
       my Str $logout-link = '';
       my Str $login-link = '';
@@ -133,6 +138,8 @@ method main($App, Str :$userid, Str :$ucomm, :%params) {
 
       $.CurrentWikiPage = $.Sys.get(key => 'WIKI_HOME');
       $.CurrentWikiPage = %.Params<p> if defined %.Params<p> && %.Params<p> ne '';
+
+      $home = '<a href="/wiki">home</a>' if $.CurrentWikiPage ne $.Sys.get(key => 'WIKI_HOME');
 
       $logout-link = '<a href="/logout">Logout</a>' if $.UserID ne '';
       $login-link = '<a href="/login">Login</a>' if $.UserID eq '';
@@ -152,8 +159,9 @@ method main($App, Str :$userid, Str :$ucomm, :%params) {
         $wiki-text = %.Text<txtdata>.Str;
         $summary = %.Text<summary>.Str;
       }
-
+      $wiki-name = $.CurrentWikiPage if $.CurrentWikiPage ne '';
       $.Sys.FT(tag => 'PAGE_TITLE', text => $wiki-name);
+      #$.Sys.FT(tab => 'PAGE_TITLE', text => $.CurrentWikiPage);
 
       $.Sys.FT(tag => 'SITE_LOGO', text => $.Sys.site-logo());
       $.Sys.FT(tag => 'MENU_BAR', text => $home);
@@ -164,9 +172,9 @@ method main($App, Str :$userid, Str :$ucomm, :%params) {
             ~ $.CurrentWikiPage ~ '">edit</a>';
       $.Sys.FT(tag => 'MENU_BAR', text => $edit); # if $.UserID ne '';
 
-      #$.Sys.FORM-STRING(text => 'Page: ' ~ $.CurrentWikiPage);
-      #$.Sys.FORM-BREAK();
-      #$.Sys.FORM-BREAK();
+      my $refresh = '&nbsp;|&nbsp;<a href="/wiki/display?p=' 
+            ~ $.CurrentWikiPage ~ '">refresh</a>';
+      $.Sys.FT(tag => 'MENU_BAR', text => $refresh); # if $.UserID ne '';
 
       my Str $wiki-to-html = '';
       $wiki-to-html = self.wiki-translate(text => $wiki-text);
@@ -178,7 +186,7 @@ method main($App, Str :$userid, Str :$ucomm, :%params) {
 
 
 method EDIT_SCREEN_1000() {
-        my Str $home = '<a href="/wiki">home</a>';
+        my Str $home = '<a href="/wiki">exit</a>';
       my Str $cancel = ''; 
       my Str $logout-link = '';
       my Str $login-link = '';
@@ -195,6 +203,7 @@ method EDIT_SCREEN_1000() {
       $.CurrentWikiPage = $.Sys.get(key => 'WIKI_HOME');
       $.CurrentWikiPage = %.Params<p> if defined %.Params<p> && %.Params<p> ne '';
 
+      $home = '<a href="/wiki">home</a>' if $.CurrentWikiPage ne $.Sys.get(key => 'WIKI_HOME');
       
       $status = self.wiki-open-page(id => $.CurrentWikiPage);
       $wiki-text = %.Text<txtdata>.Str;      
@@ -223,8 +232,9 @@ method EDIT_SCREEN_1000() {
       else {
         $.CurrentWikiPage = $.Sys.get(key => 'WIKI_HOME');
       }
-      #$.Sys.FT(tag => 'PAGE_TITLE', text => $wiki-name);
-      $.Sys.FT(tag => 'PAGE_TITLE', text => $.CurrentWikiPage);
+      $wiki-name = $.CurrentWikiPage if $.CurrentWikiPage ne '';
+      $.Sys.FT(tag => 'PAGE_TITLE', text => $wiki-name);
+      #$.Sys.FT(tag => 'PAGE_TITLE', text => $.CurrentWikiPage);
 
       $.Sys.FT(tag => 'SITE_LOGO', text => $.Sys.site-logo());
       $.Sys.FT(tag => 'MENU_BAR', text => $home);
@@ -364,73 +374,125 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
 
   method wiki-translate(Str :$text) {
     my Str $wiki-text = '';
-    $wiki-text = $text ~ "\n\n";
+    my %SaveUrl = ();
 
-    #-- quote html
+    #-- begin: remove field separators
+    $wiki-text = self.wiki-remove-field-separator(text => $text);
+    #-- end: remove field separators
+
+    #-- begin: remove \r\n
+    $wiki-text = $text ~ "\r\n";
+    #-- end: remove \r\n
+
+
+    #-- begin: quote html
     $wiki-text = self.wiki-quote-html(text => $wiki-text);
+    #-- end: quote html
 
-    #-- replace .\ with BR
+
+    #-- begin: replace .\ with BR
     $wiki-text ~~ s:g/\.\\ *\r?\n/\<br\/\>\&nbsp; /;
+    #-- end: replace .\ with BR
 
-    #-- HIDE tags
-    $wiki-text ~~ s:g/\&lt\;hide\&gt\;(.*?)\&lt\;\/hide\&gt\;//;
 
-    #-- join lines terminated with backslash
-    $wiki-text ~~ s:g/\\' '*\r?\n//; #' comment needed to editor color
-
-    #-- save PRE tags to buffer (for further parsing later in code)
-    $wiki-text ~~ s:g/\&lt\;'pre'\&gt\;(.*?)\&lt\;\/'pre'\&gt\;/{
-      self.wiki-pre-formatted_text(text => $0);
-    }/;
-
-    #-- save TABLE data to buffer
-    $wiki-text ~~ s:g/^^(\|\|.*?\|\|)\n\n/{
-      self.wiki-table(text => $0.Str);
-    }/;
-
-      #-- color pattern = {{color,digit% some text}}
-    $wiki-text ~~ s:g/\{\{(.*?)\,(\d+)\%\s*?(.*?)\}\}/{
-      self.wiki-colored-text(color => $0, size => $1, text => $2);
-    }/;
-
-    #-- translate  &lt;br&gt; to \n
-    $wiki-text ~~ s:g/\&lt\;br\&gt\;/\n/; 
-
-    #-- pattern: == # Heading == 
-    $wiki-text = self.wiki-numbered-heading(text => $wiki-text);
-
-    #-- clean-up extra tags
-    $wiki-text = self.wiki-remove-unwanted-tags(text => $wiki-text);
-
-    #-- split text by paragraph marked by \n
-    $wiki-text ~~ s:g/[^^|\n](.*?)\n$$/{
-      self.wiki-paragraph(text => $0); 
-    }/;
-
-    #-- pattern = <pagetitle>SOMETITLE</pagetitle>
-    $wiki-text ~~ s:g/\&lt\;pagetitle\&gt\;(.*)\&lt\;\/pagetitle\&gt\;/{
-      self.wiki-set-page-title(title => $0.Str);
-    }/;
-
-    #-- code
-    $wiki-text ~~ s:g/\&lt\;'code'\&gt\;(.*)\&lt\;\/'code'\&gt\;/{
-      self.wiki-source-code(text => $0);
-    }/;
-
-    #-- Bring back PREformatted texts
-    #-- The preformatted text buffer is %.Preformatted
-    for 1 .. $.PreformattedIndex -> $i {
-      $wiki-text ~~ s:g/\<pre\>PRE_$i\<\/pre\>/{
-        '<pre>' ~ %.Preformatted{$i.Str} ~ '</pre>';
+    #-- begin: <back> tag
+    $wiki-text ~~ s:g/\&lt\;'back'\&gt\;/{
+      self.store-raw(text => 'back to ' ~ $.CurrentWikiPage);
       }/;
-    }
-    %.Preformatted = (); #-- reclaim memory
-    $.PreformattedIndex = 0;
+    #Ref: $pageText =~
+    #Ref: s/&lt;back&gt;/$self->StoreRaw("<b>" 
+    #Ref: . $self->Ts('Backlinks for: %s', $MainPage) 
+    #Ref: . "<\/b><br \/>\n" . $self->GetPageList($self->SearchTitleAndBody($MainPage)))/ige;
+    #-- end: <back> tag
 
-    #-- clean-up extra tags
-    $wiki-text = self.wiki-remove-unwanted-tags(text => $wiki-text);
+
+    #-- begin: nowiki tag
+    #ref: $pageText =~ s/\&lt;nowiki\&gt;((.|\n)*?)\&lt;\/nowiki\&gt;/$self->StoreRaw($1)/ige;
+
+    #pattern = <nowiki>text<nowiki>
+    $wiki-text ~~ s:g/\&lt\;nowiki\&gt\;(.*?)\&lt\;\/nowiki\&gt\;/{
+      self.store-raw(text => $0.Str);
+    }/;
+    #-- end: nowiki tag
+   
+
+
+    #Ref: $pageText =~
+    #Ref: s/&lt;back\s+(.*?)&gt;/$self->StoreRaw("<b>" 
+    #Ref: . $self->Ts('Backlinks for: %s', $self->QuoteHtml($1)) 
+    #Ref: . "<\/b><br \/>\n" . $self->GetPageList($self->SearchTitleAndBody($1)))/ige;
+
+
+
+    #Hide:#-- HIDE tags
+    #Hide:$wiki-text ~~ s:g/\&lt\;hide\&gt\;(.*?)\&lt\;\/hide\&gt\;//;
+    #Hide:
+    #Hide:#-- join lines terminated with backslash
+    #Hide:$wiki-text ~~ s:g/\\' '*\r?\n//; #' comment needed to editor color
+    #Hide:
+    #Hide:#-- save PRE tags to buffer (for further parsing later in code)
+    #Hide:$wiki-text ~~ s:g/\&lt\;'pre'\&gt\;(.*?)\&lt\;\/'pre'\&gt\;/{
+    #Hide:  self.wiki-pre-formatted_text(text => $0);
+    #Hide:}/;
+    #Hide:
+    #Hide:#-- save TABLE data to buffer
+    #Hide:$wiki-text ~~ s:g/^^(\|\|.*?\|\|)\n\n/{
+    #Hide:  self.wiki-table(text => $0.Str);
+    #Hide:}/;
+    #Hide:
+    #Hide:  #-- color pattern = {{color,digit% some text}}
+    #Hide:$wiki-text ~~ s:g/\{\{(.*?)\,(\d+)\%\s*?(.*?)\}\}/{
+    #Hide:  self.wiki-colored-text(color => $0, size => $1, text => $2);
+    #Hide:}/;
+    #Hide:
+    #Hide:#-- translate  &lt;br&gt; to \n
+    #Hide:$wiki-text ~~ s:g/\&lt\;br\&gt\;/\n/; 
+    #Hide:
+    #Hide:#-- pattern: == # Heading == 
+    #Hide:$wiki-text = self.wiki-numbered-heading(text => $wiki-text);
+    #Hide:
+    #Hide:#-- clean-up extra tags
+    #Hide:$wiki-text = self.wiki-remove-unwanted-tags(text => $wiki-text);
+    #Hide:
+    #Hide:#-- split text by paragraph marked by \n
+    #Hide:$wiki-text ~~ s:g/[^^|\n](.*?)\n$$/{
+    #Hide:  self.wiki-paragraph(text => $0); 
+    #Hide:}/;
+    #Hide:
+    #Hide:#-- split text by paragraph "</p>" marker
+    #Hide:
+    #Hide:
+    #Hide:
+    #Hide:#-- pattern = <pagetitle>SOMETITLE</pagetitle>
+    #Hide:$wiki-text ~~ s:g/\&lt\;pagetitle\&gt\;(.*)\&lt\;\/pagetitle\&gt\;/{
+    #Hide:  self.wiki-set-page-title(title => $0.Str);
+    #Hide:}/;
+    #Hide:
+    #Hide:#-- code
+    #Hide:$wiki-text ~~ s:g/\&lt\;'code'\&gt\;(.*)\&lt\;\/'code'\&gt\;/{
+    #Hide:  self.wiki-source-code(text => $0);
+    #Hide:}/;
+    #Hide:
+    #Hide:#-- Bring back PREformatted texts
+    #Hide:#-- The preformatted text buffer is %.Preformatted
+    #Hide:for 1 .. $.PreformattedIndex -> $i {
+    #Hide:  $wiki-text ~~ s:g/\<pre\>PRE_$i\<\/pre\>/{
+    #Hide:    '<pre>' ~ %.Preformatted{$i.Str} ~ '</pre>';
+    #Hide:  }/;
+    #Hide:}
+    #Hide:%.Preformatted = (); #-- reclaim memory
+    #Hide:$.PreformattedIndex = 0;
+    #Hide:
+    #Hide:#-- clean-up extra tags
+    #Hide:$wiki-text = self.wiki-remove-unwanted-tags(text => $wiki-text);
+    #Hide:
 
     return $wiki-text;
+  }
+
+  method store-raw(Str :$text) {
+    %.SaveUrl{$.SaveUrlIndex} = $text;
+    return $C_FS ~ $.SaveUrlIndex++ ~ $C_FS;
   }
 
   method wiki-quote-html(Str :$text) {
@@ -439,7 +501,7 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     $qtext ~~ s:g/<[&]>/\&amp\;/;
     $qtext ~~ s:g/<[\<]>/\&lt\;/;
     $qtext ~~ s:g/<[\>]>/\&gt\;/;
-    $qtext ~~ s:g/'&amp;'(<[#a..zA..Z0..9]>+)/\&$0/;
+    $qtext ~~ s:g/'&amp;'(<[#a..zA..Z0..9]>+)/\&$0;/;
     return $qtext;
   }
 
@@ -683,10 +745,10 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
       $para ~~ s:g/\n//;
     }
 
-    $para = self.wiki-list-item(text => $para, 
+     $para = self.wiki-list-item(text => $para, 
                                 listtype => 'ul', 
                                 symbol => '*'); #-- unordered list
-    $para = self.wiki-list-item(text => $para, 
+     $para = self.wiki-list-item(text => $para, 
                                 listtype => 'ol', 
                                 symbol => '#'); #-- ordered list
 
@@ -1203,13 +1265,15 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
                   given $k {
                     when 'txtdata' {
                       my $text = $v;
-                      $file-data = base64-decode($text).decode;
+                      #-- hide! $file-data = base64-decode($text).decode;
+                      $file-data = $text; 
                       #$file-data = $text;
                       %.Text{$k} = $file-data;
                     }
                     when 'summary' {
                       my $summary = $v;
-                      $summary = base64-decode($summary).decode;
+                      #-- hide! $summary = base64-decode($summary).decode;
+                      
                       #self.TRACE: 'Summary';
                       #%.Text{$k} = $v.Str;
                       %.Text{$k} = $summary;
@@ -1449,10 +1513,12 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
       given $key {
         when 'txtdata' {
           #-- $text = $.Sys.getparam(key => 'text');
-          $text = base64-encode($text, :str);
+          #-- hide! $text = base64-encode($text, :str);
+          $text = $text; #base64-encode($text, :str);
         }
         when 'summary' {
-          $text = base64-encode($text, :str);
+          #-- hide! $text = base64-encode($text, :str);
+          $text = $text; #base64-encode($text, :str);
         }
         default {
           if $key ne '' {
