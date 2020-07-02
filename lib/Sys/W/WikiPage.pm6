@@ -47,6 +47,13 @@ class Sys::W::WikiPage is export {
     # Single tags (that do not require a closing /tag)
     has @.HtmlSingle  = <br p hr li dt dd th>;
 
+    #-- begin: testing-declaration
+    has Bool $.NonEnglish = False;
+    has Bool $.NewFS = False;
+    has Bool $.SimpleLinks = True;
+    has Bool $.SubPage = True;
+    #-- end: testing-declaration
+
 
     constant $C_APP_NAME = "WIKI";
     constant $C_FS  = "\xb3";
@@ -377,9 +384,80 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
         note $e.message;
     }
 
+  method wiki-init-link-patterns() {
+    my Str $upper-letter = '';
+    my Str $lower-letter = '';
+    my Str $any-letter = '';
+    my Str $link-pattern-A = '';
+    my Str $link-pattern-B = '';
+    my Str $link-pattern-C = '';
+
+    $upper-letter = '<[A..Z';
+    $lower-letter = '<[a..z';
+    $any-letter = '<[A..Za..z';
+
+    if $.NonEnglish {
+      $upper-letter ~= "\xc0..\xde";
+      $lower-letter ~= "\xdf..\xff";
+      if $.NewFS {
+        $any-letter ~= "\x80..\xff";        
+      }
+      else {
+        $any-letter ~= "\xc0..\xff";
+      }
+    }
+    if $.SimpleLinks {
+      $any-letter ~= '_0..9';
+    }
+
+
+    $upper-letter ~= ']>';
+    $lower-letter ~= ']>';
+    $any-letter ~= ']>';
+
+    self.TRACE: 'UpperLetter = ' ~ $upper-letter;
+    self.TRACE: 'LowerLetter = ' ~ $lower-letter;
+    self.TRACE: 'AnyLetter = ' ~ $any-letter;
+
+    $link-pattern-A = $upper-letter 
+                    ~ '+' 
+                    ~ $lower-letter
+                    ~ '+'
+                    ~ $upper-letter 
+                    ~ $any-letter 
+                    ~ '*';
+
+    self.TRACE: 'Link pattern A = ' ~ $link-pattern-A;
+
+
+    $link-pattern-B = $upper-letter 
+                    ~ '+' 
+                    ~ $lower-letter
+                    ~ '+'
+                    ~ $any-letter 
+                    ~ '*';
+
+    self.TRACE: 'Link pattern B = ' ~ $link-pattern-B;
+
+                  
+
+    $link-pattern-C = $upper-letter 
+                    ~ '+' 
+                    ~ $any-letter 
+                    ~ '*';
+
+    self.TRACE: 'Link pattern C = ' ~ $link-pattern-C;
+
+                  
+
+  }
 
   method wiki-translate(Str :$text) {
     my Str $wiki-text = '';
+
+    self.wiki-init-link-patterns();
+
+
     my %SaveUrl = ();
 
     #-- begin: remove field separators
@@ -1026,20 +1104,83 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     #- end: line break
 
     #- begin: tt
-      $wiki-text ~~ s:g/
-        \&lt\;tt\&gt\;
-        (.*?)
-        \&lt\;\/tt\&gt\;
-        /
-        \<tt\>$0\<\/tt\>
-        /;
+    $wiki-text ~~ s:g/
+      \&lt\;tt\&gt\;
+      (.*?)
+      \&lt\;\/tt\&gt\;
+      /
+      \<tt\>$0\<\/tt\>
+      /;
     #- end: tt
 
     #begin: counter
     #end: counter
 
     #begin: pod
+    $wiki-text ~~ s:g/
+      (<[BbIiUu]>)\&lt\;((.*?))\&gt\;
+      /
+      \<$0\>$1\<\/$0\>
+      /;
+
     #end: pod
+
+    #begin: TEXT-T01
+
+    #end: TEXT-T01
+
+    #begin: ICON
+    $wiki-text ~~ s:g/
+      \%'ICON'\{(.*?)\}\%
+    /{
+      self.store-icon-tag(icon => $0);
+    }/;
+    #end: ICON
+
+    #begin: html links
+    # s/
+    #  \&lt;            <
+    #  A(\s[^<>]+?)     A
+    #  \&gt;            >
+    #  (.*?)           .*?
+    #  \&lt;           <
+    #  \/a             /a
+    #  \&gt;           >
+    # /$self->StoreHref($1, $2)/gise;
+    #
+    $wiki-text ~~ s:g/
+    \&lt\;a\s(.*?)\&gt\;(.*?)\&lt\;\/a\&gt\;
+    /{
+      self.store-href(anchor => $0, text => $1);
+    }/;
+    #end: html links
+
+
+    #begin: action pattern
+
+    #end: action pattern
+
+    #begin: search link
+    #end: search link
+
+    #begin: free link pattern
+    #end: free link pattern
+
+    #begin: anchored link pattern
+    #end: anchored link pattern
+
+    #begin: urlpattern
+    #end: urlpattern
+
+    #begin: interlink pattern
+    #end: interlink pattern
+
+    #begin: linkpattern
+    #end: linkpattern
+
+    #begin: anchoredlinkpattern
+    #end: anchoredlinkpattern
+
 
     #Hide: #pattern = <nowiki>text<nowiki>
     #Hide: $wikitext ~~ s:g/\&lt\;nowiki\&gt\;(.*?)\&lt\;\/nowiki\&gt\;/{
@@ -1283,7 +1424,11 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     return $headtext;
   }
 
-
+  method store-icon-tag(:$icon){
+    my Str $icon-path = '';
+    $icon-path = 'themes/img/icons/' ~ $icon;
+    return $icon-path;
+  };
 
   method wiki-indent(:$indent, :$text) {
     my $indent_text = self.space(2); #'&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;';
@@ -1293,6 +1438,14 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     return $indent_text ~ $text;
   }
 
+  method store-href(:$anchor, :$text) {
+    #    return self.store-raw(text => "<$tag>" ~ $wiki-text ~ "</$tag>");
+    my $href = '';
+    my $txt = '';
+    $txt = $text.Str;
+    $href = $anchor.Str;
+    return '<a ' ~ self.store-raw(text => $href) ~ '>' ~ $txt ~ '</a>';
+  }
 
   method wiki-space-indent(:$indent, :$text) {
     my $indent_text = self.space(1); #'&nbsp;&nbsp;';

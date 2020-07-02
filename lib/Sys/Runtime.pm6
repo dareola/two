@@ -3700,43 +3700,43 @@ class Runtime is export {
       $source-code ~= $snippet;
 
       $snippet = q:to/END_OF_CODE/;
-        method table-structure(Str :$tabname = '', Bool :$keyonly = True) {
-            my Str %wTableStructure = ();
-            if $tabname ne '' {
-              if self.is-table(tabname => $tabname) {
-                #-- Query TABLFLDS for fldname, fldspos
-                my %wFields = self.structure( fields => ['fldname', 'fldspos'] );
-                %wFields<fldname> = 'fldname';
-                %wFields<fldspos> = 'fldspos';
-                my %wWhere = ();
-                if $keyonly {
-                  %wWhere = self.structure( fields => ['tabname', 'actvatd', 'version', 'primkey'] );
-                  %wWhere<tabname> = $tabname;
-                  %wWhere<actvatd> = 'A';
-                  %wWhere<version> = '0';
-                  %wWhere<primkey> = 'X';
-                }
-                else {
-                  %wWhere = self.structue( fields => ['tabname', 'acvtatd', 'version'] );
-                  %wWhere<tabname> = $tabname;
-                  %wWhere<actvatd> = 'A';
-                  %wWhere<version> = '0';
-                }
-                my @iTABLFLDS = self.table-query(tabname => 'TABLFLDS', 
-                                                fields => %wFields,
-                                                where => %wWhere);
-                if (@iTABLFLDS.elems) {
-                  for @iTABLFLDS -> $fldname {
-                    my $field-name = $fldname<fldname>.lc;
-                    if $field-name ne '' {
-                      %wTableStructure{$field-name} = '';  #-- set initial blank value, we only need fields
-                    }
+        method table-structure(Str :$tabname = '', Bool :$keyonly = False) {
+          my Str %wTableStructure = ();
+          if $tabname ne '' {
+            if self.is-table(tabname => $tabname) {
+              #-- Query TABLFLDS for fldname, fldspos
+              my %wFields = self.structure( fields => ['fldname', 'fldspos'] );
+              %wFields<fldname> = 'fldname';
+              %wFields<fldspos> = 'fldspos';
+              my %wWhere = ();
+              if $keyonly {
+                %wWhere = self.structure( fields => ['tabname', 'actvatd', 'version', 'primkey'] );
+                %wWhere<tabname> = $tabname;
+                %wWhere<actvatd> = 'A';
+                %wWhere<version> = '0';
+                %wWhere<primkey> = 'X';
+              }
+              else {
+                %wWhere = self.structure( fields => ['tabname', 'actvatd', 'version'] );
+                %wWhere<tabname> = $tabname;
+                %wWhere<actvatd> = 'A';
+                %wWhere<version> = '0';
+              }
+              my @iTABLFLDS = self.table-query(tabname => 'TABLFLDS', 
+                                              fields => %wFields,
+                                              where => %wWhere);
+              if (@iTABLFLDS.elems) {
+                for @iTABLFLDS -> $fldname {
+                  my $field-name = $fldname<fldname>.lc;
+                  if $field-name ne '' {
+                    %wTableStructure{$field-name} = '';  #-- set initial blank value, we only need fields
                   }
                 }
               }
             }
-            return %wTableStructure;
           }
+          return %wTableStructure;
+        }
 
         
     END_OF_CODE

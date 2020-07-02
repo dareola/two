@@ -2297,7 +2297,7 @@ method TRACE(Str $msg, :$id = "D0", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
       }
 
     
-    method table-structure(Str :$tabname = '', Bool :$keyonly = True) {
+    method table-structure(Str :$tabname = '', Bool :$keyonly = False) {
         my Str %wTableStructure = ();
         if $tabname ne '' {
           if self.is-table(tabname => $tabname) {
@@ -2314,7 +2314,7 @@ method TRACE(Str $msg, :$id = "D0", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
               %wWhere<primkey> = 'X';
             }
             else {
-              %wWhere = self.structue( fields => ['tabname', 'acvtatd', 'version'] );
+              %wWhere = self.structure( fields => ['tabname', 'actvatd', 'version'] );
               %wWhere<tabname> = $tabname;
               %wWhere<actvatd> = 'A';
               %wWhere<version> = '0';
