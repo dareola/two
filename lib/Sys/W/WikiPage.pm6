@@ -51,7 +51,9 @@ class Sys::W::WikiPage is export {
     has Bool $.NonEnglish = False;
     has Bool $.NewFS = False;
     has Bool $.SimpleLinks = True;
-    has Bool $.SubPage = True;
+    has Bool $.UseSubPage = True;
+    has $.LinkPattern is rw = '';
+    has $.HalfLinkPattern is rw = '';
     #-- end: testing-declaration
 
 
@@ -448,7 +450,17 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
 
     self.TRACE: 'Link pattern C = ' ~ $link-pattern-C;
 
-                  
+    if $.UseSubPage {
+      $.LinkPattern = "(((?:(?:$link-pattern-A)?\\/)+$link-pattern-B)|$link-pattern-A)";
+      $.HalfLinkPattern = "(((?:(?:$link-pattern-B)?\\/)+$link-pattern-B)|$link-pattern-A)";
+    }
+    else {
+      $.LinkPattern = "($.link-pattern-A)";
+      $.HalfLinkPattern = "($.link-pattern-C)";
+    }              
+    self.TRACE: 'Link pattern = ' ~ $.LinkPattern;
+    self.TRACE: 'Half link pattern = ' ~ $.HalfLinkPattern;
+    
 
   }
 
