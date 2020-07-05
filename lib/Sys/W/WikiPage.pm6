@@ -285,12 +285,18 @@ method EDIT_SCREEN_1000() {
       $.Sys.FORM-BREAK();
       $.Sys.FORM-BREAK();
 
-      $.Sys.FORM-STRING(text => 'Summary');
+      $.Sys.FORM-STRING(text => '<table border="0"><tr><td valign="top">');
+
+      $.Sys.FORM-STRING(text => 'REGEX');
       $.Sys.FORM-SPACE();
       $.Sys.FORM-TEXT(key => 'summary', value => $summary,
                                     size => $edit-cols.Str, length => '80');
 
+      my Str $regex = '';
+      $regex = $summary.Str;
 
+      my Str $text-string = '';
+      $text-string = $wiki-text;
 
       $.Sys.FORM-BREAK();
       $.Sys.FORM-TEXTAREA(key => 'text',
@@ -298,12 +304,23 @@ method EDIT_SCREEN_1000() {
                         rows => $edit-rows,
                         cols => $edit-cols);
 
+
       $.Sys.FORM-HIDDEN(key => 'p', value => $.CurrentWikiPage);
-      $.Sys.FORM-STRING(text => '<br/>PREVIEW:<br/>');
       $.Sys.FORM-BREAK();
       my Str $preview = self.wiki-to-html(text => $wiki-text);
-      $.Sys.FORM-STRING(text => $preview);
+
+      #$.Sys.FORM-STRING(text => '</td><td valign="top">PREVIEW<br/>' ~ $preview ~ '</td></tr></table>');
+
+      #$.Sys.FORM-STRING(text => $preview);
+
+      my $regex-result = '';
+      $text-string ~~ s:g/<$regex>/{
+        $regex-result ~= self.eval-regex($/) ~ '&nbsp;' ~ $C_FS ~ '&nbsp;&nbsp;';
+      }/;
+
+      $.Sys.FORM-STRING(text => '</td><td valign="top">REGEX PREVIEW<br/>' ~ $regex-result ~ '</td></tr></table>');
       
+      $.Sys.FORM-STRING(text => '<hr/>WIKI Preview<br/>' ~ $preview);
 
       $cancel = '&nbsp;|&nbsp;<a href="/wiki/display?p='
             ~ $.CurrentWikiPage ~ '">cancel</a>';
@@ -313,6 +330,9 @@ method EDIT_SCREEN_1000() {
   return True;
 }
 
+  method eval-regex(Match $result) {
+    return $result;
+  }
 
 
   method wiki-display-page-metadata() {
@@ -487,11 +507,11 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     #self.TRACE: 'Quote delimiter = ' ~ $quote-delim;
 
     $.AnchoredLinkPattern = $.LinkPattern ~ '#(\\w+)' ~ $quote-delim;
-    self.TRACE: 'Anchored link pattern: ' ~ $.AnchoredLinkPattern;
+    #self.TRACE: 'Anchored link pattern: ' ~ $.AnchoredLinkPattern;
     $.LinkPattern ~= $quote-delim;
-    self.TRACE: 'Link pattern: ' ~ $.LinkPattern;
+    #self.TRACE: 'Link pattern: ' ~ $.LinkPattern;
     $.HalfLinkPattern ~= $quote-delim;
-    self.TRACE: 'Half link pattern: ' ~ $.HalfLinkPattern;
+    #self.TRACE: 'Half link pattern: ' ~ $.HalfLinkPattern;
 
   }
 
@@ -500,6 +520,7 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
 
     self.wiki-init-link-patterns();
 
+    #self.TRACE: 'TEXT = ' ~ '<hr>' ~ $text;
 
     my %SaveUrl = ();
 
@@ -563,11 +584,24 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
 
     #-- begin: paragraph
     #-- split text by paragraph marked by \n
-    $wiki-text ~~ s:g/[^^|\n](.*?)\n$$/{
+    #$wiki-text ~~ s:g/[^^|\n](.*?)\n$$/{
+    #self.TRACE: 'PARA :' ~ $0;
+    #self.wiki-parse-paragraph(text => $0);
+    #}/;
+    #-- end: paragraph
+
+    #-----
+    #-- begin: paragraph
+    #-- split text by paragraph marked by \n
+    $wiki-text ~= "\n";
+    $wiki-text ~~ s:g/[^^|\n](.*?)\n|$$/{
+    #self.TRACE: 'PARA :' ~ $0;
+    #self.TRACE: '<br/>';
     self.wiki-parse-paragraph(text => $0);
     }/;
     #-- end: paragraph
 
+    #-----
 
 
     #Hide:#-- HIDE tags
@@ -864,7 +898,10 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
 
   method wiki-parse-paragraph(:$text) {
     my $para = '';
-    $para = self.wiki-common-markup(text => $text);
+    if $text ne '' {
+      #self.TRACE: '>' ~ $text ~ '<hr/>';
+      $para = self.wiki-common-markup(text => $text);
+    }
     return '<p>' ~ $para ~ '</p>';
   }
 
