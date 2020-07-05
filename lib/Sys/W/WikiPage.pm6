@@ -208,6 +208,7 @@ method EDIT_SCREEN_1000() {
       my Str $logout-link = '';
       my Str $login-link = '';
       my Str $wiki-name = '';
+      my Int $regex-counter = 1;
       $wiki-name = $.Sys.get(key => 'WIKI_NAME');
 
       $logout-link = '<a href="/logout">Logout</a>' if $.UserID ne '';
@@ -315,7 +316,7 @@ method EDIT_SCREEN_1000() {
 
       my $regex-result = '';
       $text-string ~~ s:g/<$regex>/{
-        $regex-result ~= self.eval-regex($/) ~ '&nbsp;' ~ $C_FS ~ '&nbsp;&nbsp;';
+        $regex-result ~= self.eval-regex($regex-counter++, $/);
       }/;
 
       $.Sys.FORM-STRING(text => '</td><td valign="top">REGEX MATCH RESULT<br/>' ~ $regex-result ~ '</td></tr></table>');
@@ -330,8 +331,8 @@ method EDIT_SCREEN_1000() {
   return True;
 }
 
-  method eval-regex(Match $result) {
-    return $result;
+  method eval-regex($counter, Match $result) {
+    return $counter.Str ~ '.&nbsp;' ~ $result ~ '&nbsp;' ~ $C_FS ~ '<br/>';
   }
 
 
