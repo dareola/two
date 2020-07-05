@@ -299,7 +299,7 @@ method EDIT_SCREEN_1000() {
                         cols => $edit-cols);
 
       $.Sys.FORM-HIDDEN(key => 'p', value => $.CurrentWikiPage);
-      $.Sys.FORM-STRING(text => 'PREVIEW:<br/>');
+      $.Sys.FORM-STRING(text => '<br/>PREVIEW:<br/>');
       $.Sys.FORM-BREAK();
       my Str $preview = self.wiki-to-html(text => $wiki-text);
       $.Sys.FORM-STRING(text => $preview);
