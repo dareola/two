@@ -38,10 +38,10 @@ class Sys::W::WikiPage is export {
     has Int $.PreformattedIndex is rw = 0;
     has %.SaveUrl = ();
     has Int $.SaveUrlIndex is rw = 0;
-  
+
     # Tags that must be in <tag> ... </tag> pairs:
     has @.HtmlPairs = <b i u font big small sub sup h1 h2 h3 h4 h5 h6 cite code
-  em s strike strong tt var div center blockquote ol ul dl table tr td caption 
+  em s strike strong tt var div center blockquote ol ul dl table tr td caption
   br p hr li dt dd th>;
 
     # Single tags (that do not require a closing /tag)
@@ -101,12 +101,12 @@ method main($App, Str :$userid, Str :$ucomm, :%params) {
     if defined %.Params<save> {
       $.UserCommand = 'DISPLAY';
     }
-  
+
     self.goto-screen(cmd => $.UserCommand, screen => $next-screen);
 }
 
     method goto-screen(Str :$cmd, Str :$screen = '') {
-      
+
       my Str $next-screen = '';
       my Str $method-to-call = '';
       if $screen ne '' {
@@ -136,7 +136,7 @@ method main($App, Str :$userid, Str :$ucomm, :%params) {
       $.Sys.FT(tag => 'PAGE_TITLE', text => 'Error: method <b>' ~ $cmd ~ '</b> not implemented');
       $.Sys.FT(tag => 'SITE_LOGO', text => $.Sys.site-logo());
       $.Sys.FT(tag => 'PAGE_EDITOR', text => $.UserID);
-      $.Sys.FT(tag => 'MENU_BAR', text => $home-link);       
+      $.Sys.FT(tag => 'MENU_BAR', text => $home-link);
     }
 
 
@@ -144,8 +144,8 @@ method main($App, Str :$userid, Str :$ucomm, :%params) {
       my Str $home = '';
 
       $home = '<a href="/home">exit</a>';
-      
-      my Str $edit = ''; 
+
+      my Str $edit = '';
       my Str $logout-link = '';
       my Str $login-link = '';
       my Str $wiki-name = '';
@@ -165,7 +165,7 @@ method main($App, Str :$userid, Str :$ucomm, :%params) {
       my Str $summary = '';
       self.TRACE: 'CURRENT WIKI PAGE = ' ~ $.CurrentWikiPage;
       $status = self.wiki-open-page(id => $.CurrentWikiPage);
-      $wiki-text = %.Text<txtdata>.Str;      
+      $wiki-text = %.Text<txtdata>.Str;
       $summary = %.Text<summary>.Str;
 
       if defined %.Params<save> {
@@ -183,11 +183,11 @@ method main($App, Str :$userid, Str :$ucomm, :%params) {
       $.Sys.FT(tag => 'PAGE_EDITOR', text => $.UserID);
       $.Sys.FT(tag => 'WIKIMENU_BAR', text => $login-link ~ $logout-link);
 
-      $edit = '&nbsp;|&nbsp;<a href="/wiki/edit?p=' 
+      $edit = '&nbsp;|&nbsp;<a href="/wiki/edit?p='
             ~ $.CurrentWikiPage ~ '">edit</a>';
       $.Sys.FT(tag => 'MENU_BAR', text => $edit); # if $.UserID ne '';
 
-      my $refresh = '&nbsp;|&nbsp;<a href="/wiki/display?p=' 
+      my $refresh = '&nbsp;|&nbsp;<a href="/wiki/display?p='
             ~ $.CurrentWikiPage ~ '">refresh</a>';
       $.Sys.FT(tag => 'MENU_BAR', text => $refresh); # if $.UserID ne '';
 
@@ -202,7 +202,7 @@ method main($App, Str :$userid, Str :$ucomm, :%params) {
 
 method EDIT_SCREEN_1000() {
         my Str $home = '<a href="/wiki">exit</a>';
-      my Str $cancel = ''; 
+      my Str $cancel = '';
       my Str $logout-link = '';
       my Str $login-link = '';
       my Str $wiki-name = '';
@@ -219,9 +219,9 @@ method EDIT_SCREEN_1000() {
       $.CurrentWikiPage = %.Params<p> if defined %.Params<p> && %.Params<p> ne '';
 
       $home = '<a href="/wiki">home</a>' if $.CurrentWikiPage ne $.Sys.get(key => 'WIKI_HOME');
-      
+
       $status = self.wiki-open-page(id => $.CurrentWikiPage);
-      $wiki-text = %.Text<txtdata>.Str;      
+      $wiki-text = %.Text<txtdata>.Str;
       $summary = %.Text<summary>.Str;
 
       if defined %.Params<savc> {
@@ -256,10 +256,10 @@ method EDIT_SCREEN_1000() {
       $.Sys.FT(tag => 'PAGE_EDITOR', text => $.UserID);
       $.Sys.FT(tag => 'WIKIMENU_BAR', text => $login-link ~ $logout-link);
 
-  
+
       $.Sys.FORM-IMG-BUTTON(key => 'press-savc',
                             src => $C_ICON_SAVC,
-                            alt => 'Save and continue editing');    
+                            alt => 'Save and continue editing');
       $.Sys.FORM-SPACE();
       $.Sys.FORM-IMG-BUTTON(key => 'press-save',
                             src => $C_ICON_SAVE,
@@ -272,12 +272,12 @@ method EDIT_SCREEN_1000() {
       $.Sys.FORM-SPACE(spaces => 5);
       $.Sys.FORM-STRING(text => 'Rows');
       $.Sys.FORM-SPACE();
-      $.Sys.FORM-TEXT(key => 'ROWS', value => $edit-rows.Str, 
-                                    size => '2', length => '2'); 
+      $.Sys.FORM-TEXT(key => 'ROWS', value => $edit-rows.Str,
+                                    size => '2', length => '2');
       $.Sys.FORM-SPACE();
       $.Sys.FORM-STRING(text => 'Cols');
       $.Sys.FORM-SPACE();
-      $.Sys.FORM-TEXT(key => 'COLS', value => $edit-cols.Str, 
+      $.Sys.FORM-TEXT(key => 'COLS', value => $edit-cols.Str,
                                    size => '3', length => '3');
 
       $.Sys.FORM-BREAK();
@@ -285,20 +285,20 @@ method EDIT_SCREEN_1000() {
 
       $.Sys.FORM-STRING(text => 'Summary');
       $.Sys.FORM-SPACE();
-      $.Sys.FORM-TEXT(key => 'summary', value => $summary, 
+      $.Sys.FORM-TEXT(key => 'summary', value => $summary,
                                     size => $edit-cols.Str, length => '80');
 
 
 
       $.Sys.FORM-BREAK();
-      $.Sys.FORM-TEXTAREA(key => 'text', 
+      $.Sys.FORM-TEXTAREA(key => 'text',
                         value => $wiki-text,
                         rows => $edit-rows,
                         cols => $edit-cols);
 
       $.Sys.FORM-HIDDEN(key => 'p', value => $.CurrentWikiPage);
 
-      $cancel = '&nbsp;|&nbsp;<a href="/wiki/display?p=' 
+      $cancel = '&nbsp;|&nbsp;<a href="/wiki/display?p='
             ~ $.CurrentWikiPage ~ '">cancel</a>';
       $.Sys.FT(tag => 'MENU_BAR', text => $cancel); # if $.UserID ne '';
 
@@ -402,7 +402,7 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
       $upper-letter ~= "\xc0..\xde";
       $lower-letter ~= "\xdf..\xff";
       if $.NewFS {
-        $any-letter ~= "\x80..\xff";        
+        $any-letter ~= "\x80..\xff";
       }
       else {
         $any-letter ~= "\xc0..\xff";
@@ -421,31 +421,31 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     self.TRACE: 'LowerLetter = ' ~ $lower-letter;
     self.TRACE: 'AnyLetter = ' ~ $any-letter;
 
-    $link-pattern-A = $upper-letter 
-                    ~ '+' 
+    $link-pattern-A = $upper-letter
+                    ~ '+'
                     ~ $lower-letter
                     ~ '+'
-                    ~ $upper-letter 
-                    ~ $any-letter 
+                    ~ $upper-letter
+                    ~ $any-letter
                     ~ '*';
 
     self.TRACE: 'Link pattern A = ' ~ $link-pattern-A;
 
 
-    $link-pattern-B = $upper-letter 
-                    ~ '+' 
+    $link-pattern-B = $upper-letter
+                    ~ '+'
                     ~ $lower-letter
                     ~ '+'
-                    ~ $any-letter 
+                    ~ $any-letter
                     ~ '*';
 
     self.TRACE: 'Link pattern B = ' ~ $link-pattern-B;
 
-                  
 
-    $link-pattern-C = $upper-letter 
-                    ~ '+' 
-                    ~ $any-letter 
+
+    $link-pattern-C = $upper-letter
+                    ~ '+'
+                    ~ $any-letter
                     ~ '*';
 
     self.TRACE: 'Link pattern C = ' ~ $link-pattern-C;
@@ -457,10 +457,10 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     else {
       $.LinkPattern = "($.link-pattern-A)";
       $.HalfLinkPattern = "($.link-pattern-C)";
-    }              
+    }
     self.TRACE: 'Link pattern = ' ~ $.LinkPattern;
     self.TRACE: 'Half link pattern = ' ~ $.HalfLinkPattern;
-    
+
 
   }
 
@@ -496,8 +496,8 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     self.store-raw(text => 'back to ' ~ $.CurrentWikiPage);
     }/;
     #Ref: $pageText =~
-    #Ref: s/&lt;back&gt;/$self->StoreRaw("<b>" 
-    #Ref: . $self->Ts('Backlinks for: %s', $MainPage) 
+    #Ref: s/&lt;back&gt;/$self->StoreRaw("<b>"
+    #Ref: . $self->Ts('Backlinks for: %s', $MainPage)
     #Ref: . "<\/b><br \/>\n" . $self->GetPageList($self->SearchTitleAndBody($MainPage)))/ige;
     #-- end: <back> tag
 
@@ -533,7 +533,7 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     #-- begin: paragraph
     #-- split text by paragraph marked by \n
     $wiki-text ~~ s:g/[^^|\n](.*?)\n$$/{
-    self.wiki-parse-paragraph(text => $0); 
+    self.wiki-parse-paragraph(text => $0);
     }/;
     #-- end: paragraph
 
@@ -557,9 +557,9 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     #Hide:}/;
     #Hide:
     #Hide:#-- translate  &lt;br&gt; to \n
-    #Hide:$wiki-text ~~ s:g/\&lt\;br\&gt\;/\n/; 
+    #Hide:$wiki-text ~~ s:g/\&lt\;br\&gt\;/\n/;
     #Hide:
-    #Hide:#-- pattern: == # Heading == 
+    #Hide:#-- pattern: == # Heading ==
     #Hide:$wiki-text = self.wiki-numbered-heading(text => $wiki-text);
     #Hide:
     #Hide:#-- clean-up extra tags
@@ -567,7 +567,7 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     #Hide:
     #Hide:#-- split text by paragraph marked by \n
     #Hide:$wiki-text ~~ s:g/[^^|\n](.*?)\n$$/{
-    #Hide:  self.wiki-paragraph(text => $0); 
+    #Hide:  self.wiki-paragraph(text => $0);
     #Hide:}/;
     #Hide:
     #Hide:#-- split text by paragraph "</p>" marker
@@ -594,8 +594,17 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     #Hide:$wiki-text = self.wiki-remove-unwanted-tags(text => $wiki-text);
     #Hide:
 
+    $wiki-text = self.restore-saved-text(text => $wiki-text);
     return $wiki-text;
   }
+
+  method restore-saved-text(:$text) {
+    my Str $wiki-text = '';
+    $wiki-text = $text;
+    1 while $wiki-text ~~ s:g/$C_FS(\d+)$C_FS/%.SaveUrl{$0}/; # Restore saved text
+    return $wiki-text;
+  }
+
 
   method store-raw(Str :$text) {
     %.SaveUrl{$.SaveUrlIndex} = $text;
@@ -624,13 +633,13 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     my $wiki-text = '';
     $wiki-text = $text;
 
-    $wiki-text = '<a href="' 
+    $wiki-text = '<a href="'
                     ~ 'https://launchpad.support.sap.com/#/notes/'
-                    ~ $wiki-text 
-                    ~ '" target=sapnote_"'  
-                    ~ $wiki-text 
-                    ~ '">' 
-                    ~ $wiki-text 
+                    ~ $wiki-text
+                    ~ '" target=sapnote_"'
+                    ~ $wiki-text
+                    ~ '">'
+                    ~ $wiki-text
                     ~ '</a>';
     return self.store-raw(text => "<$tag>" ~ $wiki-text ~ "</$tag>");
   }
@@ -668,14 +677,14 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
         }/;
         $table ~= '<tr><td class="wikitablecell" align="top">&nbsp;&nbsp;' ~ $line-text ~ '&nbsp;</td></tr>';
       }/;
-    } 
+    }
     $table = '<table border="0">' ~ $table ~ '</table><br/>';
     return $table;
   }
 
   method wiki-colored-text(:$color, :$size, :$text) {
     my Str $wiki-text = '';
-    $wiki-text ~= '<span style="font-size:' ~ $size ~ '%; ' ~ 'color:' ~ $color 
+    $wiki-text ~= '<span style="font-size:' ~ $size ~ '%; ' ~ 'color:' ~ $color
                                          ~ ";" ~ '">' ~ $text ~ '</span>';
     return $wiki-text;
   }
@@ -748,25 +757,25 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
         $first-time = False;
         $last-depth = $depth;
         $page ~= $line_item ~ "\n";
-      } 
+      }
       else {
         $line_item ~~ s:g/(\#+)/{
-          #-- replace '##' with icon :i 
+          #-- replace '##' with icon :i
           my Str $icon = '';
           my Int $icon-type = 0;
           $icon-type = $0.chars;
           if $icon-type > 0 {
             given $icon-type {
               when 1 {
-               $icon = '#'; #<img src="/themes/img/common/yellow_square.gif"/>'; 
+               $icon = '#'; #<img src="/themes/img/common/yellow_square.gif"/>';
                #-- TODO: Determine icon for ## symbol
               }
               when 2 {
-               $icon = '<img src="/themes/img/common/yellow_square.gif"/>'; 
+               $icon = '<img src="/themes/img/common/yellow_square.gif"/>';
                #-- TODO: Determine icon for ## symbol
               }
               default {
-               #$icon = '<img src="/themes/img/common/yellow_square.gif"/>'; 
+               #$icon = '<img src="/themes/img/common/yellow_square.gif"/>';
                #-- TODO: Determine icon for ## symbol
               }
             }
@@ -783,12 +792,12 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
   method wiki-remove-unwanted-tags(:$text) {
     my $para = $text;
     #-- clean up
-    #-- whitespace before BR 
+    #-- whitespace before BR
     $para ~~ s:g/\s+(\<br\/\>)/{$0}/;
 
     #-- whitespace before </td>
     $para ~~ s:g/\s+(\<\/td\>)/{$0}/;
-    
+
     #<br/><ul> - remove br
     $para ~~ s:g/\<br\/\>(\<ul\>)/{$0}/;
     $para ~~ s:g/\<br\/\>\s+(\<ul\>)/{$0}/;
@@ -831,50 +840,50 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
   method wiki-paragraph(:$text) {
     return '' if $text eq '' || $text eq "\n";
     my $para = $text;
-    
-    #pattern = [http://some.url some remarks]     
+
+    #pattern = [http://some.url some remarks]
     $para ~~ s:g/\[(['http'|'https'])\:\/\/(.*?)\s+(.*?)[\]]/{
             self.wiki-bracket-url(protocol => $0, uri => $1, desc => $2);
-            }/;  
-    
+            }/;
+
     #pattern = <wspace>http://some.url.somewhere
     $para ~~ s:g/(\s+)(['http'|'https'])\:\/\/(.*?)[\"|$$|\s+?]/{  #"
             self.wiki-url(prefix => $0, protocol => $1, uri => $2);
             }/;
 
     #pattern = [http:/somewhere.com this is a sample url]
-    $para ~~ s:g/\[(['http'|'https'])\:\/(.*?)\s+(.*?)[\]]/{ 
+    $para ~~ s:g/\[(['http'|'https'])\:\/(.*?)\s+(.*?)[\]]/{
             self.wiki-local-url(protocol => $0, uri => $1, desc => $2);
             }/;
 
     #pattern = [[WikiPattern | Description]]
     $para ~~ s:g/\[\[(\/?)(<upper>+<alnum>+<alpha>*)\s*?(\|+)\s*?(.*?)\s*?\]\]/{
-      self.wiki-bracket-link(subpage => $0, 
-                             page => $1, 
+      self.wiki-bracket-link(subpage => $0,
+                             page => $1,
                              desc => self.wiki-expand-word(text => $3.Str));
-    }/; 
+    }/;
 
     #pattern = [[/Sometext/MorePages/AnotherPage | Sometext]]
     $para ~~ s:g/\[\[(\/?)(.*?)\s*?(\|+)\s*?(.*?)\s*?\]\]/{
-      self.wiki-bracket-multilink(subpage => $0, 
-                                  page => $1, 
-                                  pipe => $2, 
+      self.wiki-bracket-multilink(subpage => $0,
+                                  page => $1,
+                                  pipe => $2,
                                   desc => $3);
-    }/; 
+    }/;
 
     #pattern = [[UpperLowerAndAnything]]
      $para ~~ s:g/\[\[(<upper>+<alnum>+<alnum>*)\]\]/{
-       self.wiki-bracket-link(subpage => '', 
-                              page => $0, 
+       self.wiki-bracket-link(subpage => '',
+                              page => $0,
                               desc => self.wiki-expand-word(text => $0.Str));
      }/;
 
     #pattern = [[/WikiPattern]]
     $para ~~ s:g/\[\[(\/)(.*?)\]\]/{
-      self.wiki-bracket-link(subpage => $0, 
-                             page => $1, 
+      self.wiki-bracket-link(subpage => $0,
+                             page => $1,
                              desc => self.wiki-expand-word(text => $1.Str));
-    }/; 
+    }/;
 
     $para ~= '<br/>';
 
@@ -892,46 +901,46 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
       $para ~~ s:g/\n//;
     }
 
-     $para = self.wiki-list-item(text => $para, 
-                                listtype => 'ul', 
+     $para = self.wiki-list-item(text => $para,
+                                listtype => 'ul',
                                 symbol => '*'); #-- unordered list
-     $para = self.wiki-list-item(text => $para, 
-                                listtype => 'ol', 
+     $para = self.wiki-list-item(text => $para,
+                                listtype => 'ol',
                                 symbol => '#'); #-- ordered list
 
-    $para ~= "\n"; 
+    $para ~= "\n";
 
     return $para;
   }
 
   method wiki-bracket-url(:$protocol, :$uri, :$desc) {
-    my $url = '<a href="' ~ $protocol ~ '://' 
-                          ~ $uri ~ '" target="_new">' 
-                          ~ $desc ~ '</a>'; 
+    my $url = '<a href="' ~ $protocol ~ '://'
+                          ~ $uri ~ '" target="_new">'
+                          ~ $desc ~ '</a>';
     return $url;
   }
 
   method wiki-url(:$prefix, :$protocol, :$uri) {
-    my $url = $prefix 
-            ~ '<a href="' 
-            ~ $protocol 
-            ~ '://' 
-            ~ $uri 
-            ~ '" target="_new">' 
-            ~ $protocol 
-            ~ '://' 
-            ~ $uri 
-            ~ '</a>' 
+    my $url = $prefix
+            ~ '<a href="'
+            ~ $protocol
+            ~ '://'
+            ~ $uri
+            ~ '" target="_new">'
+            ~ $protocol
+            ~ '://'
+            ~ $uri
+            ~ '</a>'
             ~ "\n";
     return $url;
   }
 
   method wiki-local-url(:$protocol, :$uri, :$desc) {
     my $site_url = $.Sys.get(key => 'SITE_URL');
-    my $url = '<a href="' 
-            ~ $protocol ~ '://' 
-            ~ $site_url ~ '/' ~ $uri 
-            ~ '" target="_new">' 
+    my $url = '<a href="'
+            ~ $protocol ~ '://'
+            ~ $site_url ~ '/' ~ $uri
+            ~ '" target="_new">'
             ~ $desc ~ '</a>';
     return $url;
   }
@@ -955,7 +964,7 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     else {
       $current_page = $page;
     }
-    $url = $url ~ '?p=' ~ $current_page; 
+    $url = $url ~ '?p=' ~ $current_page;
     #-- detect if page exists..
     my Str $file-name = self.get-page-filename(filename => $current_page.Str);
     if $file-name.IO.e {
@@ -972,7 +981,7 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     my $current_page = $.CurrentWikiPage;
     my @subpages = $page.split('/');
     my $the_url = '';
-    
+
     if $subpage ne '' {
       my $subpagelink = '';
       my $i = 0;
@@ -980,11 +989,11 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
         $i++;
         $subpagelink ~= '/' ~ $pagelink;
         if $i == @subpages.elems {
-          $the_url ~= '<a href="' ~ $url ~ '?p=' ~ $current_page 
+          $the_url ~= '<a href="' ~ $url ~ '?p=' ~ $current_page
                                         ~ $subpagelink ~ '">' ~ $desc ~ '</a>';
         }
         else {
-          $the_url ~= '<a href="' ~ $url ~ '?p=' ~ $current_page 
+          $the_url ~= '<a href="' ~ $url ~ '?p=' ~ $current_page
                                   ~ $subpagelink ~ '">' ~ $pagelink ~ '</a>' ~ '/';
         }
       }
@@ -995,15 +1004,15 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
       for @subpages -> $pagelink {
         $i++;
         $subpagelink ~= $pagelink ~ '/';
-        my $subpage_url = $subpagelink.chop; 
+        my $subpage_url = $subpagelink.chop;
         if $i == @subpages.elems {
-          $the_url ~=  '<a href="' ~ $url ~ '?p=' ~ $subpage_url 
+          $the_url ~=  '<a href="' ~ $url ~ '?p=' ~ $subpage_url
                                           ~ '">' ~ $desc ~ '</a>';
         }
         else {
-          $the_url ~= '<a href="' ~ $url ~ '?p=' ~ $subpage_url 
+          $the_url ~= '<a href="' ~ $url ~ '?p=' ~ $subpage_url
                                         ~ '">' ~ $pagelink ~ '</a>' ~ '/';
-        }      
+        }
       }
     }
   return $the_url;
@@ -1211,8 +1220,8 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
 
     #Hide: #pattern = [[UpperAndAnything]]
     #Hide: $wikitext ~~ s:g/\[\[(<upper>*<alpha>*.*?)\]\]/{
-    #Hide:    self.wiki-bracket-link(subpage => '', 
-    #Hide:                           page => self.wiki-free-to-normal(text => $0), 
+    #Hide:    self.wiki-bracket-link(subpage => '',
+    #Hide:                           page => self.wiki-free-to-normal(text => $0),
     #Hide:                           desc => self.wiki-expand-word(text => $0.Str));
     #Hide: }/;
 
@@ -1254,15 +1263,15 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
   method wiki-line(:$text) {
     my $line = $text;
 
-    #- <toc>  
-    $line ~~ s:g/\&lt\;'toc'\&gt\;/TODO:Table-of-Contents/; 
+    #- <toc>
+    $line ~~ s:g/\&lt\;'toc'\&gt\;/TODO:Table-of-Contents/;
 
     #- B<Bold text> U<underlined> I<italic>
     $line ~~ s:g/(<[BUIbui]>)(\&lt\;)(.*?)(\&gt\;)/{
     self.wiki-pod(text => $2, tag => $0);
     }/;
 
-    my Bool $heading_detected = False; 
+    my Bool $heading_detected = False;
 
     #pattern = === Heading === #-- temporarily disable
     $line ~~ s:g/^^(\=+)\s+?(.*?)\s+?(\=+)/{
@@ -1272,14 +1281,14 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
 
     #pattern = :text - where : is number of &nbsp;
     $line ~~ s:g/^^(\:+)(.*?)$$/{
-      self.wiki-indent(indent => $0, text => $1); 
+      self.wiki-indent(indent => $0, text => $1);
     }/;
-    
+
     #pattern = <space>text - where : is number of &nbsp;
     $line ~~ s:g/^^(' '+)(.*)$$/{ #' comment to fix editor color
-      self.wiki-space-indent(indent => $0, text => $1); 
+      self.wiki-space-indent(indent => $0, text => $1);
     }/;
-    
+
     $line ~~ s:g/\%'ICON'\{(.*?)\}\%/{
       self.wiki-icon-pattern(icon => $0);
     }/;
@@ -1292,7 +1301,7 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     $line ~~ s:g/\&lt\;'sapnote'\&gt\;\s*?(\d+)\s*?(.*?)\&lt\;\/'sapnote'\&gt\;/{
     self.wiki-sap-note(note => $0.Int, desc => $1.Str);
     }/;
-    
+
     $line ~~ s:g/\&lt\;hr\/?\&gt\;/\<hr\/\>/;
 
     $line ~= '<br/>' if !$heading_detected; #-- do not add line break if line is heading
@@ -1302,7 +1311,7 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
 
   method wiki-list-item(:$text, :$listtype, :$symbol) {
     my $para = $text;
-    
+
     my @ParagraphLines = $para.split(/\n/);
     my Bool $inside-list = False;
     my Bool $new-list = False;
@@ -1319,7 +1328,7 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
 
       if $line_item.substr(0..0) eq $symbol {
         my $star = '';
-        
+
         $line_item ~~ s:g/^^($symbol+)(.*?)$$/{
           $star = $0;
           $depth = $star.chars;
@@ -1338,7 +1347,7 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
               $indent ~= '<' ~ $listtype ~ '>';
             }
           }
-          
+
           $line_item = $indent ~ '<li>' ~ $line_item; #new
         }
         else {
@@ -1361,12 +1370,12 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
               $indent ~= '</' ~ $listtype ~ '>';
             }
           }
-          
+
           $line_item = $indent ~ '<li>' ~ $line_item; #new
         }
         $inside-list = True;
         $current-list = $new-list;
-      } 
+      }
       else {
         $item-status = 'L'; #last
         if $inside-list {
@@ -1389,11 +1398,11 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     $new-paragraph ~= ' ';
     $item-status = 'L' if $last-status eq 'C' || $last-status eq 'N';
     if $last-status eq 'C' || $last-status eq 'N' {
-      # OL 
+      # OL
       for 1..$last-depth {
         $new-paragraph ~= '</' ~ $listtype ~ '>';
       }
-      
+
     }
     $para = $new-paragraph;
     # end - lists
@@ -1403,7 +1412,7 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
 
     #<li></ul> #-- remove extra list item
     $para ~~ s:g/\<li\>\<\/ul\>//;
-      
+
     return $para;
   }
 
@@ -1412,13 +1421,13 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     if $title ne '' {
       #--FIXME: $.PAGETITLE = $title.Str;
     }
-    return $title-text; 
+    return $title-text;
   }
 
   method wiki-source-code(:$text) {
     my $source-code = $text;
     $source-code ~~ s:g/(\<br\/\>)+//;
-    #$code = '<pre><code>' ~ $code ~ '</code></pre>'; 
+    #$code = '<pre><code>' ~ $code ~ '</code></pre>';
     $source-code = '<textarea name="code" rows="5" cols="132" wrap="virtual" style="width:75%">' ~ $text ~ '</textarea>';
     return $source-code;
   }
@@ -1477,7 +1486,7 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
 
   method wiki-get-file-upload(:$filename) {
     my Str $file-path = '';
-    
+
     #[upload:/photos/books.jpg] maps to /file/uploads/photos/books.jpg
 
     my Str $path-prefix = '/file/uploads/';
@@ -1501,13 +1510,13 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
   method wiki-sap-note(Int :$note, Str :$desc?) {
     my Int $sap-note = $note;
     my Str $sDesc = $desc;
-    my Str $sap-link = '<a href="' 
+    my Str $sap-link = '<a href="'
                     ~ 'https://launchpad.support.sap.com/#/notes/'
-                    ~ $sap-note.Str 
-                    ~ '" target=sapnote_"'  
-                    ~ $sap-note.Str 
-                    ~ '">' 
-                    ~ $sap-note.Str 
+                    ~ $sap-note.Str
+                    ~ '" target=sapnote_"'
+                    ~ $sap-note.Str
+                    ~ '">'
+                    ~ $sap-note.Str
                     ~ '</a>';
     $sap-link ~= self.space ~ $desc if defined $desc;
     return $sap-link;
@@ -1534,13 +1543,13 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     my Str $page = '';
     my Str $wiki-page = '';
     $wiki-page = $filename;
-    $page = $.Sys.get(key => 'DATA_DIR') 
+    $page = $.Sys.get(key => 'DATA_DIR')
           ~ '/'
-          ~ $.Sys.get(key => 'SID') 
+          ~ $.Sys.get(key => 'SID')
           ~ $.Sys.get(key => 'SID_NR')
           ~ '/'
           ~ 'wikidata'
-          ~ '/' 
+          ~ '/'
           ~ 'page'
           ~ '/'
           ~ $wiki-page.substr(0,1).uc
@@ -1554,13 +1563,13 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     my Str $file = '';
     my Str $keep-page = '';
     $keep-page = $filename;
-    $file = $.Sys.get(key => 'DATA_DIR') 
+    $file = $.Sys.get(key => 'DATA_DIR')
           ~ '/'
-          ~ $.Sys.get(key => 'SID') 
+          ~ $.Sys.get(key => 'SID')
           ~ $.Sys.get(key => 'SID_NR')
           ~ '/'
           ~ 'wikidata'
-          ~ '/' 
+          ~ '/'
           ~ 'keep'
           ~ '/'
           ~ $keep-page.substr(0,1).uc
@@ -1578,7 +1587,7 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     $absolutepath = $filename;
     if $absolutepath ne '' {
       #-- Check if file exists
-      if $absolutepath.IO.e { #- file exists        
+      if $absolutepath.IO.e { #- file exists
         $file-handle = $absolutepath.IO.open;
         $file-handle.encoding: "latin-1";
         my $data = slurp $file-handle;
@@ -1588,33 +1597,33 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
         for %Page.kv -> $k, $v {
           %.Page{$k} = $v.Str if $k ne '';
           #self.TRACE: 'PAGE.' ~ $k ~ ' = ' ~ $v.Str if $k ne '';
-          
+
           if $k eq 'text_default' {
             my %Section = ();
             %Section = $v.split(/$C_FS2/);
-            
+
             for %Section.kv -> $k, $v {
               %.Section{$k} = $v.Str if $k ne '';
               #self.TRACE: 'SECTION.' ~ $k ~ ' = ' ~ $v.Str if $k ne '';
-              
+
               if $k eq 'secdata' {
                 my %Text = ();
                 %Text = $v.split(/$C_FS3/);
-                
+
                 for %Text.kv -> $k, $v {
                   %.Text{$k} = $v if $k ne '';
                   given $k {
                     when 'txtdata' {
                       my $text = $v;
                       #-- hide! $file-data = base64-decode($text).decode;
-                      $file-data = $text; 
+                      $file-data = $text;
                       #$file-data = $text;
                       %.Text{$k} = $file-data;
                     }
                     when 'summary' {
                       my $summary = $v;
                       #-- hide! $summary = base64-decode($summary).decode;
-                      
+
                       #self.TRACE: 'Summary';
                       #%.Text{$k} = $v.Str;
                       %.Text{$k} = $summary;
@@ -1637,7 +1646,7 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
       } # absolutepath.IO.e
     } # absolutepath ne ''
     return ($return-code, $file-data);
-  } 
+  }
 
   method request-page-lock(Str :$pageid) {
     return self.request-lock-dir(name => $pageid,
@@ -1647,16 +1656,16 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
 
   method request-lock-dir(Str :$name,
                           Int :$maxtry,
-                          Int :$wait) {              
+                          Int :$wait) {
     my Bool $lock-status = False;
-    my Str $lock-dir = $.Sys.get(key => 'DATA_DIR') 
+    my Str $lock-dir = $.Sys.get(key => 'DATA_DIR')
                      ~ '/'
-                     ~ $.Sys.get(key => 'SID') 
+                     ~ $.Sys.get(key => 'SID')
                      ~ $.Sys.get(key => 'SID_NR')
                      ~ '/'
                      ~ 'wikidata'
-                     ~ '/' 
-                     ~ '/lock/' 
+                     ~ '/'
+                     ~ '/lock/'
                      ~ $name;
     #- TODO: create a lock directory
     my Int $retries = 1;
@@ -1680,14 +1689,14 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
   }
 
   method release-lock-dir(Str :$name) {
-    my Str $lock-dir = $.Sys.get(key => 'DATA_DIR') 
+    my Str $lock-dir = $.Sys.get(key => 'DATA_DIR')
                      ~ '/'
-                     ~ $.Sys.get(key => 'SID') 
+                     ~ $.Sys.get(key => 'SID')
                      ~ $.Sys.get(key => 'SID_NR')
                      ~ '/'
                      ~ 'wikidata'
-                     ~ '/' 
-                     ~ '/lock/' 
+                     ~ '/'
+                     ~ '/lock/'
                      ~ $name;
     $lock-dir.IO.rmdir;
     if ($lock-dir.IO.e) {
@@ -1695,23 +1704,23 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     }
     else {
       return True;
-    }    
+    }
   }
 
   method wiki-save-data(Str :$id) {
     # %.Text fields:
     #   text,    minor,   newauthor, summary
-    #   txtdata, minorch, newauth,   summary 
+    #   txtdata, minorch, newauth,   summary
 
     # %.Section fields:
     #   name,    version, revision, tscreate, ts,      ip,    host,      id,      username, data
-    #   secname, version, rvision,  creatdt,  changdt, ipaddrs, hostnam, usercod, usernam,  secdata 
+    #   secname, version, rvision,  creatdt,  changdt, ipaddrs, hostnam, usercod, usernam,  secdata
     #   kpchgdt (keep change date)
 
     # %.Page fields:
     #   version, revision, tscreate, ts
     #   version, rvision,  creatdt,  changdt
-    
+
     my Str $oldtext-text = '';
     my Str $oldtext-minor = '';
     my Str $oldtext-newauthor = '';
@@ -1735,14 +1744,14 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     #self.TRACE: 'PREPARING TO SAVE DATA';
 
     # %.Text fields:
-    #   txtdata, minorch, newauth,   summary 
+    #   txtdata, minorch, newauth,   summary
     $oldtext-text      = %.Text<txtdata>.Str;
     $oldtext-minor     = %.Text<minorch>.Str;
     $oldtext-newauthor = %.Text<newauth>.Str;
     $oldtext-summary   = %.Text<summary>.Str;
 
     # %.Section fields:
-    #   secname, version, rvision,  creatdt,  changdt, ipaddrs, hostnam, usercod, usernam,  secdata 
+    #   secname, version, rvision,  creatdt,  changdt, ipaddrs, hostnam, usercod, usernam,  secdata
     $oldsection-name     = %.Section<secname>.Str;
     $oldsection-version  = %.Section<version>.Str;
     $oldsection-revision = %.Section<rvision>.Str;
@@ -1767,7 +1776,7 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     my Str $text-summary = '';
     $text-data = $.Sys.getparam(key => 'text');
     $text-summary = $.Sys.getparam(key => 'summary');
-    %.Text<txtdata> = $text-data;  
+    %.Text<txtdata> = $text-data;
     %.Text<summary> = $text-summary;
 
     #-- TODO: Save keep section
@@ -1799,7 +1808,7 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     if $revision > 0 {
       my $dt = DateTime.now;
       %.Section{'kpchgdt'} = $dt.Str;  # 'keep' change date
-        
+
       for %.Section.sort -> (:$key, :$value) {
         $section-text = $value.Str;
         #self.TRACE: 'section.key: ' ~ $k;
@@ -1822,7 +1831,7 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
 
       $section-data = $C_FS1 ~ $section-data;
       my Str $page-directory = '';
-      $page-directory = $.Sys.get(key => 'DATA_DIR') 
+      $page-directory = $.Sys.get(key => 'DATA_DIR')
                       ~ '/'
                       ~ $.Sys.get(key => 'SID')
                       ~ $.Sys.get(key => 'SID_NR')
@@ -1834,7 +1843,7 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
       self.wiki-create-page-directory(dir => $page-directory,
                                       page => $.CurrentWikiPage,
                                       root => True);
-      
+
       #self.write-string-to-file-limited(file => $keep-file,
       #                                  data => $section-data,
       #                                  limit => 0);
@@ -1869,9 +1878,9 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
       }
       $text-data ~= $key ~ $C_FS3 ~ $text ~ $C_FS3;
     }
-    $text-data ~= $C_FS3; 
+    $text-data ~= $C_FS3;
     #self.TRACE: 'TEXT-DATA: ' ~ $text-data;
-    return self.wiki-save-section(name => "text_$name", 
+    return self.wiki-save-section(name => "text_$name",
                                   data => $text-data);
   }
 
@@ -1952,7 +1961,7 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     $page-data ~= $C_FS1;
     #self.TRACE: 'PAGE data to save: ' ~ $page-data;
     my Str $page-directory = '';
-    $page-directory = $.Sys.get(key => 'DATA_DIR') 
+    $page-directory = $.Sys.get(key => 'DATA_DIR')
                      ~ '/'
                     ~ $.Sys.get(key => 'SID')
                     ~ $.Sys.get(key => 'SID_NR')
@@ -1982,7 +1991,7 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
                                    Str :$page,
                                    Bool :$root?) {
     my Str $page-dir = '';
-    $page-dir = $dir  
+    $page-dir = $dir
               ~ '/'
               ~ $page.substr(0,1).uc;
     $page-dir ~= '/' ~ $page if !$root;
@@ -2016,7 +2025,7 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     return True;
   }
 
-  method write-string-to-file-limited(Str :$file, 
+  method write-string-to-file-limited(Str :$file,
                                       Str :$data,
                                       Int :$limit) {
     my Str $trim-data = $data;
@@ -2032,11 +2041,11 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     else {
       self.append-string-to-file(file => $file,
                                  data => $trim-data);
-    }                                    
+    }
     return True;
   }
 
-  method append-string-to-file(Str :$file, 
+  method append-string-to-file(Str :$file,
                                Str :$data) {
     spurt $file, $data, :append;
     return True;
@@ -2054,7 +2063,7 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
 
     # %.Text fields:
     #   text,    minor,   newauthor, summary
-    #   txtdata, minorch, newauth,  summary 
+    #   txtdata, minorch, newauth,  summary
 
     # %.Section fields:
     #   name,    version, revision, tscreate, ts,      ip,    host,      id,      username, data
@@ -2067,13 +2076,13 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
 
 
     #-- Initialize data storage
-    %.Page = $.Sys.Dbu.structure( 
+    %.Page = $.Sys.Dbu.structure(
                          fields => ['version', 'rvision', 'createdt', 'changedt'] );
-    %.Section = $.Sys.Dbu.structure( 
-                            fields => ['secname', 'version', 'rvision', 'creatdt', 'changdt', 
+    %.Section = $.Sys.Dbu.structure(
+                            fields => ['secname', 'version', 'rvision', 'creatdt', 'changdt',
                                       'ipaddrs', 'hostnam', 'usercod', 'username', 'secdata',
                                       'kpchgdt'] );
-    %.Text = $.Sys.Dbu.structure( 
+    %.Text = $.Sys.Dbu.structure(
                          fields => ['txtdata', 'minorch', 'newauth', 'summary'] );
 
     $wiki-page = $id;
@@ -2091,13 +2100,13 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
       self.wiki-open-default-text();
       for %.Page.kv -> $k, $v {
         $page-data ~= $k ~ $C_FS1 ~ $v.Str ~ $C_FS1;
-      }  
+      }
     }
 
 
 
     return $return-code;
-  } 
+  }
 
   method wiki-open-newpage(Str :$id) {
     my $dt = DateTime.now;
@@ -2106,7 +2115,7 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     #   version, revision, tscreate, ts
     #   version, rvision,  creatdt,  changdt
 
-    %.Page = $.Sys.Dbu.structure( 
+    %.Page = $.Sys.Dbu.structure(
                          fields => ['version', 'rvision', 'creatdt', 'changdt'] );
 
     %.Page<version> = 3;
@@ -2144,11 +2153,11 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
 
     # %.Text fields:
     #   text,    minor,   newauthor, summary
-    #   txtdata, minorch, newauth,  summary 
+    #   txtdata, minorch, newauth,  summary
 
-    %.Text = $.Sys.Dbu.structure( 
+    %.Text = $.Sys.Dbu.structure(
                          fields => ['txtdata', 'minorch', 'newauth', 'summary'] );
-    
+
     %.Text<txtdata> = $C_NEW_TEXT if $C_NEW_TEXT ne '';
     %.Text<minorch> = 0; #minor edit
     %.Text<newauth> = 1; #default new author
@@ -2158,7 +2167,7 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
       $text-data ~= $k ~ $C_FS3 ~ $v.Str ~ $C_FS3;
     }
     #self.TRACE: 'NEW-TEXT: ' ~ $text-data;
-    self.wiki-open-new-section(name => $text-name, 
+    self.wiki-open-new-section(name => $text-name,
                                data => $text-data);
   }
 
@@ -2170,11 +2179,11 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
 
     # %.Section fields:
     #   name,    version, revision, tscreate, ts,      ip,    host,      id,      username, data
-    #   secname, version, rvision,  creatdt,  changdt, ipaddrs, hostnam, usercod, usernam,  secdata 
+    #   secname, version, rvision,  creatdt,  changdt, ipaddrs, hostnam, usercod, usernam,  secdata
 
 
-    %.Section = $.Sys.Dbu.structure( 
-                            fields => ['secname', 'version', 'rvision', 'creatdt', 'changdt', 
+    %.Section = $.Sys.Dbu.structure(
+                            fields => ['secname', 'version', 'rvision', 'creatdt', 'changdt',
                                        'ipaddrs', 'hostnam', 'usercod', 'usernam', 'secdata',
                                        'kpchgdt'] );
     %.Section<secname> = $name;
@@ -2192,7 +2201,7 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
       $section-data ~= $k ~ $C_FS2 ~ $v.Str ~ $C_FS2;
     }
     #self.TRACE: 'NEW-SECTION: ' ~ $section-data;
-    %.Page{"$name"} = $section-data; 
+    %.Page{"$name"} = $section-data;
   }
 
   method T(Str $text) {
