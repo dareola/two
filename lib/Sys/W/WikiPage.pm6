@@ -52,8 +52,10 @@ class Sys::W::WikiPage is export {
     has Bool $.NewFS = False;
     has Bool $.SimpleLinks = True;
     has Bool $.UseSubPage = True;
+    has Bool $.NamedAnchors = True;
     has $.LinkPattern is rw = '';
     has $.HalfLinkPattern is rw = '';
+    has $.AnchoredLinkPattern is rw = '';
     #-- end: testing-declaration
 
 
@@ -192,7 +194,7 @@ method main($App, Str :$userid, Str :$ucomm, :%params) {
       $.Sys.FT(tag => 'MENU_BAR', text => $refresh); # if $.UserID ne '';
 
       my Str $wiki-to-html = '';
-      $wiki-to-html = self.wiki-translate(text => $wiki-text);
+      $wiki-to-html = self.wiki-to-html(text => $wiki-text);
 
       $.Sys.FORM-STRING(text => $wiki-to-html);
 
@@ -232,7 +234,7 @@ method EDIT_SCREEN_1000() {
       }
 
       my Int $edit-rows = 15;
-      my Int $edit-cols = 80;
+      my Int $edit-cols = 60;
       #my Str $wiki-text = '';
       my Int $rows = 0;
       my Int $cols = 0;
@@ -297,6 +299,11 @@ method EDIT_SCREEN_1000() {
                         cols => $edit-cols);
 
       $.Sys.FORM-HIDDEN(key => 'p', value => $.CurrentWikiPage);
+      $.Sys.FORM-STRING(text => 'PREVIEW:<br/>');
+      $.Sys.FORM-BREAK();
+      my Str $preview = self.wiki-to-html(text => $wiki-text);
+      $.Sys.FORM-STRING(text => $preview);
+      
 
       $cancel = '&nbsp;|&nbsp;<a href="/wiki/display?p='
             ~ $.CurrentWikiPage ~ '">cancel</a>';
@@ -393,6 +400,7 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     my Str $link-pattern-A = '';
     my Str $link-pattern-B = '';
     my Str $link-pattern-C = '';
+    my Str $quote-delim = '';
 
     $upper-letter = '<[A..Z';
     $lower-letter = '<[a..z';
@@ -417,9 +425,9 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     $lower-letter ~= ']>';
     $any-letter ~= ']>';
 
-    self.TRACE: 'UpperLetter = ' ~ $upper-letter;
-    self.TRACE: 'LowerLetter = ' ~ $lower-letter;
-    self.TRACE: 'AnyLetter = ' ~ $any-letter;
+    #self.TRACE: 'UpperLetter = ' ~ $upper-letter;
+    #self.TRACE: 'LowerLetter = ' ~ $lower-letter;
+    #self.TRACE: 'AnyLetter = ' ~ $any-letter;
 
     $link-pattern-A = $upper-letter
                     ~ '+'
@@ -429,7 +437,7 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
                     ~ $any-letter
                     ~ '*';
 
-    self.TRACE: 'Link pattern A = ' ~ $link-pattern-A;
+    #self.TRACE: 'Link pattern A = ' ~ $link-pattern-A;
 
 
     $link-pattern-B = $upper-letter
@@ -439,7 +447,7 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
                     ~ $any-letter
                     ~ '*';
 
-    self.TRACE: 'Link pattern B = ' ~ $link-pattern-B;
+    #self.TRACE: 'Link pattern B = ' ~ $link-pattern-B;
 
 
 
@@ -448,23 +456,46 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
                     ~ $any-letter
                     ~ '*';
 
-    self.TRACE: 'Link pattern C = ' ~ $link-pattern-C;
+    #self.TRACE: 'Link pattern C = ' ~ $link-pattern-C;
 
     if $.UseSubPage {
-      $.LinkPattern = "(((?:(?:$link-pattern-A)?\\/)+$link-pattern-B)|$link-pattern-A)";
-      $.HalfLinkPattern = "(((?:(?:$link-pattern-B)?\\/)+$link-pattern-B)|$link-pattern-A)";
+     
+      #ref: $.LinkPattern = "(((?:(?:$link-pattern-A)?\\/)+$link-pattern-B)|$link-pattern-A)";
+      # 1. ( ( non-greedy link pattern A
+      # 2.   back slash
+      # 3.   slash
+      # 4.  )
+      # 5.  greedy link pattern B
+      # 6. )
+      # 7. OR
+      # 8. link pattern A
+
+      $.LinkPattern = "(([[$link-pattern-A?\\/]]+$link-pattern-B)|($link-pattern-A])";  
+      #ref: $.HalfLinkPattern = "(((?:(?:$link-pattern-B)?\\/)+$link-pattern-B)|$link-pattern-A)";
+      $.HalfLinkPattern = "(([[$link-pattern-B?\\/]]+$link-pattern-B)|$link-pattern-A)";
     }
     else {
       $.LinkPattern = "($.link-pattern-A)";
       $.HalfLinkPattern = "($.link-pattern-C)";
     }
-    self.TRACE: 'Link pattern = ' ~ $.LinkPattern;
-    self.TRACE: 'Half link pattern = ' ~ $.HalfLinkPattern;
 
+    #self.TRACE: 'Link pattern = ' ~ $.LinkPattern;
+    #self.TRACE: 'Half link pattern = ' ~ $.HalfLinkPattern;
+    
+    $quote-delim = "'\"'" ~ '<-["]>*' ~ "'\"'"; 
+
+    #self.TRACE: 'Quote delimiter = ' ~ $quote-delim;
+
+    $.AnchoredLinkPattern = $.LinkPattern ~ '#(\\w+)' ~ $quote-delim;
+    self.TRACE: 'Anchored link pattern: ' ~ $.AnchoredLinkPattern;
+    $.LinkPattern ~= $quote-delim;
+    self.TRACE: 'Link pattern: ' ~ $.LinkPattern;
+    $.HalfLinkPattern ~= $quote-delim;
+    self.TRACE: 'Half link pattern: ' ~ $.HalfLinkPattern;
 
   }
 
-  method wiki-translate(Str :$text) {
+  method wiki-to-html(Str :$text) {
     my Str $wiki-text = '';
 
     self.wiki-init-link-patterns();
@@ -1769,7 +1800,7 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     $oldpage-version  = %.Page<version>.Str;
     $oldpage-revision = %.Page<rvision>.Str;
     $oldpage-tscreate = %.Page<creatdt>.Str;
-    $oldpage-ts       = %.Page<chandgt>.Str;
+    $oldpage-ts       = %.Page<changdt>.Str;
 
     #-- Get data from parameters
     my Str $text-data = '';
