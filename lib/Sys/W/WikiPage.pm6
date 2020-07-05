@@ -318,7 +318,7 @@ method EDIT_SCREEN_1000() {
         $regex-result ~= self.eval-regex($/) ~ '&nbsp;' ~ $C_FS ~ '&nbsp;&nbsp;';
       }/;
 
-      $.Sys.FORM-STRING(text => '</td><td valign="top">REGEX PREVIEW<br/>' ~ $regex-result ~ '</td></tr></table>');
+      $.Sys.FORM-STRING(text => '</td><td valign="top">REGEX MATCH RESULT<br/>' ~ $regex-result ~ '</td></tr></table>');
       
       $.Sys.FORM-STRING(text => '<hr/>WIKI Preview<br/>' ~ $preview);
 
