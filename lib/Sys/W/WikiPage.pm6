@@ -56,6 +56,9 @@ class Sys::W::WikiPage is export {
     has $.LinkPattern is rw = '';
     has $.HalfLinkPattern is rw = '';
     has $.AnchoredLinkPattern is rw = '';
+    has $.EditLinkPattern is rw = '';
+    has $.InterSitePattern is rw = '';
+    has $.InterLinkPattern is rw = '';
     #-- end: testing-declaration
 
 
@@ -320,7 +323,7 @@ method EDIT_SCREEN_1000() {
       }/;
 
       $.Sys.FORM-STRING(text => '</td><td valign="top">REGEX MATCH RESULT<br/>' ~ $regex-result ~ '</td></tr></table>');
-      
+
       $.Sys.FORM-STRING(text => '<hr/>WIKI Preview<br/>' ~ $preview);
 
       $cancel = '&nbsp;|&nbsp;<a href="/wiki/display?p='
@@ -480,7 +483,7 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     #self.TRACE: 'Link pattern C = ' ~ $link-pattern-C; #-- works
 
     if $.UseSubPage {
-     
+
       #ref: $.LinkPattern = "(((?:(?:$link-pattern-A)?\\/)+$link-pattern-B)|$link-pattern-A)";
       # 1. ( ( non-greedy link pattern A
       # 2.   back slash
@@ -491,7 +494,7 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
       # 7. OR
       # 8. link pattern A
 
-      $.LinkPattern = "(($link-pattern-A)?\\/+$link-pattern-B)|($link-pattern-A)";  
+      $.LinkPattern = "(($link-pattern-A)?\\/+$link-pattern-B)|($link-pattern-A)";
       #ref: $.HalfLinkPattern = "(((?:(?:$link-pattern-B)?\\/)+$link-pattern-B)|$link-pattern-A)";
       $.HalfLinkPattern = "(([[$link-pattern-B?\\/]]+$link-pattern-B)|$link-pattern-A)";
     }
@@ -501,22 +504,29 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     }
 
     # self.TRACE: 'Link pattern = ' ~ $.LinkPattern; #-- works
-    self.TRACE: 'HALF LINK PATTERN: ' ~ $.HalfLinkPattern;
+    #self.TRACE: 'HALF LINK PATTERN: ' ~ $.HalfLinkPattern;
 
     #LINK.PATTERN = (([[<[A..Z]>+<[a..z]>+<[A..Z]><[A..Za..z_0..9]>*?\/]]+<[A..Z]>+<[a..z]>+<[A..Za..z_0..9]>*)|(<[A..Z]>+<[a..z]>+<[A..Z]><[A..Za..z_0..9]>*])
 
     #self.TRACE: 'Half link pattern = ' ~ $.HalfLinkPattern;
-    
-    $quote-delim = "'\"'" ~ '<-["]>*' ~ "'\"'"; 
+
+    $quote-delim = "'" ~  '"' ~ "'" ~ '<-["]>*' ~ "'" ~  '"' ~ "'";
 
     #self.TRACE: 'Quote delimiter = ' ~ $quote-delim;
 
-    $.AnchoredLinkPattern = $.LinkPattern ~ '#(\\w+)' ~ $quote-delim;
+    $.AnchoredLinkPattern = $.LinkPattern ~ '\#(\w+)' ~ $quote-delim;
+
     #self.TRACE: 'Anchored link pattern: ' ~ $.AnchoredLinkPattern;
+
     $.LinkPattern ~= $quote-delim;
     #self.TRACE: 'Link pattern: ' ~ $.LinkPattern;
+
     $.HalfLinkPattern ~= $quote-delim;
     #self.TRACE: 'Half link pattern: ' ~ $.HalfLinkPattern;
+
+    $.EditLinkPattern = $.LinkPattern;
+    $.InterSitePattern = $upper-letter ~ $any-letter ~ '+';
+    self.TRACE: 'Intersite pattern: ' ~ $.InterSitePattern;
 
   }
 
