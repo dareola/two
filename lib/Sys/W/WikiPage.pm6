@@ -239,6 +239,7 @@ method EDIT_SCREEN_1000() {
 
       my Int $edit-rows = 15;
       my Int $edit-cols = 60;
+      my Int $summary-cols = 120;
       #my Str $wiki-text = '';
       my Int $rows = 0;
       my Int $cols = 0;
@@ -289,12 +290,15 @@ method EDIT_SCREEN_1000() {
       $.Sys.FORM-BREAK();
       $.Sys.FORM-BREAK();
 
-      $.Sys.FORM-STRING(text => '<table border="0"><tr><td valign="top">');
+      $.Sys.FORM-STRING(text => '<table border="0"><tr><td valign="top" valign="top" colspan="2">');
 
       $.Sys.FORM-STRING(text => 'REGEX');
       $.Sys.FORM-SPACE();
       $.Sys.FORM-TEXT(key => 'summary', value => $summary,
-                                    size => $edit-cols.Str, length => '1024');
+                                    size => $summary-cols.Str, length => '1024');
+
+      $.Sys.FORM-STRING(text => '</td><td></td></tr><tr><td valign="top">');
+
 
       my Str $regex = '';
       $regex = $summary.Str;
@@ -318,9 +322,11 @@ method EDIT_SCREEN_1000() {
       #$.Sys.FORM-STRING(text => $preview);
 
       my $regex-result = '';
-      $text-string ~~ s:g/<$regex>/{
-        $regex-result ~= self.eval-regex($regex-counter++, $/);
-      }/;
+      if $regex ne '' {
+        $text-string ~~ s:g/<$regex>/{
+          $regex-result ~= self.eval-regex($regex-counter++, $/);
+        }/;
+      };
 
       $.Sys.FORM-STRING(text => '</td><td valign="top">REGEX MATCH RESULT<br/>' ~ $regex-result ~ '</td></tr></table>');
 
