@@ -291,7 +291,7 @@ method EDIT_SCREEN_1000() {
       $.Sys.FORM-STRING(text => 'REGEX');
       $.Sys.FORM-SPACE();
       $.Sys.FORM-TEXT(key => 'summary', value => $summary,
-                                    size => $edit-cols.Str, length => '80');
+                                    size => $edit-cols.Str, length => '1024');
 
       my Str $regex = '';
       $regex = $summary.Str;
@@ -458,7 +458,7 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
                     ~ $any-letter
                     ~ '*';
 
-    #self.TRACE: 'Link pattern A = ' ~ $link-pattern-A;
+    #self.TRACE: 'Link pattern A = ' ~ $link-pattern-A; #-- works
 
 
     $link-pattern-B = $upper-letter
@@ -468,7 +468,7 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
                     ~ $any-letter
                     ~ '*';
 
-    #self.TRACE: 'Link pattern B = ' ~ $link-pattern-B;
+    #self.TRACE: 'Link pattern B = ' ~ $link-pattern-B; #-- works
 
 
 
@@ -477,7 +477,7 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
                     ~ $any-letter
                     ~ '*';
 
-    #self.TRACE: 'Link pattern C = ' ~ $link-pattern-C;
+    #self.TRACE: 'Link pattern C = ' ~ $link-pattern-C; #-- works
 
     if $.UseSubPage {
      
@@ -491,7 +491,7 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
       # 7. OR
       # 8. link pattern A
 
-      $.LinkPattern = "(([[$link-pattern-A?\\/]]+$link-pattern-B)|($link-pattern-A])";  
+      $.LinkPattern = "(($link-pattern-A)?\\/+$link-pattern-B)|($link-pattern-A)";  
       #ref: $.HalfLinkPattern = "(((?:(?:$link-pattern-B)?\\/)+$link-pattern-B)|$link-pattern-A)";
       $.HalfLinkPattern = "(([[$link-pattern-B?\\/]]+$link-pattern-B)|$link-pattern-A)";
     }
@@ -500,7 +500,11 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
       $.HalfLinkPattern = "($.link-pattern-C)";
     }
 
-    #self.TRACE: 'Link pattern = ' ~ $.LinkPattern;
+    # self.TRACE: 'Link pattern = ' ~ $.LinkPattern; #-- works
+    self.TRACE: 'HALF LINK PATTERN: ' ~ $.HalfLinkPattern;
+
+    #LINK.PATTERN = (([[<[A..Z]>+<[a..z]>+<[A..Z]><[A..Za..z_0..9]>*?\/]]+<[A..Z]>+<[a..z]>+<[A..Za..z_0..9]>*)|(<[A..Z]>+<[a..z]>+<[A..Z]><[A..Za..z_0..9]>*])
+
     #self.TRACE: 'Half link pattern = ' ~ $.HalfLinkPattern;
     
     $quote-delim = "'\"'" ~ '<-["]>*' ~ "'\"'"; 
