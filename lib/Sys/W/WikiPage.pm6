@@ -48,17 +48,149 @@ class Sys::W::WikiPage is export {
     has @.HtmlSingle  = <br p hr li dt dd th>;
 
     #-- begin: testing-declaration
-    has Bool $.NonEnglish = False;
-    has Bool $.NewFS = False;
-    has Bool $.SimpleLinks = True;
-    has Bool $.UseSubPage = True;
-    has Bool $.NamedAnchors = True;
     has $.LinkPattern is rw = '';
     has $.HalfLinkPattern is rw = '';
     has $.AnchoredLinkPattern is rw = '';
     has $.EditLinkPattern is rw = '';
     has $.InterSitePattern is rw = '';
     has $.InterLinkPattern is rw = '';
+
+    has Int $.TaskNumDaysToExpire = 30;
+    has Str $.ScriptTZ = "";
+    has Int $.RcDefault = 30;
+    has Int $.CookieExpire = 60;
+    has Int $.KeepDays = 14;
+    has Int $.RedirType = 1;
+    has Str $.NotFoundPg = "";                      # Page for not-found links ("" for blank pg)
+    has Str $.EmailFrom = "Wiki";                   # Text for "From: " field of email notes.
+    has Str $.FooterNote = "";                      # HTML for bottom of every page
+    has Str $.EditNote = "";                        # HTML notice above buttons on edit page
+    has Str $.NewText = "";                         # New page text ("" for default message)
+    has Str $.HttpCharset = "";                     # Charset for pages, like "iso-8859-2"
+    has Str $.UserGotoBar = "";                     # HTML added to end of goto bar
+    has Str $.InterWikiMoniker = '';                # InterWiki moniker for this wiki. (for RSS)
+    has Str $.SiteName = '';
+    has Str $.SiteDescription = '';                 # Description of this wiki. (for RSS)
+    has Str $.RssLogoUrl = '';                      # Optional image for RSS feed
+    has Str $.EarlyRules = '';                      # Local syntax rules for wiki->html (evaled)
+    has Str $.LateRules = '';                       # Local syntax rules for wiki->html (evaled)
+    has Int $.KeepSize = 0;                         # If non-zero, maximum size of keep file
+    has Str $.BGColor = 'white';                    # Background color ('' to disable)
+    has Str $.DiffColor1 = '#ffffaf';               # Background color of old/deleted text
+    has Str $.DiffColor2 = '#cfffcf';               # Background color of new/added text
+    has Str $.FavIcon = '';                         # URL of bookmark/favorites icon, or ''
+    has Int $.RssDays = 7;                          # Default number of days in RSS feed
+    has Str $.PublicFolderMatch = '';
+    has Str $.UserHeader = '';                      #<<AUTOFOCUSJAVASCRIPT;
+                                                    # Optional HTML header additional content
+    has Str $.UserBody = "";                        #'onload="onLoad()"';
+                                                    # Optional <BODY> tag additional content
+    has Int $.StartUID  = 1001;                     # Starting number for user IDs
+    has @.ImageSites = ();                          # Url prefixes of good image sites: ()=all
+    has Str $.BreadCrumb = '';
+    has Str $.MenuGroup = '';
+    has Str $.SiteMenuBar = '';
+    has Str $.PopupMenu = '';
+    has Str $.TabMenuBar = '';
+    has Str $.HttpDocsDir = '../httpdocs';
+
+    # Major options:
+    has Bool $.UseSubpage = True;                   # True = use subpages,
+                                                    # False = do not use subpages
+    has Bool $.UseCache = False;                    # True = cache HTML pages,
+                                                    # False = generate every page
+    has Bool $.EditAllowed = False;                 # True = editing allowed,
+                                                    # False = read-only
+    has Bool $.RawHtml = False;                     # 1 = allow <HTML> tag,
+                                                    # 0 = no raw HTML in pages
+    has Bool $.HtmlTags = True;                     # 1 = "unsafe" HTML tags,
+                                                    # 0 = only minimal tags
+    has Bool $.UseDiff = True;                      # 1 = use diff features,
+                                                    # 0 = do not use diff
+    has Bool $.FreeLinks = True;                    # 1 = use [[word]] links,
+                                                    # 0 = LinkPattern only
+    has Bool $.WikiLinks = True;                    # 1 = use LinkPattern,
+                                                    # 0 = use [[word]] only
+    has Bool $.AdminDelete = True;                  # 1 = Admin only deletes,
+                                                    # 0 = Editor can delete
+    has Bool $.RunCGI = True;                       # 1 = Run script as CGI,
+                                                    # 0 = Load but do not run
+    has Bool $.EmailNotify = False;                 # 1 = use email notices,
+                                                    # 0 = no email on changes
+    has Bool $.EmbedWiki = False;                   # 1 = no headers/footers,
+                                                    # 0 = normal wiki pages
+    has Str $.DeletedPage = 'DeletedPage';          # 0 = disable, 'PageName' = tag to delete page
+    has Str $.ReplaceFile = 'ReplaceFile';          # 0 = disable, 'PageName' = indicator tag
+    has @.ReplaceableFiles = ();                    # List of allowed server files to replace
+    has Bool $.TableSyntax = True;                  # 1 = wiki syntax tables,
+                                                    # 0 = no table syntax
+    has Bool $.NewFS = False;                       # 1 = new multibyte $FS,
+                                                    # 0 = old $FS
+    has Bool $.UseUpload = True;                    # 1 = allow uploads,
+                                                    # 0 = no uploads
+    has Str $.MenuSpacer = '&nbsp;';
+
+    # Minor options:
+    has Bool $.UseSmilies = True;                   # 1 = use smiley pics
+                                                    # 0 = do not change :)
+    has Bool $.RecentTop = True;                    # 1 = recent on top, 0 = recent on bottom
+    has Bool $.UseDiffLog = True;                   # 1 = save diffs to log,  0 = do not save diffs
+    has Bool $.MetaNoIndexHist = True;              # 1 - disallow robots indexing old pages, 0 = allow
+    has Bool $.KeepMajor = True;                    # 1 = keep major rev,     0 = expire all revisions
+    has Bool $.KeepAuthor = True;                   # 1 = keep author rev,    0 = expire all revisions
+    has Bool $.ShowEdits = False;                   # 1 = show minor edits,   0 = hide edits by default
+    has Str $.DefaultLanguage = 'English';          # 1 = default user language
+    has Bool $.HtmlLinks = False;                   # 1 = allow A HREF links, 0 = no raw HTML links
+    has Bool $.SimpleLinks = False;                 # 1 = only letters,       0 = allow _ and numbers
+    has Bool $.NonEnglish = False;                  # 1 = extra link chars,   0 = only A-Za-z chars
+    has Bool $.ThinLine = False;                    # 1 = fancy <hr> tags,    0 = classic wiki <hr>
+    has Int $.BracketText = 2;                      # 1 = allow [URL text],   0 = no link descriptions, 2 = allow but dont emit bracket
+    has Bool $.UseAmPm = True;                      # 1 = use am/pm in times, 0 = use 24-hour times
+    has Bool $.UseIndex = False;                    # 1 = use index file,     0 = slow/reliable method
+    has Bool $.UseHeadings = True;                  # 1 = allow = h1 text =,  0 = no header formatting
+    has Bool $.NetworkFile = True;                  # 1 = allow remote file:, 0 = no file:// links
+    has Bool $.BracketWiki = False;                 # 1 = [WikiLnk txt] link, 0 = no local descriptions
+    has Bool $.UseLookup = True;                    # 1 = lookup host names,  0 = skip lookup (IP only)
+    has Bool $.FreeUpper = True;                    # 1 = force upper case,   0 = do not force case
+    has Bool $.FastGlob = True;                     # 1 = new faster code,    0 = old compatible code
+    has Bool $.DefaultSearch = False;
+    has Bool $.MetaKeywords = True;                 # 1 = Google-friendly,    0 = search-engine averse
+    has Int $.NamedAnchors = True;                  # 0 = no anchors, 1 = enable anchors,
+                                                    # 2 = enable but suppress display
+    has Str $.ScrumHdColor = "#ffcccc";             # The scrum wiki table header color
+    has Bool $.SlashLinks = False;                  # 1 = use script/action links, 0 = script?action
+    has Bool $.UpperFirst = True;                   # 1 = free links start uppercase, 0 = no ucfirst
+    has Bool $.AdminBar = True;                     # 1 = admins see admin links, 0 = no admin bar
+    has Bool $.RepInterMap = False;                 # 1 = intermap is replacable, 0 = not replacable
+    has Bool $.ConfirmDel = True;                   # 1 = delete link confirm page,
+                                                    # 0 = immediate delete
+    has Bool $.MaskHosts = False;                   # 1 = mask hosts/IPs,      0 = no masking
+    has Bool $.LockCrash = False;                   # 1 = crash if lock stuck, 0 = auto clear locks
+    has Bool $.HistoryEdit = False;                 # 1 = edit links on history page, 0 = no edit links
+    has Bool $.OldThinLine = False;                 # 1 = old ==== thick line,
+                                                    # 0 = ------ for thick line
+    has Bool $.NumberDates = False;                 # 1 = 2003-6-17 dates,     0 = June 17, 2003 dates
+    has Bool $.ParseParas = False;                  # 1 = new paragraph markup, 0 = old markup
+    has Bool $.AuthorFooter = True;                 # 1 = show last author in footer, 0 = do not show
+    has Bool $.AllUpload = False;                   # 1 = anyone can upload,   0 = only editor/admins
+    has Bool $.LimitFileUrl = True;                 # 1 = limited use of file: URLs, 0 = no limits
+    has Bool $.MaintTrimRc = False;                 # 1 = maintain action trims RC, 0 = only maintainrc
+    has Bool $.SearchButton = False;                # 1 = search button on page, 0 = old behavior
+    has Bool $.EditNameLink = False;                # 1 = edit links use name (CSS), 0 = '?' links
+    has Bool $.UseMetaWiki = False;                 # 1 = add MetaWiki search links, 0 = no MW links
+    has Bool $.BracketImg = True;                   # 1 = [url url.gif] becomes image link, 0 = no img
+    has Bool $.FreeUserNames = True;                # 1 = spaces in username, 0 = LinkPattern only
+    has Bool $.FullTable  = True;
+    has Bool $.UseNumberedAnchor = True;            # 1 = use numbered anchor in NumberedHeadings
+    has Str $.DateFormat = '%eBmY';                 # not yet used
+    has Bool $.SearchLinks = True;                  # 1 = allow search links syntax, 0 = don't
+    has Bool $.AutoMailto = True;                   # converts emails in format name@host
+                                                    # into mailto: hyperlinks
+    has Str $.UploadFileInfo = '';                  #filename|newfile|X|printfilename
+
+
+
+
     #-- end: testing-declaration
 
 
@@ -538,6 +670,84 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
 
   method wiki-to-html(Str :$text) {
     my Str $wiki-text = '';
+    $wiki-text = $text;
+
+    #1***          my $self = shift;
+    #2***          my ($pageText) = @_;
+    #3***          $TableMode       = 0;
+    #4***          %SaveUrl         = ();
+    #5***          %SaveNumUrl      = ();
+    #6***          $SaveUrlIndex    = 0;
+    #7***          $SaveNumUrlIndex = 0;
+    #8***          $pageText        = $self->RemoveFS($pageText);
+    #b8
+    $wiki-text = self.remove-field-separator(text => $wiki-text);
+    #e8
+    #9***          if ($RawHtml) {
+    #10***            $pageText =~ s/<html>((.|\n)*?)<\/html>/$self->StoreRaw($1)/ige;
+    #11***          }
+
+    #12***          $pageText = $self->QuoteHtml($pageText);
+    #b12
+    $wiki-text = self.quote-html(text => $wiki-text);
+    #e12
+    #13***          $pageText =~ s/\.\\ *\r?\n/<br\/\>&nbsp; /g;    # .\ used for breaking lines of codes
+    #b13
+    $wiki-text ~~ s:g/ \. \\ ' '* \n /\<br\/\>\&nbsp\;/;
+    #e13
+    #14***          $pageText =~ s/\\ *\r?\n/ /g;    # Join lines with backslash at end
+    #b14
+    $wiki-text ~~ s:g/ \\ ' '* \n/ /;
+    #e14
+    #15***          $pageText =~
+    #16***        s/&lt;back&gt;/$self->StoreRaw("<b>" . $self->Ts('Backlinks for: %s', $MainPage)
+    #16***        . "<\/b><br \/>\n" . $self->GetPageList($self->SearchTitleAndBody($MainPage)))/ige;
+    #b16
+    $wiki-text ~~ s:g/ '&lt;' 'back' '&gt;' /Backlinks to MAINPAGE/;
+    #e16
+    #17***          $pageText =~
+    #18***        s/&lt;back\s+(.*?)&gt;/$self->StoreRaw("<b>" . $self->Ts('Backlinks for: %s',
+    #18***                $self->QuoteHtml($1)) . "<\/b><br \/>\n" . $self->GetPageList($self->SearchTitleAndBody($1)))/ige;
+    #b18
+    $wiki-text ~~ s:g/ '&lt;' 'back' \s+ (.*?) '&gt;' /Backlinks to $0/;
+    #e18
+    #19***          if ($ParseParas) {
+    #20***            # Note: The following 3 rules may span paragraphs, so they are
+    #21***            #       copied from CommonMarkup
+    #22***            $pageText =~ s/\&lt;nowiki\&gt;((.|\n)*?)\&lt;\/nowiki\&gt;/$self->StoreRaw($1)/ige;
+    #23***            $pageText =~ s/\&lt;code\&gt;((.|\n)*?)\&lt;\/code\&gt;/$self->StorePre($1, "code")/ige;
+    #24***            $pageText =~ s/\&lt;pre\&gt;((.|\n)*?)\&lt;\/pre\&gt;/$self->StorePre($1, "pre")/ige;
+    #25***            $pageText =~ s/((.|\n)+?\n)\s*\n/$self->ParseParagraph($1)/geo;
+    #26***            $pageText =~ s/(.*)<\/p>(.+)$/$1.$self->ParseParagraph($2)/geo;
+    #27***          }
+    #28***          else {
+    #29***            $pageText = $self->CommonMarkup($pageText, 1, 0);    # Multi-line markup
+    #30***            $pageText = $self->WikiLinesToHtml($pageText);       # Line-oriented markup
+    #31***          }
+    #32***          while (@HeadingNumbers) {
+    #33***            pop @HeadingNumbers;
+    #34***            #$TableOfContents .= "</dd></dl>\n\n";
+    #35***            $TableOfContents .= "\n\n";
+    #36***          }
+    #37***          #my $toc = '<div id="page_toc"><dl><dd><span class="wikitext"><h4>' . $self->T('Table of Contents') . '</h4></dd></dl>' . $TableOfContents . '</span></div>' if ($TableOfContents);
+    #38***          my $toc = '<div id="page_toc"><span class="wikitext"><h4>' . $self->T('Table of Contents') . '</h4>' . $TableOfContents . '</span></div>' if ($TableOfContents);
+    #39***          $toc = "" if (!defined $toc);
+    #40***          $pageText =~ s/&lt;toc&gt;/$toc/gi;
+    #41***          if ($FloatingImage) {
+    #42***            $FloatingImage = "<div id='floating_image'><image src='$FloatingImage' border='0'></div>";
+    #43***            $pageText =~ s/&lt;insert_picture&gt;/$FloatingImage/gi;
+    #44***          }
+    #45***          if ($LateRules ne '') {
+    #46***            $pageText = $self->EvalLocalRules($LateRules, $pageText, 0);
+    #47***          }
+    #48***          return $self->RestoreSavedText($pageText);
+
+
+    return $wiki-text;
+  }
+
+  method wiki-to-html-old1(Str :$text) {
+    my Str $wiki-text = '';
 
     self.wiki-init-link-patterns();
 
@@ -731,13 +941,13 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
   }
 
 
-  method wiki-quote-html(Str :$text) {
+  method quote-html(Str :$text) {
     my Str $qtext = '';
     $qtext = $text;
-    $qtext ~~ s:g/<[&]>/\&amp\;/;
-    $qtext ~~ s:g/<[\<]>/\&lt\;/;
-    $qtext ~~ s:g/<[\>]>/\&gt\;/;
-    $qtext ~~ s:g/'&amp;'(<[#a..zA..Z0..9]>+)/\&$0;/;
+    $qtext ~~ s:g/ <[&]> /\&amp\;/;
+    $qtext ~~ s:g/ <[<]> /\&lt\;/;
+    $qtext ~~ s:g/ <[>]> /\&gt\;/;
+    $qtext ~~ s:g/ '&amp;' (<[#a..zA..Z0..9]>+) \; /&$0\;/;
     return $qtext;
   }
 
@@ -1106,8 +1316,340 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     }
   return $the_url;
   }
+  method common-markup(Str :$text) {
+    my $wiki-text = '';
+    $wiki-text = $text;
 
-  method wiki-common-markup(:$text) {
+    #1***    my $self = shift;
+    #2***      my ($text, $useImage, $doLines) = @_;
+    #3***      local $_ = $text;
+    #4***      if ($doLines < 2) {    # 2 = do line-oriented only
+    #5***                            # The <nowiki> tag stores text with no markup (except quoting HTML)
+    #6***        if (m/\&lt;toc\&gt;/) {
+    #7***          $TOCFlag = 1;
+    #8***        }
+    #9***        s/\&lt;localdir\&gt;((.|\n)*?)\&lt;\/localdir\&gt;/$self->StoreRaw($self->DisplayLocalDirectory($1))/ige;
+    #10***        s/\&lt;nowiki\&gt;((.|\n)*?)\&lt;\/nowiki\&gt;/$self->StoreRaw($1)/ige;
+    #11***        s/\&lt;wikiproc\&gt;((.|\n)*?)\&lt;\/wikiproc\&gt;/$self->WikiProc($1)/ige;
+    #12***        s/\&lt;training\&gt;((.|\n)*?)\&lt;\/training\&gt;/$self->SetTrainingText($1)/ige;
+    #13***        s/\&lt;postit\&gt;((.|\n)*?)\&lt;\/postit\&gt;/$self->PostItNote($1)/ige;
+    #14***        s/\&lt;scroll\&gt;((.|\n)*?)\&lt;\/scroll\&gt;/$self->ScrollText($1)/ige;
+    #15***        s/\&lt;sidebar\&gt;((.|\n)*?)\&lt;\/sidebar\&gt;/$self->SideBar($1)/ige;
+    #16***        s/\&lt;sidemenu\&gt;((.|\n)*?)\&lt;\/sidemenu\&gt;/$self->SideMenu($1)/ige;
+    #17***        s/\&lt;menubar\&gt;((.|\n)*?)\&lt;\/menubar\&gt;/$self->MenuBar($1)/ige;
+    #18***        s/\&lt;tabmenubar\&gt;((.|\n)*?)\&lt;\/tabmenubar\&gt;/$self->TabMenuBar($1)/ige;
+    #19***        s/\&lt;menu\&gt;((.|\n)*?)\&lt;\/menu\&gt;/$self->PopupMenu($1)/ige;
+    #20***        s/\&lt;sitemenubar\&gt;((.|\n)*?)\&lt;\/sitemenubar\&gt;/$self->SiteMenuBar($1)/ige;
+    #21***        s/\&lt;menugroup\&gt;((.|\n)*?)\&lt;\/menugroup\&gt;/$self->SideMenuGroup($1)/ige;
+    #22***        s/\&lt;insertpage\&gt;((.|\n)*?)\&lt;\/insertpage\&gt;/$self->ExtractPageText($1)/ige;
+    #23***        s/\&lt;banner\&gt;((.|\n)*?)\&lt;\/banner\&gt;/$self->PageBanner($1)/ige;
+    #24***        s/\&lt;pagetitle\&gt;((.|\n)*?)\&lt;\/pagetitle\&gt;/$self->PageTitle($1)/ige;
+    #25***        s/\&lt;picture\&gt;((.|\n)*?)\&lt;\/picture\&gt;/$self->FloatImage($1)/ige;
+    #26***        # The <pre> tag wraps the stored text with the HTML <pre> tag
+    #27***        s/\&lt;code\&gt;((.|\n)*?)\&lt;\/code\&gt;/$self->StoreCode($1, "nowiki")/ige;
+    #28***        s/\&lt;sapnote\&gt;((.|\n)*?)\&lt;\/sapnote\&gt;/$self->StoreSAPNote($1, "nowiki")/ige;
+    #29***        s/\&lt;pre\&gt;((.|\n)*?)\&lt;\/pre\&gt;/$self->StorePre($1, "pre")/ige;
+    #30***        #s/\&lt;center\&gt;((.|\n)*?)\&lt;\/center\&gt;/$self->StorePre($1, "center")/ige;
+    #31***        if ($EarlyRules ne '') {
+    #32***          $_ = $self->EvalLocalRules($EarlyRules, $_, !$useImage);
+    #33***        }
+    #34***        s/\[\#(\w+)\]/$self->StoreHref(" name=\"$1\"")/ge if $NamedAnchors;
+    #35***        # Note that these tags are restricted to a single paragraph
+    #36***        my ($t);
+    #37**        if ($HtmlTags) {
+    #38***          foreach $t (@HtmlPairs) {
+    #39***            s/
+    #40***          \&lt\;$t(\s[^<>]+?)?\&gt\;  # match opening tag with params
+    #41***          (?>(.*?)((\n\n)|(\&lt\;\/$t\&gt\;)))  # match up to closing tag or end para
+    #42***          (?<!\n\n) # fail if end of para
+    #43***          /<$t$1>$2<\/$t>/gisx;    #replacement string
+    #44***          }
+    #45***          foreach $t (@HtmlSingle) {
+    #46***            s/
+    #47***            \&lt\;$t(\s[^<>]+?)?\&gt\;   # match tag with param
+    #48***            /<$t$1>/gix;           # replacement string
+    #49***          }
+    #50***        }
+    #51***        else {
+    #52***          foreach $t (qw/b i center strong em tt/) {
+    #53***            s/
+    #54***              \&lt\;$t\&gt\; # match opening tag
+    #55***              (?>(.*?)((\n\n)|(\&lt\;\/$t\&gt\;))) # up to closing tag or end of para
+    #56***              (?<!\n\n)  # fail if end of para
+    #57***            /<$t>$1<\/$t>/gisx;     #replacement string
+    #58***          }
+    #59***          s/\&lt\;br\&gt\;/<br>/gi;
+    #60***        }
+    #61***        s/\&lt;br\&gt;/<br>/gi;                                # Allow simple line break anywhere
+    #62***        s/\&lt;tt\&gt;(.*?)\&lt;\/tt\&gt;/<tt>$1<\/tt>/gis;    # <tt> (MeatBall)
+    #63***        s/([^#])#(\w+)#/$1 . ++$Counters{$2}/ge;
+    #64***        # POD style markup
+    #65***        s/
+    #66***      ([biu]+)\&lt\; #match opening tag
+    #67***      (?>(.*?)((\n\n)|(\&gt\;))) # match up to closing tag or end of para
+    #68***      (?<!\n\n)  # fail if end of para
+    #69***      /"<" . join("><", split("", $1)) . ">" . $2
+    #70***        . "<\/" . join("><\/", split("", scalar(reverse($1)))) . ">"/gisex;    #replacement string
+    #71***        #bi20090828dma
+    #72***        s/
+    #73***      TEXT\&lt\; #match opening tag
+    #74***      (?>(.*?)((\n\n)|(\&gt\;))) # match up to closing tag or end of para
+    #75***      (?<!\n\n)  # fail if end of para
+    #76***      /$self->GetTextElement($1)/gisex;                                       #replacement string
+    #77***        #ei20090828dma
+    #78***        #
+    #79***        #bi20180106dma
+    #80***        s/\%ICON\{(\w*)\}\%/$self->StoreIconTag($1)/geo;
+    #81***        #
+    #82***        #--https://foswiki.org/System/DocumentGraphics
+    #83***        #
+    #84***        #ei20180106dma
+    #85***        if ($HtmlLinks) {
+    #86***          s/\&lt;A(\s[^<>]+?)\&gt;(.*?)\&lt;\/a\&gt;/$self->StoreHref($1, $2)/gise;
+    #87***        }
+    #88***        s/$ActionPattern/$self->StoreAction($1, $2, $3)/geo;
+    #89***        if ($SearchLinks) {
+    #90***          s/\{\?\s*([^\|]*?)\s*(\|\s*(.*?)\s*)?\}/$self->StoreSearchLink($1, $3)/geo;
+    #91***        }
+    #92***        if ($FreeLinks) {
+    #93***          # Consider: should local free-link descriptions be conditional?
+    #94***          # Also, consider that one could write [[Bad Page|Good Page]]?
+    #95***          s/\[\[$FreeLinkPattern\|([^\]]+)\]\]/$self->StorePageOrEditLink($1, $2)/geo;
+    #96***          s/\[\[$FreeLinkPattern\]\]/$self->StorePageOrEditLink($1, "")/geo;
+    #97***          s/\[\[$AnchoredLinkPattern\|([^\]]+)\]\]/$self->StoreAnchoredLink($1, $2, $3)/geos if $NamedAnchors;
+    #98***        }
+    #99***        if ($BracketText) {    # Links like [URL text of link]
+    #100***          s/\[$UrlPattern\s+([^\]]+?)\]/$self->StoreBracketUrl($1, $2, $useImage)/geos;
+    #101***          s/\[$InterLinkPattern\s+([^\]]+?)\]/$self->StoreBracketInterPage($1, $2,
+    #102***                                                                $useImage)/geos;
+    #103***          if ($WikiLinks && $BracketWiki) {    # Local bracket-links
+    #104***            s/\[$LinkPattern\s+([^\]]+?)\]/$self->StoreBracketLink($1, $2)/geos;
+    #105***            s/\[$AnchoredLinkPattern\s+([^\]]+?)\]/$self->StoreBracketAnchoredLink($1,
+    #106***                                                  $2, $3)/geos if $NamedAnchors;
+    #107***          }
+    #108***        }
+    #109***        s/\[$UrlPattern\]/$self->StoreBracketUrl($1, "", 0)/geo;
+    #110***        s/\[$InterLinkPattern\]/$self->StoreBracketInterPage($1, "", 0)/geo;
+    #111***        s/\b$UrlPattern/$self->StoreUrl($1, $useImage)/geo;    #--
+    #112***        s/\b$InterLinkPattern/$self->StoreInterPage($1, $useImage)/geo;
+    #113***        if ($WikiLinks) {
+    #114***          s/$AnchoredLinkPattern/$self->StoreRaw($self->GetPageOrEditAnchoredLink($1,
+    #115***                                $2, ""))/geo if $NamedAnchors;
+    #116***          # CAA: Putting \b in front of $LinkPattern breaks /SubPage links
+    #117***          #      (subpage links without the main page)
+    #118***          s/$LinkPattern/$self->GetPageOrEditLink($1, $2)/geo;
+    #119***        }
+    #120***        s/\&lt;hide\&gt;((.|\n)*?)\&lt;\/hide\&gt;/$self->StorePre("", "hide")/ige;
+    #121***        s/\b$RFCPattern/$self->StoreRFC($1)/geo;
+    #122***        s/\b$ISBNPattern/$self->StoreISBN($1)/geo;
+    #123***        s/\[(?:(\w+);)\s*(\S+\.$ImageExtensions)\s*\]/$self->StoreImageTagAlign($2, $1)/geo;        #dbChange for [] images.
+    #124***        s/\[(?:(\w+:\w+)\@)?\s*(\S+\.$ImageExtensions)\s*\]/$self->StoreImageTagCSS($2, $1)/geo;    #dbChange for [] images.
+    #125***        if ($UseUpload) {
+    #126***          #bd20090824dma
+    #127***          #      s/$UploadPattern/$self->StoreUpload($1)/geo;
+    #128***          #ed20090824dma
+    #129***          #bi20090824dma
+    #130***          #correct format: [upload:uploaded_doc.ext Description]
+    #131***          #invalid format: [upload:uploaded_do.ext] -- to be fixed
+    #132***          s/\[$UploadPattern\s+([^\]]+?)\]/$self->StoreUpload($1, $2, $useImage)/geos;
+    #133***          #ei20090824dma
+    #134***        }
+    #135***        if ($ThinLine) {
+    #136***          if ($OldThinLine) {    # Backwards compatible, conflicts with headers
+    #137***            s/====+/<hr noshade class=wikiline size=2>/g;
+    #138***          }
+    #139***          else {                 # New behavior--no conflict
+    #140***            s/------+/<hr noshade class=wikiline size=2>/g;
+    #141***          }
+    #142***          s/----+/<hr noshade class=wikiline size=1>/g;
+    #143***        }
+    #144***        else {
+    #145***          s/----+/<hr class=wikiline>/g;
+    #146***        }
+    #147***        if ($UseSmilies) {
+    #148***          foreach my $regexp (keys %Smilies) {
+    #149***            s/$regexp/<img src="$Smilies{$regexp}" alt="$&">/g;
+    #150***          }
+    #151***        }
+    #152***        if ($AutoMailto) {
+    #153***          s/([A-z0-9-_]+(?:\.[A-z0-9-_]+)*)\@([A-z0-9-_]+(?:\.[A-z0-9-_]+)*(?:\.[A-z]{2,})+)/<a href="mailto:$1\@$2">$1\@$2<\/a>/g;
+    #154***        }
+    #155***      }
+    #156***      if ($doLines) {
+    #157***        # 0 = no line-oriented, 1 or 2 = do line-oriented
+    #158***        # The quote markup patterns avoid overlapping tags (with 5 quotes)
+    #159***        # by matching the inner quotes for the strong pattern.
+    #160***        s/('*)'''(.*?)'''/$1<strong>$2<\/strong>/g;
+    #161***        s/''(.*?)''/<em>$1<\/em>/g;
+    #162***        if ($UseHeadings) {
+    #163***          s/(^|\n)\s*(\=+)\s+([^\n]+)\s+\=+/$self->WikiHeading($1, $2, $3)/geo;
+    #164***        }
+    #165***        if ($TableMode) {
+    #166***          s/((\|\|)+)/"<\/TD><TD class='wikitablecell' valign='top' COLSPAN=\"" . (length($1)\/2) . "\">"/ge;
+    #167***        }
+    #168***        s/(\@[lri]\@)(\S+\.(gif|jpg|png|jpeg))\s/$self->GetImgTag($1, $2)/gei;
+    #169***      }
+    #170***      s/\{\{(\S+)\s/$self->FontStyle($1)/ge;
+    #171***      s|\}\}|</span>|g;
+    #172***      if ($FullTable) {
+    #173***        #This code is pretty trivial. We take table attributes and put them in a string.
+    #174***        #Then we iterate over that string, looking for 'safe' matches, adding those matches to
+    #175***        #another string which ultimately becomes the actual tag. Simple, really. :) I think the
+    #176***        #best strength of regexp, is that we can 'execute' strings. This should render tables
+    #177***        #perfectly, with most of the HTML 3.0 table attributes. You can also put images in tables
+    #178***        #by simply using the image URL, and enclosing it in a cell (the aligns, etc, should work).
+    #179***        while (my ($table_str) = /&lt;table(.{0,96}?)&gt;.*?&lt;\/table&gt;/gis) {
+    #180***          my $table_attr;
+    #181***          my $table = "<table";
+    #182***          foreach $table_attr (
+    #183***            "border=\"?[0-9]{1\,2}\"?",           "cellpadding=\"?[0-9]{1\,2}\"?",
+    #184***            "cellspacing=\"?[0-9]{1\,2}\"?",      "width\=\"?(:?\\b(:?100|[0-9]{1,2})\\b%|\\b(:?800|[1-7]?[0-9]{1,2}\\b))\"?",
+    #185***            "align\=\"?(:?left|center|right)\"?", "bgcolor\=\"?#[0-9A-Fa-f]{6}\"?"
+    #186***            ) {
+    #187***            $table .= " " . $1 if ($table_str =~ /($table_attr)/is);
+    #188***          }
+    #189***          $table .= ">";
+    #190***          s/&lt;table(.*?)&gt;(.*?)&lt;\/table&gt;/\L$table\E$2<\/table>/is;
+    #191***          while (my ($td_str) = /&lt;td(.{0,96}?)&gt;.*?&lt;\/td&gt;/gis) {
+    #192***            my $td_attr;
+    #193***            my $td = "<td";
+    #194***            foreach $td_attr (
+    #195***              "align\=\"?(:?left|center|right)\"?", "valign\=\"?(:?top|middle|bottom|baseline)\"?",
+    #196***              "colspan\=\"?[0-9]{1\,2}\"?",         "background\=\"[\/a-zA-Z0-9.]*[a-zA-Z.]\"?",
+    #197***              "rowspan\=\"?[0-9]{1\,2}\"?",         "width\=\"?(:?\\b(:?100|[0-9]{1,2})\\b%|\\b(:?200|[1-2]?[0-9]{1,2}\\b))\"?",
+    #198***              "bgcolor\=\"?#[0-9A-Fa-f]{6}\"?"
+    #199***              ) {
+    #200***              $td .= ' ' . $1 if ($td_str =~ /($td_attr)/is);
+    #201***              #$m =~ s/\/[a-z]\//\/uc($1)\//;
+    #202***              #$td .= " [$m] " . $m if ($m ne ''); # if ( $td_str =~ /($td_attr)/is );
+    #203***            }
+    #204***            $td .= ">";
+    #205***            #bd20170414
+    #206***            #s/&lt;td(.*?)&gt;(.*?)&lt;\/td&gt;/$td\E$2<\/td>/is;
+    #207***            #ed20170414
+    #208***            #bi20170414
+    #209***            s/&lt;td(.*?)&gt;(.*?)&lt;\/td&gt;/$td$2<\/td>/is;
+    #210***            #ei20170414
+    #211***            #---- s/&lt;td(.*?)&gt;(.*?)&lt;\/td&gt;/\L$td\E$2<\/td>/is;
+    #212***          }
+    #213***          while (my ($th_str) = /&lt;th(.{0,96}?)&gt;.*?&lt;\/th&gt;/gis) {
+    #214***            my $th_attr;
+    #215***            my $th = "<th";
+    #216***            foreach $th_attr (
+    #217***              "align\=\"?(:?left|center|right)\"?",
+    #218***              "valign\=\"?(:?top|middle|bottom|baseline)\"?",
+    #219***              "colspan\=\"?[0-9]{1\,2}\"?",
+    #220***              "rowspan\=\"?[0-9]{1\,2}\"?",
+    #221***              "width\=\"?(:?\\b(:?100|[0-9]{1,2})\\b%|\\b(:?200|[1-2]?[0-9]{1,2}\\b))\"?",
+    #222***              "bgcolor\=\"?#[0-9A-Fa-f]{6}\"?"
+    #223***              ) {
+    #224***              $th .= " " . $1 if ($th_str =~ /($th_attr)/is);
+    #225***            }
+    #226***            $th .= ">";
+    #227***            s/&lt;th(.*?)&gt;(.*?)&lt;\/th&gt;/\L$th\E$2<\/th>/is;
+    #228***          }
+    #229***          while (my ($tr_str) = /&lt;tr(.{0,36}?)&gt;.*?&lt;\/tr&gt;/gis) {
+    #230***            my $tr_attr;
+    #231***            my $tr = "<tr";
+    #232***            foreach $tr_attr ("align\=\"?(:?left|center|right)\"?", "valign\=\"?(:?top|middle|bottom|baseline)\"?") {
+    #233***              $tr .= " " . $1 if ($tr_str =~ /($tr_attr)/is);
+    #234***            }
+    #235***            $tr .= ">";
+    #236***            s/&lt;tr(.*?)&gt;(.*?)&lt;\/tr&gt;/\L$tr\E$2<\/tr>/is;
+    #237***          }
+    #238***        }
+    #239***      }
+    #240***      return $_;
+
+
+
+    return $wiki-text;
+  }
+
+
+  method wiki-lines-to-html(Str :$text) {
+    my Str $wiki-text = '';
+    $wiki-text = $text;
+
+
+    #1***  my $self = shift;
+    #2***    my ($pageText) = @_;
+    #3***    my ($pageHtml, @htmlStack, $code, $codeAttributes, $depth, $oldCode);
+    #4***    @htmlStack = ();
+    #5***    $depth     = 0;
+    #6***    $pageHtml  = "";
+    #7***    foreach (split(/\n/, $pageText)) {    # Process lines one-at-a-time
+    #8***      $code           = '';
+    #9***      $codeAttributes = '';
+    #10***      $TableMode      = 0;
+    #11***      $_ .= "\n";
+    #12***      if (s/^(\;+)([^:]+\:?)\:/<dt>$2<dd>/) {
+    #13***        $code  = "DL";
+    #14***        $depth = length $1;
+    #15***      }
+    #16***      elsif (s/^(\:+)/<dt><dd>/) {
+    #17***        $code  = "DL";
+    #18***        $depth = length $1;
+    #19***      }
+    #20***      elsif (s/^(\*+)/<li>/) {
+    #21***        $code  = "UL";
+    #22***        $depth = length $1;
+    #23***      }
+    #24***      elsif (s/^(\#+)(\d*)([aAiI]?)/'<li' . ($2 ? " value=\"$2\"" : '') . '>'/e) {
+    #25***        $code  = "OL";
+    #26***        $depth = length $1;
+    #27***        if ($3) {
+    #28***          $codeAttributes = " type=\"$3\"";
+    #29***        }
+    #30***      }
+    #31***      elsif (
+    #32***        $TableSyntax
+    #33***        && s/^((\|\|)+)(.*)\|\|\s*$/"<TR VALIGN='CENTER' "
+    #34***                                . "ALIGN='LEFT'><TD class='wikitablecell' valign='top' colspan='"
+    #35***                                . (length($1)\/2) . "'>" . $self->Table_nbsp($3) . "<\/TD><\/TR>\n"/e) {
+    #36***        $code           = 'TABLE';
+    #37***        $codeAttributes = " BORDER='0'";
+    #38***        $TableMode      = 1;
+    #39***        $depth          = 1;
+    #40***      }
+    #41***      elsif (/^[ \t].*\S/) {
+    #42***        $code  = "PRE";
+    #43***        $depth = 1;
+    #44***      }
+    #45***      else {
+    #46***        $depth = 0;
+    #47***      }
+    #48***      while (@htmlStack > $depth) {    # Close tags as needed
+    #49***        $pageHtml .= "</" . pop(@htmlStack) . ">\n";
+    #50***      }
+    #51***      if ($depth > 0) {
+    #52***        $depth = $IndentLimit if ($depth > $IndentLimit);
+    #53***        if (@htmlStack) {              # Non-empty stack
+    #54***          $oldCode = pop(@htmlStack);
+    #55***          if ($oldCode ne $code) {
+    #56***            $pageHtml .= "</$oldCode><$code>\n";
+    #57***          }
+    #58***          push(@htmlStack, $code);
+    #59***        }
+    #60***        while (@htmlStack < $depth) {
+    #61***          push(@htmlStack, $code);
+    #62***          $pageHtml .= "<$code$codeAttributes>\n";
+    #63***        }
+    #64***      }
+    #65***      if (!$ParseParas) {
+    #66***        s/^\s*$/<p><\/p>\n/;    # Blank lines become <p></p> tags
+    #67***      }
+    #68***      $pageHtml .= $self->CommonMarkup($_, 1, 2);    # Line-oriented common markup
+    #69***    }
+    #70***    while (@htmlStack > 0) {                         # Clear stack
+    #71***      $pageHtml .= "</" . pop(@htmlStack) . ">\n";
+    #72***    }
+    #73***    return $pageHtml;
+
+    return $text;
+  }
+
+  method wiki-common-markup-test1(:$text) {
     my $wiki-text = $text;
 
     #- begin: localdir
@@ -2324,10 +2866,10 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     return $text-message;
   }
 
-  method wiki-remove-field-separator(Str :$text) {
+  method remove-field-separator(Str :$text) {
     my Str $wiki-text = '';
     $wiki-text = $text;
-    $wiki-text ~~ s:g/($C_FS)+(\d)/\|/;
+    $wiki-text ~~ s:g/($C_FS)+(\d)/$1/;
     return $wiki-text;
   }
 
