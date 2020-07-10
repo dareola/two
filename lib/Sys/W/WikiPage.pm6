@@ -41,19 +41,27 @@ class Sys::W::WikiPage is export {
 
     # Tags that must be in <tag> ... </tag> pairs:
     has @.HtmlPairs = <b i u font big small sub sup h1 h2 h3 h4 h5 h6 cite code
-  em s strike strong tt var div center blockquote ol ul dl table tr td caption
-  br p hr li dt dd th>;
+                       em s strike strong tt var div center blockquote ol ul dl
+                       table tr td caption br p hr li dt dd th>;
 
     # Single tags (that do not require a closing /tag)
     has @.HtmlSingle  = <br p hr li dt dd th>;
 
     #-- begin: testing-declaration
+    has $.FS is rw = '';
+    has $.FS1 is rw = '';
+    has $.FS2 is rw = '';
+    has $.FS3 is rw = '';
     has $.LinkPattern is rw = '';
     has $.HalfLinkPattern is rw = '';
     has $.AnchoredLinkPattern is rw = '';
     has $.EditLinkPattern is rw = '';
     has $.InterSitePattern is rw = '';
     has $.InterLinkPattern is rw = '';
+    has $.FreeLinkPattern is rw = '';
+    has $.UrlProtocols is rw = '';
+    has $.UrlPattern is rw = '';
+    has $.ImageExtensions is rw = '';
 
     has Int $.TaskNumDaysToExpire = 30;
     has Str $.ScriptTZ = "";
@@ -83,7 +91,7 @@ class Sys::W::WikiPage is export {
     has Str $.PublicFolderMatch = '';
     has Str $.UserHeader = '';                      #<<AUTOFOCUSJAVASCRIPT;
                                                     # Optional HTML header additional content
-    has Str $.UserBody = "";                        #'onload="onLoad()"';
+    has Str $.UserBody = '';                        #'onload="onLoad()"';
                                                     # Optional <BODY> tag additional content
     has Int $.StartUID  = 1001;                     # Starting number for user IDs
     has @.ImageSites = ();                          # Url prefixes of good image sites: ()=all
@@ -144,7 +152,8 @@ class Sys::W::WikiPage is export {
     has Bool $.SimpleLinks = False;                 # 1 = only letters,       0 = allow _ and numbers
     has Bool $.NonEnglish = False;                  # 1 = extra link chars,   0 = only A-Za-z chars
     has Bool $.ThinLine = False;                    # 1 = fancy <hr> tags,    0 = classic wiki <hr>
-    has Int $.BracketText = 2;                      # 1 = allow [URL text],   0 = no link descriptions, 2 = allow but dont emit bracket
+    has Int $.BracketText = 2;                      # 1 = allow [URL text],   0 = no link descriptions,
+                                                    # 2 = allow but dont emit bracket
     has Bool $.UseAmPm = True;                      # 1 = use am/pm in times, 0 = use 24-hour times
     has Bool $.UseIndex = False;                    # 1 = use index file,     0 = slow/reliable method
     has Bool $.UseHeadings = True;                  # 1 = allow = h1 text =,  0 = no header formatting
@@ -186,7 +195,9 @@ class Sys::W::WikiPage is export {
     has Bool $.SearchLinks = True;                  # 1 = allow search links syntax, 0 = don't
     has Bool $.AutoMailto = True;                   # converts emails in format name@host
                                                     # into mailto: hyperlinks
-    has Str $.UploadFileInfo = '';                  #filename|newfile|X|printfilename
+    has Str $.UploadFileInfo = '';                  # filename|newfile|X|printfilename
+    has Int $.IndentLimit = 20;                     # Maximum depth of nested lists
+    has Bool $.TOCFlag = False;
 
 
 
@@ -371,7 +382,7 @@ method EDIT_SCREEN_1000() {
 
       my Int $edit-rows = 15;
       my Int $edit-cols = 60;
-      my Int $summary-cols = 120;
+      my Int $summary-cols = 180;
       #my Str $wiki-text = '';
       my Int $rows = 0;
       my Int $cols = 0;
@@ -668,8 +679,353 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
 
   }
 
+  method init-link-patterns() {
+  #1***      my $self = shift;
+  #2***      my ($UpperLetter, $LowerLetter, $AnyLetter, $LpA, $LpB, $LpC, $QDelim);
+  #b2
+             my Str $upper-letter = '';
+             my Str $lower-letter = '';
+             my Str $any-letter = '';
+             my Str $lpA = '';
+             my Str $lpB = '';
+             my Str $lpC = '';
+             my Str $qdelim = '';
+  #e2
+  #3***      # Field separators are used in the URL-style patterns below.
+  #4***      if ($NewFS) {
+  #b4
+             if $.NewFS {
+  #e4
+  #5***        $FS = "\x1e\xff\xfe\x1e";    # An unlikely sequence for any charset
+  #b5
+               $.FS = "\x1e\xff\xfe\x1e";
+  #e5
+  #b6
+             }
+  #e6
+  #6***      }
+  #7***      else {
+  #b7
+             else {
+  #e7
+  #8a***        $FS = "\xb3";                # The FS character is a superscript "3"
+  #b8a
+                $.FS = "\xb3";
+  #e8a
+  #b8b
+            }
+  #e8b
+  #8b***      }
+  #9***      $FS1         = $FS . "1";      # The FS values are used to separate fields
+  #10***      $FS2         = $FS . "2";      # in stored hashtables and other data structures.
+  #11***      $FS3         = $FS . "3";      # The FS character is not allowed in user data.
+  #b8b..11
+             $.FS1 = $.FS ~ '1';
+             $.FS2 = $.FS ~ '2';
+             $.FS3 = $.FS ~ '3';
+  #e8b..11
+  #12***      $UpperLetter = "[A-Z";
+  #13***      $LowerLetter = "[a-z";
+  #14***      $AnyLetter   = "[A-Za-z";
+  #15***      if ($NonEnglish) {
+  #16***        $UpperLetter .= "\xc0-\xde";
+  #17***        $LowerLetter .= "\xdf-\xff";
+  #18***        if ($NewFS) {
+  #19***          $AnyLetter .= "\x80-\xff";
+  #20***        }
+  #21***        else {
+  #22***          $AnyLetter .= "\xc0-\xff";
+  #23***        }
+  #24***      }
+  #b12..24
+             $upper-letter = 'A..Z';
+             $lower-letter = 'a..z';
+             $any-letter = 'A..Za..z';
+             if $.NonEnglish {
+               $upper-letter ~= "\xc0..\xde";
+               $lower-letter ~= "\xdf..\xff";
+               if $.NewFS {
+                 $any-letter ~= "\x80..\xff";
+               }
+               else {
+                 $any-letter ~= "\xc0..\xff";
+               }
+             }
+
+  #e12..24
+  #25***      if (!$SimpleLinks) {
+  #26***        $AnyLetter .= "_0-9";
+  #27***      }
+  #b25..27
+            if !$.SimpleLinks {
+              $any-letter ~= '_0..9';
+            }
+  #e25..27
+  #28***      $UpperLetter .= "]";
+  #29***      $LowerLetter .= "]";
+  #30***      $AnyLetter   .= "]";
+  #b28..30
+           $upper-letter = '<[' ~ $upper-letter ~ ']>';
+           $lower-letter = '<[' ~ $lower-letter ~ ']>';
+           $any-letter = '<[' ~ $any-letter ~ ']>';
+           #self.TRACE: 'UPPER: ' ~ $upper-letter;
+           #self.TRACE: 'LOWER: ' ~ $lower-letter;
+           #self.TRACE: 'ANY: ' ~ $any-letter;
+
+  #e28..30
+  #31***      # Main link pattern: lowercase between uppercase, then anything
+  #32***      $LpA = $UpperLetter . "+" . $LowerLetter . "+" . $UpperLetter . $AnyLetter . "*";
+  #b32
+              $lpA = $upper-letter ~ '+ ' 
+                   ~ $lower-letter ~ '+ ' 
+                   ~ $upper-letter 
+                   ~ $any-letter ~ '*';
+              #self.TRACE: 'link pattern A: ' ~ $lpA;
+              #LINK PATTERN A = <[A..Z]>+ <[a..z]>+ <[A..Z]><[A..Za..z_0..9]>*
+  #e32
+  #33***      # Optional subpage link pattern: uppercase, lowercase, then anything
+  #34***      $LpB = $UpperLetter . "+" . $LowerLetter . "+" . $AnyLetter . "*";
+  #b34
+              $lpB = $upper-letter ~ '+ '
+                   ~ $lower-letter ~ '+ '
+                   ~ $any-letter ~ '*';
+              #self.TRACE: 'link pattern B: ' ~ $lpB;
+              #LINK PATTERN B = <[A..Z]>+ <[a..z]>+ <[A..Za..z_0..9]>*
+
+  #e34
+  #35***      $LpC = $UpperLetter . "+" . $AnyLetter . "*";
+  #b35
+              $lpC = $upper-letter ~ '+ ' 
+                   ~ $any-letter ~ '*';
+              #self.TRACE: 'link pattern C: ' ~ $lpC;
+              #LINK PATTERN C = <[A..Z]>+ <[A..Za..z_0..9]>*
+  #e35    
+  #36***      if ($UseSubpage) { # defa: True
+  #37***        # Loose pattern: If subpage is used, subpage may be simple name
+  #38***        $LinkPattern     = "(((?:(?:$LpA)?\\/)+$LpB)|$LpA)";
+  #39***        $HalfLinkPattern = "(((?:(?:$LpB)?\\/)+$LpB)|$LpB)";
+  #40***        # Strict pattern: both sides must be the main LinkPattern
+  #41***      }
+  #42***      else {
+  #43***        $LinkPattern     = "($LpA)";
+  #44***        $HalfLinkPattern = "($LpC)";
+  #45***      }
+  #b35..45
+              if $.UseSubpage {
+                $.LinkPattern = '(' 
+                              ~   '(' 
+                              ~     '('                   # capture 
+                              ~        '(' ~ $lpA ~ ')?'  # optional lpA
+                              ~        '\/'               # followed by ) 
+                              ~     ')+ '                 # one or more  
+                              ~     $lpB                  # and then lpB
+                              ~  ')'           
+                              ~  '|'                      # or
+                              ~  $lpA                     # lpA
+                              ~  ')';
+
+              #self.TRACE: 'Link pattern including subpage: ' ~ $.LinkPattern;
+              #link pattern = ((((<[A..Z]>+ <[a..z]>+ <[A..Z]><[A..Za..z_0..9]>*)?\/)+ <[A..Z]>+ <[a..z]>+ <[A..Za..z_0..9]>*) |<[A..Z]>+ <[a..z]>+ <[A..Z]><[A..Za..z_0..9]>*)
+
+               $.HalfLinkPattern = '(' 
+                              ~   '(' 
+                              ~     '('                   # capture 
+                              ~        '(' ~ $lpB ~ ')?'  # optional lpB
+                              ~        '\/'               # followed by ) 
+                              ~     ')+ '                 # one or more  
+                              ~     $lpB                  # and then lpB
+                              ~  ')'           
+                              ~  '|'                      # or
+                              ~  $lpB                     # lpB
+                              ~  ')';
+               #self.TRACE: 'Half link pattern including subpage: ' ~ $.HalfLinkPattern;
+              #Half link pattern = ((((<[A..Z]>+ <[a..z]>+ <[A..Za..z_0..9]>*)?\/)+ <[A..Z]>+ <[a..z]>+ <[A..Za..z_0..9]>*) |<[A..Z]>+ <[a..z]>+ <[A..Za..z_0..9]>*)
+
+
+              }
+              else {
+                $.LinkPattern = '(' ~ $lpA ~ ')';
+                $.HalfLinkPattern = '(' ~ $lpC ~ ')';
+              }
+  #e35..45
+  #46***      $QDelim = '(?:"")?';                                                          # Optional quote delimiter (not in output)
+  #b46
+
+              $qdelim = "'" ~ '"' ~ "'" ~ '<-["]>*' ~ "'" ~ '"' ~ "'";
+              self.TRACE: 'Quoted delimiter: ' ~ $qdelim;
+              #quoted delimited text = '"'<-["]>*'"'
+  #e46
+  #47***      $AnchoredLinkPattern = $LinkPattern . '#(\\w+)' . $QDelim if $NamedAnchors;
+  #b47
+              $.AnchoredLinkPattern = $.LinkPattern   # link pattern
+                                    ~ '\#'             # then hash
+                                    ~ '('             # followed by
+                                    ~ '\w+'           # one or more words
+                                    ~ ')';            
+                                    #~ $qdelim;        # and optional quotation
+               #self.TRACE: 'Anchored link pattern: ' ~ $.AnchoredLinkPattern;
+               #-- Anchor link pattern = ((((<[A..Z]>+ <[a..z]>+ <[A..Z]><[A..Za..z_0..9]>*)?\/)+ <[A..Z]>+ <[a..z]>+ <[A..Za..z_0..9]>*)|<[A..Z]>+ <[a..z]>+ <[A..Z]><[A..Za..z_0..9]>*)\#(\w+)'"'<-["]>*'"'
+  #e47
+  #48***      $LinkPattern     .= $QDelim;
+  #b48
+              #-- todo: $.LinkPattern ~= $qdelim;
+  #e48
+  #49***      $HalfLinkPattern .= $QDelim;
+  #b49
+              #-- todo: $.HalfLinkPattern ~= $qdelim;
+  #e49
+  #50***      # pull the fast switch *alj*
+  #51***      $EditLinkPattern = $LinkPattern;
+  #b51
+              $.EditLinkPattern = $.LinkPattern;
+  #e51
+  #52***      # Inter-site convention: sites must start with uppercase letter
+  #53***      # (Uppercase letter avoids confusion with URLs)
+  #54***      $InterSitePattern = $UpperLetter . $AnyLetter . "+";
+  #b54
+              $.InterSitePattern = $upper-letter ~ $any-letter ~ '+';
+              #self.TRACE: 'Inter site pattern : ' ~ $.InterSitePattern;
+              #-- <[A..Z]><[A..Za..z_0..9]>+ #e54
+  #55***      $InterLinkPattern = "((?:$InterSitePattern:[^\\]\\s\"<>$FS]+)$QDelim)";
+  #b55
+              $.InterLinkPattern = $.InterSitePattern 
+                                 ~ ':'
+                                 ~ '\?' 
+                                 ~ '\s*'
+                                 ~ '\w*';
+
+                                 #~ "'" ~ '"' ~ "'" ~ '<-["]>*' ~ "'" ~ '"' ~ "'";
+
+              self.TRACE: 'Inter link pattern : ' ~ $.InterLinkPattern;
+              #- <[A..Z]><[A..Za..z_0..9]>+:\?\s*\w*
+
+  #e55
+  #56***      if ($FreeLinks) { #def: True
+  #b56
+              if $.FreeLinks {
+  #e56
+  #57***        # Note: the - character must be first in $AnyLetter definition
+  #58***        if ($NonEnglish) { #def: False
+  #59***          if ($NewFS) {
+  #60***            $AnyLetter = "[-,.()' _0-9A-Za-z\x80-\xff]";
+  #61***          }
+  #62***          else {
+  #63***            $AnyLetter = "[-,.()' _0-9A-Za-z\xc0-\xff]";
+  #64***          }
+  #65***        }
+  #66***        else { 
+  #67***          $AnyLetter = "[-,.()' _0-9A-Za-z]";
+               
+                  #self.TRACE: 'ANYLETTER :' ~ $any-letter;
+                  #-- <[A..Za..z_0..9]> - previous value
+                  $any-letter = '<[A..Za..z_0..9\-,\.()' ~ "'" ~ ' ]>';
+                  #self.TRACE: 'ANYLETTER :' ~ $any-letter;
+                  #-- <[A..Za..z_0..9\-,\.()' ]> - new value
+  #68***        }
+  #b69
+              }
+  #e69
+  #69***      }
+  #70***      $FreeLinkPattern = "($AnyLetter+";
+  #71***      if ($UseSubpage) {
+  #72***        $FreeLinkPattern = "((?:(?:$AnyLetter+)?\\/)*$AnyLetter+";
+  #73***      }
+  #74***      if ($NamedAnchors) {
+  #75***        $FreeLinkPattern .= "(?:#(?:\\w+))?)";
+  #76***      }
+  #77***      else {
+  #78***        $FreeLinkPattern .= ")";
+  #79***      }
+  #b69..79
+              $.FreeLinkPattern = '(' ~ $any-letter ~ '+ ';
+              if $.UseSubpage {
+                $.FreeLinkPattern = '('
+                                  ~  '( ' ~ $any-letter ~ '+ )?'
+                                  ~  '\/'
+                                  ~ ')* '
+                                  ~ $any-letter ~ '+ ';
+                if $.NamedAnchors {
+                  #-- todo
+                }
+                else {
+                 $.FreeLinkPattern ~= ')';
+                }
+              }
+
+              #self.TRACE: 'FREE LINK PATTERN: ' ~ $.FreeLinkPattern;
+              #- (( <[A..Za..z_0..9\-,\.()' ]>+ )?\/)* <[A..Za..z_0..9\-,\.()' ]>+
+  #e69..79
+
+  #80***      $FreeLinkPattern .= $QDelim;
+  #81***      # Url-style links are delimited by one of:
+  #82***      #   1.  Whitespace                           (kept in output)
+  #83***      #   2.  Left or right angle-bracket (< or >) (kept in output)
+  #84***      #   3.  Right square-bracket (])             (kept in output)
+  #85***      #   4.  A single double-quote (")            (kept in output)
+  #86***      #   5.  A $FS (field separator) character    (kept in output)
+  #87***      #   6.  A double double-quote ("")           (removed from output)
+  #88***      $UrlProtocols = "http|https|ftp|afs|news|nntp|mid|cid|mailto|wais|image|download|mms|" . "prospero|telnet|gopher";
+  #b88
+              $.UrlProtocols = "http|https|ftp|afs|news|nntp|mid|" 
+                             ~ "cid|mailto|wais|image|download|mms|" 
+                             ~ "prospero|telnet|gopher";
+  #e88
+
+  #89***      $UrlProtocols .= '|file' if ($NetworkFile || !$LimitFileUrl);
+  #b89
+              $.UrlProtocols ~= '|file' if $.NetworkFile || !$.LimitFileUrl;
+
+              #self.TRACE: 'URL PROTOCOLS: ' ~ $.UrlProtocols;
+              # http|https|ftp|afs|news|nntp|mid|cid|mailto|wais|image|download|mms|prospero|telnet|gopher|file
+
+  #e89
+  #90***      $UrlPattern      = "((?:(?:$UrlProtocols):[^\\]\\s\"<>$FS]+)$QDelim)";
+  #b90
+              $.UrlPattern = '(' 
+                           ~  '('
+                           ~   $.UrlProtocols 
+                           ~  ')'
+                           ~  '\:'
+                           ~  '(\/)?'
+                           ~  '\/'
+                           ~  '(\S+)'  #- any char that is not whitespace
+                           ~ ')';
+
+              # self.TRACE: 'URL PATTERN: ' ~ $.UrlPattern;
+              #--((http|https|ftp|afs|news|nntp|mid|cid|mailto
+              #    |wais|image|download|mms|prospero|telnet|gopher|file)
+              #    \:(\/)?\/(\S+))
+  #e90
+  #91***      $ImageExtensions = "(gif|jpg|png|bmp|jpeg)"; 
+  #b91
+              $.ImageExtensions = "(gif|jpg|png|bmp|jpeg)"; 
+
+  #e91
+  #92***      $RFCPattern      = "RFC\\s?(\\d+)";
+  #93***      $ISBNPattern     = "ISBN:?([0-9- xX]{10,})";
+  #94***      $BLOGPattern     = "blog:?$HalfLinkPattern";
+  #95***      $UploadPattern   = "upload:([^\\]\\s\"<>$FS]+)$QDelim";
+  #96***      $ActionPattern   = "action:?([(A-Z|a-z)0-9=&\\/]+):?$HalfLinkPattern";
+  #97***      #$ActionPattern   = "action:?([(A-Z|a-z)0-9=&\\/]+):?$HalfLinkPattern";
+  #98***      if ($UseSmilies) {
+  #99***        %Smilies = (
+  #100***          ":-?\\)(?=\\W)"     => "$SmileyPath/smile.png",
+  #101***          ";-?\\)(?=\\W)"     => "$SmileyPath/blink.png",
+  #102***          ":-?](?=\\W)"       => "$SmileyPath/forced.png",
+  #103***          "8-?\\)(?=\\W)"     => "$SmileyPath/braindamaged.png",
+  #104***          ":-\\|(?=\\W)"      => "$SmileyPath/indifferent.png",
+  #105***          ":-?[/\\\\](?=\\W)" => "$SmileyPath/wry.png",
+  #106***          ":-?\\((?=\\W)"     => "$SmileyPath/sad.png",
+  #107***          ":-?\\{(?=\\W)"     => "$SmileyPath/frown.png",
+  #108***        );
+  #109***      }
+  }
+
   method wiki-to-html(Str :$text) {
     my Str $wiki-text = '';
+
+    self.init-link-patterns();
+
     $wiki-text = $text;
 
     #1***          my $self = shift;
@@ -711,7 +1067,8 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     #b18
     $wiki-text ~~ s:g/ '&lt;' 'back' \s+ (.*?) '&gt;' /Backlinks to $0/;
     #e18
-    #19***          if ($ParseParas) {
+    #19***          if ($ParseParas) { #-- current value = False
+                    if $.ParseParas {
     #20***            # Note: The following 3 rules may span paragraphs, so they are
     #21***            #       copied from CommonMarkup
     #22***            $pageText =~ s/\&lt;nowiki\&gt;((.|\n)*?)\&lt;\/nowiki\&gt;/$self->StoreRaw($1)/ige;
@@ -720,10 +1077,16 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     #25***            $pageText =~ s/((.|\n)+?\n)\s*\n/$self->ParseParagraph($1)/geo;
     #26***            $pageText =~ s/(.*)<\/p>(.+)$/$1.$self->ParseParagraph($2)/geo;
     #27***          }
+                    }
     #28***          else {
+                    else {
     #29***            $pageText = $self->CommonMarkup($pageText, 1, 0);    # Multi-line markup
+                      $wiki-text = self.common-markup(text => $wiki-text,
+                                                      use-image => True,
+                                                      do-lines => 0);
     #30***            $pageText = $self->WikiLinesToHtml($pageText);       # Line-oriented markup
     #31***          }
+                    }
     #32***          while (@HeadingNumbers) {
     #33***            pop @HeadingNumbers;
     #34***            #$TableOfContents .= "</dd></dl>\n\n";
@@ -1316,7 +1679,7 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     }
   return $the_url;
   }
-  method common-markup(Str :$text) {
+  method common-markup(Str :$text, Bool :$use-image, Int :$do-lines) {
     my $wiki-text = '';
     $wiki-text = $text;
 
@@ -1324,11 +1687,23 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     #2***      my ($text, $useImage, $doLines) = @_;
     #3***      local $_ = $text;
     #4***      if ($doLines < 2) {    # 2 = do line-oriented only
+    #b4
+               if $do-lines < 2 {
+    #e4
     #5***                            # The <nowiki> tag stores text with no markup (except quoting HTML)
     #6***        if (m/\&lt;toc\&gt;/) {
+    #b6
+                 if $wiki-text ~~ m:g/ '&lt;' 'toc' '&gt;' / {
+    #e6
     #7***          $TOCFlag = 1;
+    #b7
+                   $.TOCFlag = True;
+    #e7
+    #b8
+                 }
+    #e8
     #8***        }
-    #9***        s/\&lt;localdir\&gt;((.|\n)*?)\&lt;\/localdir\&gt;/$self->StoreRaw($self->DisplayLocalDirectory($1))/ige;
+    #9***         s/\&lt;localdir\&gt;((.|\n)*?)\&lt;\/localdir\&gt;/$self->StoreRaw($self->DisplayLocalDirectory($1))/ige;
     #10***        s/\&lt;nowiki\&gt;((.|\n)*?)\&lt;\/nowiki\&gt;/$self->StoreRaw($1)/ige;
     #11***        s/\&lt;wikiproc\&gt;((.|\n)*?)\&lt;\/wikiproc\&gt;/$self->WikiProc($1)/ige;
     #12***        s/\&lt;training\&gt;((.|\n)*?)\&lt;\/training\&gt;/$self->SetTrainingText($1)/ige;
@@ -1354,23 +1729,65 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     #32***          $_ = $self->EvalLocalRules($EarlyRules, $_, !$useImage);
     #33***        }
     #34***        s/\[\#(\w+)\]/$self->StoreHref(" name=\"$1\"")/ge if $NamedAnchors;
+    #b34
+                  $wiki-text ~~ s:g/ '[' '#' (\w+) ']' /{
+                    self.store-href(anchor => '', text => " name=\"$0\"")
+                  }/ if $.NamedAnchors;
+    #e34
     #35***        # Note that these tags are restricted to a single paragraph
     #36***        my ($t);
-    #37**        if ($HtmlTags) {
+    #37**        if ($HtmlTags) { #default value = True
+    #b37
+                 if $.HtmlTags {
+    #e37
     #38***          foreach $t (@HtmlPairs) {
+    #b38
+                    for @.HtmlPairs -> $t {
+    #e38
     #39***            s/
     #40***          \&lt\;$t(\s[^<>]+?)?\&gt\;  # match opening tag with params
     #41***          (?>(.*?)((\n\n)|(\&lt\;\/$t\&gt\;)))  # match up to closing tag or end para
     #42***          (?<!\n\n) # fail if end of para
     #43***          /<$t$1>$2<\/$t>/gisx;    #replacement string
+    #b39-43
+                    $wiki-text ~~ s:g/ '&lt;' <$t> '&gt;' # match opening tag
+                    ( .*? )
+                     '&lt;' '/' <$t> '&gt;' # match up to closing tag
+                    /{
+                    "<$t>" ~ $0 ~ "</$t>"
+                    }/;
+
+    #e39-43
+    #b44
+                    }
+    #e44
     #44***          }
+
     #45***          foreach $t (@HtmlSingle) {
+    #b45
+                    for @.HtmlSingle -> $t {
+    #e45
     #46***            s/
     #47***            \&lt\;$t(\s[^<>]+?)?\&gt\;   # match tag with param
     #48***            /<$t$1>/gix;           # replacement string
+    #b46..48
+                      $wiki-text ~~ s:g/ '&lt;' <$t> '&gt;'
+                      /{
+                      "<" ~ $0 ~ "/>"
+                      }/;
+    #e46..49
+    #b49
+                    }
+    #e49
     #49***          }
+    #b50
+                  }
+    #e50
     #50***        }
     #51***        else {
+    #b51
+                  else {
+    #e51
     #52***          foreach $t (qw/b i center strong em tt/) {
     #53***            s/
     #54***              \&lt\;$t\&gt\; # match opening tag
@@ -1379,8 +1796,17 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     #57***            /<$t>$1<\/$t>/gisx;     #replacement string
     #58***          }
     #59***          s/\&lt\;br\&gt\;/<br>/gi;
+    #b59
+                    $wiki-text ~~ s:g/'&lt\;' 'br' 'gt;'/\<br\/\>/;
+    #e59
+    #b60
+                  }
+    #e60
     #60***        }
     #61***        s/\&lt;br\&gt;/<br>/gi;                                # Allow simple line break anywhere
+    #b61
+                  $wiki-text ~~ s:g/'&lt;' 'br' '&gt;'/\<br\/\>/;  # Allow simple line break anywhere
+    #e61
     #62***        s/\&lt;tt\&gt;(.*?)\&lt;\/tt\&gt;/<tt>$1<\/tt>/gis;    # <tt> (MeatBall)
     #63***        s/([^#])#(\w+)#/$1 . ++$Counters{$2}/ge;
     #64***        # POD style markup
@@ -1399,7 +1825,14 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     #77***        #ei20090828dma
     #78***        #
     #79***        #bi20180106dma
+
     #80***        s/\%ICON\{(\w*)\}\%/$self->StoreIconTag($1)/geo;
+    #b80
+                  $wiki-text ~~ s:g/'%ICON{' (\w*) '}%'/{
+                    self.store-icon-tag(icon => $0)
+                  }/;
+    #e80
+
     #81***        #
     #82***        #--https://foswiki.org/System/DocumentGraphics
     #83***        #
@@ -1412,11 +1845,53 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     #90***          s/\{\?\s*([^\|]*?)\s*(\|\s*(.*?)\s*)?\}/$self->StoreSearchLink($1, $3)/geo;
     #91***        }
     #92***        if ($FreeLinks) {
+    #b92
+                  if $.FreeLinks { #-def: True
+    #e92
     #93***          # Consider: should local free-link descriptions be conditional?
     #94***          # Also, consider that one could write [[Bad Page|Good Page]]?
     #95***          s/\[\[$FreeLinkPattern\|([^\]]+)\]\]/$self->StorePageOrEditLink($1, $2)/geo;
+    
+    #b95
+                    self.TRACE: 'FREELINKPATTERN: ' ~ $.FreeLinkPattern;
+
+                    $wiki-text ~~ s:g/
+                    \[
+                    \[
+                     (
+                     (( <[A..Za..z_0..9\-,\.()' ]>+ )?\/)* <[A..Za..z_0..9\-,\.()' ]>+
+                     )
+                     \|
+                     (.*?)
+                    \]
+                    \]
+                    /{
+                      '<u>free-link:</u>[' ~ '0:' ~ $0 ~ '; 1:<b>' ~ $1 ~ ']</b>'
+                    }/;
+
+                    #-- begin: code not working
+                    #$wiki-text ~~ s:g/
+                    #\[
+                    #\[
+                    # (
+                    # <$.FreeLinkPattern>
+                    # )
+                    # \|
+                    # (.*?)
+                    #\]
+                    #\]
+                    #/{
+                    #  '<u>free-link:</u>[' ~ '0:' ~ $0 ~ '; 1:<b>' ~ $1 ~ ']</b>'
+                    #}/;
+                    #-- end: code not working
+
+
+    #e95
     #96***          s/\[\[$FreeLinkPattern\]\]/$self->StorePageOrEditLink($1, "")/geo;
     #97***          s/\[\[$AnchoredLinkPattern\|([^\]]+)\]\]/$self->StoreAnchoredLink($1, $2, $3)/geos if $NamedAnchors;
+    #b98
+                  }
+    #e98
     #98***        }
     #99***        if ($BracketText) {    # Links like [URL text of link]
     #100***          s/\[$UrlPattern\s+([^\]]+?)\]/$self->StoreBracketUrl($1, $2, $useImage)/geos;
@@ -1442,8 +1917,8 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     #120***        s/\&lt;hide\&gt;((.|\n)*?)\&lt;\/hide\&gt;/$self->StorePre("", "hide")/ige;
     #121***        s/\b$RFCPattern/$self->StoreRFC($1)/geo;
     #122***        s/\b$ISBNPattern/$self->StoreISBN($1)/geo;
-    #123***        s/\[(?:(\w+);)\s*(\S+\.$ImageExtensions)\s*\]/$self->StoreImageTagAlign($2, $1)/geo;        #dbChange for [] images.
-    #124***        s/\[(?:(\w+:\w+)\@)?\s*(\S+\.$ImageExtensions)\s*\]/$self->StoreImageTagCSS($2, $1)/geo;    #dbChange for [] images.
+    #123***        s/\[(?:(\w+);)\s*(\S+\.$ImageExtensions)\s*\]/$self->StoreImageTagAlign($2, $1)/geo; #dbChange for [] images.
+    #124***        s/\[(?:(\w+:\w+)\@)?\s*(\S+\.$ImageExtensions)\s*\]/$self->StoreImageTagCSS($2, $1)/geo;#dbChange for [] images.
     #125***        if ($UseUpload) {
     #126***          #bd20090824dma
     #127***          #      s/$UploadPattern/$self->StoreUpload($1)/geo;
@@ -1474,8 +1949,14 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     #152***        if ($AutoMailto) {
     #153***          s/([A-z0-9-_]+(?:\.[A-z0-9-_]+)*)\@([A-z0-9-_]+(?:\.[A-z0-9-_]+)*(?:\.[A-z]{2,})+)/<a href="mailto:$1\@$2">$1\@$2<\/a>/g;
     #154***        }
+    #b155
+                 }
+    #e155
     #155***      }
     #156***      if ($doLines) {
+    #b156
+                 if $do-lines > 0 {
+    #e156
     #157***        # 0 = no line-oriented, 1 or 2 = do line-oriented
     #158***        # The quote markup patterns avoid overlapping tags (with 5 quotes)
     #159***        # by matching the inner quotes for the strong pattern.
@@ -1488,6 +1969,9 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     #166***          s/((\|\|)+)/"<\/TD><TD class='wikitablecell' valign='top' COLSPAN=\"" . (length($1)\/2) . "\">"/ge;
     #167***        }
     #168***        s/(\@[lri]\@)(\S+\.(gif|jpg|png|jpeg))\s/$self->GetImgTag($1, $2)/gei;
+    #b169
+                 }
+    #e169
     #169***      }
     #170***      s/\{\{(\S+)\s/$self->FontStyle($1)/ge;
     #171***      s|\}\}|</span>|g;
@@ -2078,7 +2562,10 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
 
   method store-icon-tag(:$icon){
     my Str $icon-path = '';
-    $icon-path = 'themes/img/icons/' ~ $icon;
+    $icon-path = '<img src="' ~ '/themes/img/icons/'
+               ~ $icon
+               ~ '.png"'
+               ~ 'alt="' ~ $icon ~ '"/>';
     return $icon-path;
   };
 
@@ -2091,12 +2578,21 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
   }
 
   method store-href(:$anchor, :$text) {
-    #    return self.store-raw(text => "<$tag>" ~ $wiki-text ~ "</$tag>");
-    my $href = '';
-    my $txt = '';
-    $txt = $text.Str;
-    $href = $anchor.Str;
-    return '<a ' ~ self.store-raw(text => $href) ~ '>' ~ $txt ~ '</a>';
+    # l-anchor = local-variable anchor
+    my $l-anchor = '';
+    my $l-text = '';
+    my $l-href = '';
+
+    $l-text = $text.Str;
+    $l-anchor = $anchor.Str;
+
+    if $l-anchor eq '' {
+      $l-href = $l-text;
+    }
+    else {
+      $l-href = '<a ' ~ self.store-raw(text => $l-anchor) ~ '>' ~ $l-text ~ '</a>';
+    }
+    return $l-href;
   }
 
   method wiki-space-indent(:$indent, :$text) {
