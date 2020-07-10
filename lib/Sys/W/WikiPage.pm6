@@ -1314,6 +1314,58 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     return $qtext;
   }
 
+  method store-page-or-edit-link(Str :$url, Str :$desc) {
+    my Str $page = '';
+    my Str $name = '';
+    my Str $url-name = '';
+
+    $page = $url;
+    $name = $desc;
+
+    $url-name = $page ~ $name;
+
+    #$url-name = 'FL:' ~ $page ~ '&nbsp;<b>' ~ $name ~ '</b>';
+    $url-name = self.get-page-or-edit-link(url => $page, desc => $desc);
+
+    return $url-name;
+  }
+
+
+  method get-page-or-edit-link(Str :$url, Str :$desc) {
+    my Str $page = '';
+    my Str $name = '';
+    my Str $url-name = '';
+    $page = $url;
+    $name = $desc;
+    $url-name = 'link:' ~ $page ~ '<b>' ~ $name ~ '</b>';
+    $url-name = self.get-page-or-edit-anchored-link(url => $page, desc => $desc);
+    return $url-name;
+  }
+
+  method get-page-or-edit-anchored-link(Str :$url, Str :$desc) {
+    my Str $page = '';
+    my Str $name = '';
+    my Str $url-name = '';
+    $page = $url;
+    $name = $desc;
+    $url-name = 'link:' ~ $page ~ '<b>' ~ $name ~ '</b>';
+    #-- Determine if file exists
+    my Str $edit-link = '';
+    $edit-link = self.get-edit-link(page => $page, text => $name);
+    $url-name = $edit-link; # ~ '<b>' ~ $name ~ '</b>';
+
+    return $url-name;
+  }
+
+  method get-edit-link(Str :$page, Str :$text) {
+    my Str $page-id = '';
+    my Str $edit-link = ''; 
+    $page-id = $page;
+    $edit-link = $page-id ~ '&nbsp;<b>' ~ $text ~ '</b>';
+    #$edit-link = self.script-link-class();
+    return $edit-link;
+  }
+
   method wiki-pre-formatted_text(:$text) {
     my Str $pre_text = $text.Str;
     $.PreformattedIndex++;
@@ -1854,6 +1906,22 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     
     #b95
                     self.TRACE: 'FREELINKPATTERN: ' ~ $.FreeLinkPattern;
+                    #begin: this code works
+                    #$wiki-text ~~ s:g/
+                    #\[
+                    #\[
+                    # (
+                    # (( <[A..Za..z_0..9\-,\.()' ]>+ )?\/)* <[A..Za..z_0..9\-,\.()' ]>+
+                    # )
+                    # \s*
+                    # \|
+                    # (.*?)
+                    #\]
+                    #\]
+                    #/{
+                    #  '<u>free-link:</u>[' ~ '0:' ~ $0 ~ '; 1:<b>' ~ $1 ~ ']</b>'
+                    #}/;
+                    #end: this code works
 
                     $wiki-text ~~ s:g/
                     \[
@@ -1861,12 +1929,13 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
                      (
                      (( <[A..Za..z_0..9\-,\.()' ]>+ )?\/)* <[A..Za..z_0..9\-,\.()' ]>+
                      )
+                     \s*
                      \|
                      (.*?)
                     \]
                     \]
                     /{
-                      '<u>free-link:</u>[' ~ '0:' ~ $0 ~ '; 1:<b>' ~ $1 ~ ']</b>'
+                      self.store-page-or-edit-link(url => $0.Str, desc => $1.Str);
                     }/;
 
                     #-- begin: code not working
