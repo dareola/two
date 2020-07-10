@@ -910,7 +910,7 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
 
                                  #~ "'" ~ '"' ~ "'" ~ '<-["]>*' ~ "'" ~ '"' ~ "'";
 
-              self.TRACE: 'Inter link pattern : ' ~ $.InterLinkPattern;
+              #self.TRACE: 'Inter link pattern : ' ~ $.InterLinkPattern;
               #- <[A..Z]><[A..Za..z_0..9]>+:\?\s*\w*
 
   #e55
@@ -1341,7 +1341,7 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     #$url-name = 'FL:' ~ $page ~ '&nbsp;<b>' ~ $name ~ '</b>';
     $url-name = self.get-page-or-edit-link(url => $page, desc => $desc);
 
-    return $url-name;
+    return self.store-raw(text => $url-name);
   }
 
 
@@ -1970,24 +1970,7 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     #95***          s/\[\[$FreeLinkPattern\|([^\]]+)\]\]/$self->StorePageOrEditLink($1, $2)/geo;
     
     #b95
-                    self.TRACE: 'FREELINKPATTERN: ' ~ $.FreeLinkPattern;
-                    #begin: this code works
-                    #$wiki-text ~~ s:g/
-                    #\[
-                    #\[
-                    # (
-                    # (( <[A..Za..z_0..9\-,\.()' ]>+ )?\/)* <[A..Za..z_0..9\-,\.()' ]>+
-                    # )
-                    # \s*
-                    # \|
-                    # (.*?)
-                    #\]
-                    #\]
-                    #/{
-                    #  '<u>free-link:</u>[' ~ '0:' ~ $0 ~ '; 1:<b>' ~ $1 ~ ']</b>'
-                    #}/;
-                    #end: this code works
-
+                    #self.TRACE: 'FREELINKPATTERN: ' ~ $.FreeLinkPattern;
                     $wiki-text ~~ s:g/
                     \[
                     \[
@@ -2003,32 +1986,86 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
                       self.store-page-or-edit-link(url => $0.Str, desc => $1.Str);
                     }/;
 
-                    #-- begin: code not working
-                    #$wiki-text ~~ s:g/
-                    #\[
-                    #\[
-                    # (
-                    # <$.FreeLinkPattern>
-                    # )
-                    # \|
-                    # (.*?)
-                    #\]
-                    #\]
-                    #/{
-                    #  '<u>free-link:</u>[' ~ '0:' ~ $0 ~ '; 1:<b>' ~ $1 ~ ']</b>'
-                    #}/;
-                    #-- end: code not working
-
-
     #e95
     #96***          s/\[\[$FreeLinkPattern\]\]/$self->StorePageOrEditLink($1, "")/geo;
+    #b96
+                    $wiki-text ~~ s:g/
+                    \[
+                    \[
+                     (
+                     (( <[A..Za..z_0..9\-,\.()' ]>+ )?\/)* <[A..Za..z_0..9\-,\.()' ]>+
+                     )
+                    \]
+                    \]
+                    /{
+                    #'<b>0: ' ~ $0.Str ~ '; 1: ' ~ $1.Str ~ '</b>'
+                      self.store-page-or-edit-link(url => $0.Str, desc => $0.Str);
+                    }/;
+    #e96
     #97***          s/\[\[$AnchoredLinkPattern\|([^\]]+)\]\]/$self->StoreAnchoredLink($1, $2, $3)/geos if $NamedAnchors;
+    #b97
+                    #self.TRACE: 'TODO/TOCHECK: ANCHORED LINK PATTERN: ' ~ $.AnchoredLinkPattern;
+
+                    # ((((<[A..Z]>+ <[a..z]>+ <[A..Z]><[A..Za..z_0..9]>*)?\/)+ <[A..Z]>+ <[a..z]>+ <[A..Za..z_0..9]>*)|<[A..Z]>+ <[a..z]>+ <[A..Z]><[A..Za..z_0..9]>*)\#(\w+)
+                    $wiki-text ~~ s:g/
+                    \[
+                    \[
+                    (
+                     ((((<[A..Z]>+ 
+                         <[a..z]>+ 
+                         <[A..Z]><[A..Za..z_0..9]>*)?\/)+ 
+                         <[A..Z]>+ <[a..z]>+ <[A..Za..z_0..9]>*)
+                         |
+                         <[A..Z]>+ 
+                         <[a..z]>+ 
+                         <[A..Z]><[A..Za..z_0..9]>*)\#(\w+)
+                    )
+                    \]
+                    \]
+                    /{
+                      '0: ' ~ $0.Str ~ '; 1: ' ~ $1.Str
+                    }/;
+
+    #e97
+
     #b98
                   }
     #e98
     #98***        }
     #99***        if ($BracketText) {    # Links like [URL text of link]
+    #b99
+                  if $.BracketText == 2 {
+    #e99
+
     #100***          s/\[$UrlPattern\s+([^\]]+?)\]/$self->StoreBracketUrl($1, $2, $useImage)/geos;
+    #b100
+    #                 $wiki-text ~~ s:g/\[$UrlPattern\s+([^\]]+?)\]/$self->StoreBracketUrl($1, $2, $useImage)/
+                      self.TRACE: 'URL PATTERN :' ~ $.UrlPattern;
+    #-- begin: CONTINUE HERE
+                     $wiki-text ~~ s:g/
+                     \[
+                     ((
+                     http|https|ftp|afs|news|nntp|mid|cid|mailto|wais|image|download|mms|prospero|telnet|gopher|file
+                     )
+                     \:
+                     (\/)?
+                     \/)
+                     (\S+)
+                     \s*
+                     (\S+)
+                     \]
+                     /{
+                             ' 0: <u>' ~ $0.Str ~ '</u>'
+                           ~ ';1: <u>' ~ $1.Str ~ '</u>' 
+                           ~ ';2: <u><b>' ~ $2.Str ~ '</b></u>' 
+                     #self.store-bracket-url(protocol => $0.Str, 
+                     #                       url => $1.Str)
+                     }/;
+    #                 #-- 0 - protocol
+    #                 #-- 1 - url
+    #                 #-- 2 - description
+    #-- end:CONTINUE HERE
+    #e100
     #101***          s/\[$InterLinkPattern\s+([^\]]+?)\]/$self->StoreBracketInterPage($1, $2,
     #102***                                                                $useImage)/geos;
     #103***          if ($WikiLinks && $BracketWiki) {    # Local bracket-links
@@ -2036,7 +2073,11 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     #105***            s/\[$AnchoredLinkPattern\s+([^\]]+?)\]/$self->StoreBracketAnchoredLink($1,
     #106***                                                  $2, $3)/geos if $NamedAnchors;
     #107***          }
+    #b108
+                   }
+    #e108
     #108***        }
+
     #109***        s/\[$UrlPattern\]/$self->StoreBracketUrl($1, "", 0)/geo;
     #110***        s/\[$InterLinkPattern\]/$self->StoreBracketInterPage($1, "", 0)/geo;
     #111***        s/\b$UrlPattern/$self->StoreUrl($1, $useImage)/geo;    #--
@@ -2184,6 +2225,16 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     return $wiki-text;
   }
 
+  method store-bracket-url(Str :$protocol, 
+                           Str :$url) {
+    my Str $proto = '';
+    my Str $uri = '';
+    $proto = $protocol.Str;
+    $uri = $url.Str;
+    my Str $http = '';
+    $http = $proto ~ $uri;
+    return $http;
+ }
 
   method wiki-lines-to-html(Str :$text) {
     my Str $wiki-text = '';
