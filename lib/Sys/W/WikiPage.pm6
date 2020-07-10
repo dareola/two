@@ -1365,8 +1365,19 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     #$url-name = 'link:' ~ $page ~ '<b>' ~ $name ~ '</b>';
 
     #-- Determine if file exists
+
+    #self.TRACE: 'Determine if file exists: ' ~ self.get-page-filename(filename=> $page);
+    my Str $page-filename = '';
+    $page-filename = self.get-page-filename(filename=> $page);
+
     my Str $edit-link = '';
-    $edit-link = self.get-edit-link(page => $page, text => $name);
+    if $page-filename.IO.e {
+      $edit-link = self.get-edit-link(page => $page, text => '<b>' ~ $name ~ '</b>');
+    }
+    else {
+      $edit-link = $name ~ self.get-edit-link(page => $page, text => '<b><sup>?</sup></b>');
+    }
+    #$edit-link = self.get-edit-link(page => $page, text => $name);
 
     $url-name = $edit-link; # ~ '<b>' ~ $name ~ '</b>';
 
