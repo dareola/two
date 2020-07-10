@@ -64,6 +64,7 @@ class Sys::W::WikiPage is export {
     has $.ImageExtensions is rw = '';
 
     has Int $.TaskNumDaysToExpire = 30;
+    has Str $.ScriptName is rw = '';
     has Str $.ScriptTZ = "";
     has Int $.RcDefault = 30;
     has Int $.CookieExpire = 60;
@@ -574,6 +575,12 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     my Str $link-pattern-B = '';
     my Str $link-pattern-C = '';
     my Str $quote-delim = '';
+    
+    $.ScriptName = $.Sys.get(key => 'SITE_URL') 
+                 ~ '/'
+                 ~ $C_APP_NAME.lc;
+
+    self.TRACE: 'SCRIPTNAME = ' ~ $.ScriptName;
 
     $upper-letter = '<[A..Z';
     $lower-letter = '<[a..z';
@@ -680,6 +687,12 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
   }
 
   method init-link-patterns() {
+             $.ScriptName = $.Sys.get(key => 'SITE_URL') 
+                 ~ '/'
+                 ~ $C_APP_NAME.lc;
+
+             self.TRACE: 'SCRIPT NAME = ' ~ $.ScriptName;
+
   #1***      my $self = shift;
   #2***      my ($UpperLetter, $LowerLetter, $AnyLetter, $LpA, $LpB, $LpC, $QDelim);
   #b2
@@ -690,6 +703,7 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
              my Str $lpB = '';
              my Str $lpC = '';
              my Str $qdelim = '';
+
   #e2
   #3***      # Field separators are used in the URL-style patterns below.
   #4***      if ($NewFS) {
@@ -1337,7 +1351,7 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     my Str $url-name = '';
     $page = $url;
     $name = $desc;
-    $url-name = 'link:' ~ $page ~ '<b>' ~ $name ~ '</b>';
+    #$url-name = 'link:' ~ $page ~ '<b>' ~ $name ~ '</b>';
     $url-name = self.get-page-or-edit-anchored-link(url => $page, desc => $desc);
     return $url-name;
   }
@@ -1348,10 +1362,12 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     my Str $url-name = '';
     $page = $url;
     $name = $desc;
-    $url-name = 'link:' ~ $page ~ '<b>' ~ $name ~ '</b>';
+    #$url-name = 'link:' ~ $page ~ '<b>' ~ $name ~ '</b>';
+
     #-- Determine if file exists
     my Str $edit-link = '';
     $edit-link = self.get-edit-link(page => $page, text => $name);
+
     $url-name = $edit-link; # ~ '<b>' ~ $name ~ '</b>';
 
     return $url-name;
@@ -1364,9 +1380,9 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
 
     $page-id = $page;
     $page-text = $text;
-    #$edit-link = $page-id ~ '&nbsp;<b>' ~ $text ~ '</b>';
+    $edit-link = $page-id ~ '&nbsp;<b>' ~ $text ~ '</b>';
 
-    $edit-link = self.script-link-class(action => 'action=edit&p="' ~ $page-id ~ '"', 
+    $edit-link = self.script-link-class(action => 'action=edit&p=' ~ $page-id ~ '', 
                                         text => $page-text,
                                         class => 'wikipageedit');
     return $edit-link;
@@ -1381,10 +1397,27 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     $page-action = $action;
     $page-text = $text;
     $page-class = $class;
-
-    $page-id = $page-action ~ '&nbsp;<b>' ~ $page-text ~ '</b>';
+    $page-action = '<a href="' 
+                 ~ $.ScriptName 
+                 ~ self.script-link-char() 
+                 ~ $page-action
+                 ~ '">'
+                 ~ $page-text 
+                 ~ '</a>';
+    $page-id = $page-action;
   
     return $page-id;
+  }
+
+  method script-link-char() {
+    my Str $c = '';
+    if $.SlashLinks {
+      $c = '/';
+    }
+    else {
+      $c = '?';
+    }
+    return $c;
   }
 
   method wiki-pre-formatted_text(:$text) {
