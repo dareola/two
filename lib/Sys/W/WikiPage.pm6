@@ -1359,11 +1359,32 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
 
   method get-edit-link(Str :$page, Str :$text) {
     my Str $page-id = '';
+    my Str $page-text = '';
     my Str $edit-link = ''; 
+
     $page-id = $page;
-    $edit-link = $page-id ~ '&nbsp;<b>' ~ $text ~ '</b>';
-    #$edit-link = self.script-link-class();
+    $page-text = $text;
+    #$edit-link = $page-id ~ '&nbsp;<b>' ~ $text ~ '</b>';
+
+    $edit-link = self.script-link-class(action => 'action=edit&p="' ~ $page-id ~ '"', 
+                                        text => $page-text,
+                                        class => 'wikipageedit');
     return $edit-link;
+  }
+
+  method script-link-class(Str :$action, Str :$text, Str :$class) {
+    my Str $page-action = '';
+    my Str $page-text = '';
+    my Str $page-class = '';
+    my Str $page-id = '';
+
+    $page-action = $action;
+    $page-text = $text;
+    $page-class = $class;
+
+    $page-id = $page-action ~ '&nbsp;<b>' ~ $page-text ~ '</b>';
+  
+    return $page-id;
   }
 
   method wiki-pre-formatted_text(:$text) {
