@@ -199,6 +199,7 @@ class Sys::W::WikiPage is export {
     has Str $.UploadFileInfo = '';                  # filename|newfile|X|printfilename
     has Int $.IndentLimit = 20;                     # Maximum depth of nested lists
     has Bool $.TOCFlag is rw = False;
+    has Bool $.TableMode is rw = False;
 
 
 
@@ -1025,7 +1026,7 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     #47***          }
     #48***          return $self->RestoreSavedText($pageText);
     #b48
-    #            $wiki-text = self.restore-saved-text(text => $wiki-text);
+                $wiki-text = self.restore-saved-text(text => $wiki-text);
 
     #e48
 
@@ -1957,28 +1958,85 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     #2***    my ($pageText) = @_;
     #3***    my ($pageHtml, @htmlStack, $code, $codeAttributes, $depth, $oldCode);
     #4***    @htmlStack = ();
+    #b3..4
+             my @HtmlStack = ();
+             my Str $code = '';
+             my Str $code-attributes = '';
+             my Int $depth = 0;
+             my Str $old-code = '';
+             my Str $page-html = '';
+             my Str $line = '';
+    #e3..4
     #5***    $depth     = 0;
     #6***    $pageHtml  = "";
     #7***    foreach (split(/\n/, $pageText)) {    # Process lines one-at-a-time
     #b7
-             for $wiki-text.lines {
+             for $wiki-text.lines -> $l {
+               $line = $l;
     #e7
     #8***      $code           = '';
     #9***      $codeAttributes = '';
     #10***      $TableMode      = 0;
+    #b8..10
+                $code = '';
+                $code-attributes = '';
+                $.TableMode = False;
+    #e8..10
     #11***      $_ .= "\n";
+    #b11
+                $line ~= "\n"; 
+    #e11
+
     #12***      if (s/^(\;+)([^:]+\:?)\:/<dt>$2<dd>/) {
     #13***        $code  = "DL";
     #14***        $depth = length $1;
     #15***      }
+    #b12..15
+                if $line ~~ s:g/
+                    ^(\;+)
+                    (<[^:]>+\:?)
+                    \:
+                   /{
+                    '<dt>' ~ $1 ~ '<dd>'
+                   }/
+                {
+                  $code = "DL";
+                  $depth = $0.chars;
+                }
+    #e12..15
     #16***      elsif (s/^(\:+)/<dt><dd>/) {
     #17***        $code  = "DL";
     #18***        $depth = length $1;
     #19***      }
+    #b16..19
+                elsif 
+                  $line ~~ s:g/
+                   ^(\:+)
+                  /{
+                   '<dt><dd>'
+                  }/
+                {
+                  $code = "DL";
+                  $depth = $0.chars;
+                }
+    #e16..19
     #20***      elsif (s/^(\*+)/<li>/) {
     #21***        $code  = "UL";
     #22***        $depth = length $1;
     #23***      }
+    #b20..23
+                elsif 
+                  $line ~~ s:g/
+                    ^(\*+)
+                   /{
+                    '<li>'
+                   }/ 
+                {
+                  $code = "UL";
+                  $depth = $0.chars;
+                }
+    #e20..23
+
     #24***      elsif (s/^(\#+)(\d*)([aAiI]?)/'<li' . ($2 ? " value=\"$2\"" : '') . '>'/e) {
     #25***        $code  = "OL";
     #26***        $depth = length $1;
@@ -1986,26 +2044,79 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     #28***          $codeAttributes = " type=\"$3\"";
     #29***        }
     #30***      }
+    #b24..30
+                elsif 
+                  $line ~~ s:g/
+                   ^(\#+)
+                   (\d*)
+                   (<[aAiI]>?)
+                  /{
+                   '<li' ~ ( $1 ?? ' value="' ~ $1 ~ '"' !! '' ) ~ '>'
+                  }/ 
+                {
+                  $code = "OL";
+                  $depth = $0.chars;
+                  if ($2) {
+                    $code-attributes = ' type="' ~ $2 ~ '"';
+                  }
+                }
+    #e24..30
+
     #31***      elsif (
     #32***        $TableSyntax
     #33***        && s/^((\|\|)+)(.*)\|\|\s*$/"<TR VALIGN='CENTER' "
-    #34***                                . "ALIGN='LEFT'><TD class='wikitablecell' valign='top' colspan='"
-    #35***                                . (length($1)\/2) . "'>" . $self->Table_nbsp($3) . "<\/TD><\/TR>\n"/e) {
+    #34***        . "ALIGN='LEFT'><TD class='wikitablecell' valign='top' colspan='"
+    #35***        . (length($1)\/2) . "'>" . $self->Table_nbsp($3) . "<\/TD><\/TR>\n"/e) {
     #36***        $code           = 'TABLE';
     #37***        $codeAttributes = " BORDER='0'";
     #38***        $TableMode      = 1;
     #39***        $depth          = 1;
     #40***      }
+    #b31..40
+                elsif $.TableSyntax &&
+                  $line ~~ s:g/
+                    ^((\|\|)+)
+                    (.*)
+                    \|\|\s*$
+                  /{
+                   '<TR valign="center" align="left">'
+                   ~ '<TD align="left">' ~ self.table-cell(row => $1.Str) ~ '</TD></TR>' ~ "\n" # todo: Break table line
+                  }/ 
+                {
+                  $code = 'TABLE';
+                  $code-attributes = ' border=' ~ "'0'"; 
+                  $.TableMode = True;
+                  $depth = 1;
+                }
+    #e31..40
     #41***      elsif (/^[ \t].*\S/) {
     #42***        $code  = "PRE";
     #43***        $depth = 1;
     #44***      }
+    #b41..44
+                elsif 
+                  $line ~~ m:g/ ^[' '|\t] .* \S/ {
+                  $code = "PRE";
+                  $depth = 1;
+                }
+    #e41..44
     #45***      else {
     #46***        $depth = 0;
     #47***      }
+    #b45..47
+                else {
+                  $depth = 0;
+                }
+    #e45..47
     #48***      while (@htmlStack > $depth) {    # Close tags as needed
     #49***        $pageHtml .= "</" . pop(@htmlStack) . ">\n";
     #50***      }
+    #b48..50
+                while @HtmlStack.elems > $depth {
+                  $page-html ~= '</' ~ @HtmlStack.pop ~ '>' ~ "\n";
+                }
+    #e48..50
+
     #51***      if ($depth > 0) {
     #52***        $depth = $IndentLimit if ($depth > $IndentLimit);
     #53***        if (@htmlStack) {              # Non-empty stack
@@ -2020,13 +2131,30 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     #62***          $pageHtml .= "<$code$codeAttributes>\n";
     #63***        }
     #64***      }
+    #b51..64
+                if $depth > 0 {
+                  $depth = $.IndentLimit if $depth > $.IndentLimit;
+                  if @HtmlStack.elems > 0 {
+                    $old-code = @HtmlStack.pop;
+                    if $old-code ne $code {
+                      $page-html ~= '</' ~ $old-code ~ '>' ~ '<' ~ $code ~ '>' ~ "\n";
+                    }
+                    @HtmlStack.push($code);
+                  }
+                  while @HtmlStack.elems < $depth {
+                    @HtmlStack.push($code);
+                    $page-html ~= '<' ~ $code ~ $code-attributes ~ '>' ~ "\n";
+                  }
+                }
+    #e51..64
+
     #65***      if (!$ParseParas) {
     #b65
                 if !$.ParseParas {
     #e65
     #66***        s/^\s*$/<p><\/p>\n/;    # Blank lines become <p></p> tags
     #b66
-                  $wiki-text ~~ s:g/
+                  $line ~~ s:g/
                     ^^\s*$$
                   /{
                   '<p></p>' 
@@ -2039,24 +2167,39 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
 
     #68***      $pageHtml .= $self->CommonMarkup($_, 1, 2);    # Line-oriented common markup
     #b68
-                $wiki-text = self.common-markup(text => $wiki-text,
-                                                      use-image => True,
-                                                      do-lines => 2);
+                $page-html ~= self.common-markup(text => $line,
+                                                use-image => True,
+                                                do-lines => 2);
 
     #e68
     #b69
-              }
+              } #for wiki.lines
     #e59
     #69***    }
 
     #70***    while (@htmlStack > 0) {                         # Clear stack
     #71***      $pageHtml .= "</" . pop(@htmlStack) . ">\n";
     #72***    }
+    #b70..72
+              while @HtmlStack.elems > 0 {
+                $page-html ~= '</' ~ @HtmlStack.pop ~ '>' ~ "\n";
+              }
+    #e70..72
     #73***    return $pageHtml;
 
-    return $wiki-text;
+    return $page-html;
   }
-  
+ 
+  method table-cell(Str :$row) {
+    my Str $cells = '';
+    $cells = $row;
+    $cells ~~ s:g/
+        \|\|
+     /{
+       '</td align="left"><td>'
+     }/;
+    return $cells;
+  }
 
   method wiki-heading(:$prefix, :$heading, :$suffix) {
     my $headtext = $heading;
