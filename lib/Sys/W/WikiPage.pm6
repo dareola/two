@@ -567,124 +567,7 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
         note $e.message;
     }
 
-  method wiki-init-link-patterns() {
-    my Str $upper-letter = '';
-    my Str $lower-letter = '';
-    my Str $any-letter = '';
-    my Str $link-pattern-A = '';
-    my Str $link-pattern-B = '';
-    my Str $link-pattern-C = '';
-    my Str $quote-delim = '';
-    
-    $.ScriptName = $.Sys.get(key => 'SITE_URL') 
-                 ~ '/'
-                 ~ $C_APP_NAME.lc;
-
-    self.TRACE: 'SCRIPTNAME = ' ~ $.ScriptName;
-
-    $upper-letter = '<[A..Z';
-    $lower-letter = '<[a..z';
-    $any-letter = '<[A..Za..z';
-
-    if $.NonEnglish {
-      $upper-letter ~= "\xc0..\xde";
-      $lower-letter ~= "\xdf..\xff";
-      if $.NewFS {
-        $any-letter ~= "\x80..\xff";
-      }
-      else {
-        $any-letter ~= "\xc0..\xff";
-      }
-    }
-    if $.SimpleLinks {
-      $any-letter ~= '_0..9';
-    }
-
-
-    $upper-letter ~= ']>';
-    $lower-letter ~= ']>';
-    $any-letter ~= ']>';
-
-    #self.TRACE: 'UpperLetter = ' ~ $upper-letter;
-    #self.TRACE: 'LowerLetter = ' ~ $lower-letter;
-    #self.TRACE: 'AnyLetter = ' ~ $any-letter;
-
-    $link-pattern-A = $upper-letter
-                    ~ '+'
-                    ~ $lower-letter
-                    ~ '+'
-                    ~ $upper-letter
-                    ~ $any-letter
-                    ~ '*';
-
-    #self.TRACE: 'Link pattern A = ' ~ $link-pattern-A; #-- works
-
-
-    $link-pattern-B = $upper-letter
-                    ~ '+'
-                    ~ $lower-letter
-                    ~ '+'
-                    ~ $any-letter
-                    ~ '*';
-
-    #self.TRACE: 'Link pattern B = ' ~ $link-pattern-B; #-- works
-
-
-
-    $link-pattern-C = $upper-letter
-                    ~ '+'
-                    ~ $any-letter
-                    ~ '*';
-
-    #self.TRACE: 'Link pattern C = ' ~ $link-pattern-C; #-- works
-
-    if $.UseSubPage {
-
-      #ref: $.LinkPattern = "(((?:(?:$link-pattern-A)?\\/)+$link-pattern-B)|$link-pattern-A)";
-      # 1. ( ( non-greedy link pattern A
-      # 2.   back slash
-      # 3.   slash
-      # 4.  )
-      # 5.  greedy link pattern B
-      # 6. )
-      # 7. OR
-      # 8. link pattern A
-
-      $.LinkPattern = "(($link-pattern-A)?\\/+$link-pattern-B)|($link-pattern-A)";
-      #ref: $.HalfLinkPattern = "(((?:(?:$link-pattern-B)?\\/)+$link-pattern-B)|$link-pattern-A)";
-      $.HalfLinkPattern = "(([[$link-pattern-B?\\/]]+$link-pattern-B)|$link-pattern-A)";
-    }
-    else {
-      $.LinkPattern = "($.link-pattern-A)";
-      $.HalfLinkPattern = "($.link-pattern-C)";
-    }
-
-    # self.TRACE: 'Link pattern = ' ~ $.LinkPattern; #-- works
-    #self.TRACE: 'HALF LINK PATTERN: ' ~ $.HalfLinkPattern;
-
-    #LINK.PATTERN = (([[<[A..Z]>+<[a..z]>+<[A..Z]><[A..Za..z_0..9]>*?\/]]+<[A..Z]>+<[a..z]>+<[A..Za..z_0..9]>*)|(<[A..Z]>+<[a..z]>+<[A..Z]><[A..Za..z_0..9]>*])
-
-    #self.TRACE: 'Half link pattern = ' ~ $.HalfLinkPattern;
-
-    $quote-delim = "'" ~  '"' ~ "'" ~ '<-["]>*' ~ "'" ~  '"' ~ "'";
-
-    #self.TRACE: 'Quote delimiter = ' ~ $quote-delim;
-
-    $.AnchoredLinkPattern = $.LinkPattern ~ '\#(\w+)' ~ $quote-delim;
-
-    #self.TRACE: 'Anchored link pattern: ' ~ $.AnchoredLinkPattern;
-
-    $.LinkPattern ~= $quote-delim;
-    #self.TRACE: 'Link pattern: ' ~ $.LinkPattern;
-
-    $.HalfLinkPattern ~= $quote-delim;
-    #self.TRACE: 'Half link pattern: ' ~ $.HalfLinkPattern;
-
-    $.EditLinkPattern = $.LinkPattern;
-    $.InterSitePattern = $upper-letter ~ $any-letter ~ '+';
-    self.TRACE: 'Intersite pattern: ' ~ $.InterSitePattern;
-
-  }
+  
 
   method init-link-patterns() {
              $.ScriptName = $.Sys.get(key => 'SITE_URL') 
@@ -1137,7 +1020,7 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     #47***          }
     #48***          return $self->RestoreSavedText($pageText);
     #b48
-                $wiki-text = self.restore-saved-text(text => $wiki-text);
+    #            $wiki-text = self.restore-saved-text(text => $wiki-text);
     #e48
 
 
@@ -1306,372 +1189,6 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     return $c;
   }
 
-  method wiki-pre-formatted_text(:$text) {
-    my Str $pre_text = $text.Str;
-    $.PreformattedIndex++;
-    %.Preformatted{$.PreformattedIndex} = $text.Str;
-    $pre_text = '<pre>' ~ 'PRE_' ~ $.PreformattedIndex.Str ~ '</pre>';
-    return $pre_text;
-  }
-
-  method wiki-table(Str :$text = '') {
-    my Str $table = '';
-    my Str $wiki-text = '';
-    $wiki-text = $text;
-    for $wiki-text.split(/\n/) -> $line {
-      my Str $current-line = $line.Str;
-      $current-line ~~ s:g/^^((\|\|)+)(.*)\|\|\s*$/{
-        my $line-text = $1;
-        $line-text ~~ s:g/\|\|/{
-          my $td = '&nbsp;</td><td class="wikitablecell" align="top">&nbsp;&nbsp;';
-          $td;
-        }/;
-        $table ~= '<tr><td class="wikitablecell" align="top">&nbsp;&nbsp;' ~ $line-text ~ '&nbsp;</td></tr>';
-      }/;
-    }
-    $table = '<table border="0">' ~ $table ~ '</table><br/>';
-    return $table;
-  }
-
-  method wiki-colored-text(:$color, :$size, :$text) {
-    my Str $wiki-text = '';
-    $wiki-text ~= '<span style="font-size:' ~ $size ~ '%; ' ~ 'color:' ~ $color
-                                         ~ ";" ~ '">' ~ $text ~ '</span>';
-    return $wiki-text;
-  }
-
-  method wiki-numbered-heading(:$text = '') {
-    my $wiki_text = $text;
-    my @lines = $wiki_text.split(/\n/);
-    my Int $depth = 0;
-    my Int $last-depth = 0;
-    my Int @HeaderIndex = (1,1,1,1,1,1,1,1,1);
-    my Bool $first-time = False;
-    my $page = '';
-    for @lines -> $line {
-      my $line_item = $line;
-      if $line_item ~~ m:g/^^\=+\s+?\#\s+/ {
-        my $head = '';
-        $first-time = True;
-        $line_item ~~ s:g/^^(\=+)\s+?\#\s+(.*?)\s+(\=+)\s*?$$/{
-          $head = $0;
-          $depth = $0.chars;
-          #$0 ~ ' ' ~ $1 ~ ' ' ~ $2;
-          $1;
-        }/;
-        if $depth == $last-depth {
-          for 1..$depth -> $index {
-            @HeaderIndex[$index]++ if $index == $depth;
-          }
-          my Int $upper-bound = $depth+1;
-          for $upper-bound..@HeaderIndex.elems -> $index {
-            @HeaderIndex[$index] = 0;
-          }
-          my Str $number = '';
-          for 2..$depth -> $no {
-            $number ~= @HeaderIndex[$no].Str ~ '.';
-          }
-          $line_item = '<H' ~ $depth.Str ~ '>' ~ $number ~ ' ' ~ $line_item
-                    ~ '</H' ~ $depth.Str ~ '>';
-        }
-        elsif $depth > $last-depth {
-          for 1..$depth -> $index {
-            @HeaderIndex[$index]++ if $index == $depth;
-            @HeaderIndex[$index] = 1 if $index == $depth && $first-time;
-          }
-          my Int $upper-bound = $depth+1;
-          for $upper-bound..@HeaderIndex.elems -> $index {
-            @HeaderIndex[$index] = 0;
-          }
-          my Str $number = '';
-          for 2..$depth -> $no {
-            $number ~= @HeaderIndex[$no].Str ~ '.';
-          }
-          $line_item = '<H' ~ $depth.Str ~ '>' ~ $number ~ ' ' ~ $line_item
-                    ~ '</H' ~ $depth.Str ~ '>';
-        }
-        elsif $depth < $last-depth {
-          for 1..$depth -> $index {
-            @HeaderIndex[$index]++ if $index == $depth;
-          }
-          my Int $upper-bound = $depth+1;
-          for $upper-bound..@HeaderIndex.elems -> $index {
-            @HeaderIndex[$index] = 0;
-          }
-          my Str $number = '';
-          for 2..$depth -> $no {
-            $number ~= @HeaderIndex[$no].Str ~ '.';
-          }
-          $line_item = '<H' ~ $depth.Str ~ '>' ~ $number ~ ' ' ~ $line_item
-                    ~ '</H' ~ $depth.Str ~ '>';
-        }
-        $first-time = False;
-        $last-depth = $depth;
-        $page ~= $line_item ~ "\n";
-      }
-      else {
-        $line_item ~~ s:g/(\#+)/{
-          #-- replace '##' with icon :i
-          my Str $icon = '';
-          my Int $icon-type = 0;
-          $icon-type = $0.chars;
-          if $icon-type > 0 {
-            given $icon-type {
-              when 1 {
-               $icon = '#'; #<img src="/themes/img/common/yellow_square.gif"/>';
-               #-- TODO: Determine icon for ## symbol
-              }
-              when 2 {
-               $icon = '<img src="/themes/img/common/yellow_square.gif"/>';
-               #-- TODO: Determine icon for ## symbol
-              }
-              default {
-               #$icon = '<img src="/themes/img/common/yellow_square.gif"/>';
-               #-- TODO: Determine icon for ## symbol
-              }
-            }
-          }
-          $icon;
-        }/;
-        $page ~= $line_item ~ "\n";
-      }
-    }
-    $wiki_text = $page;
-    return $wiki_text;
-  }
-
-  method wiki-remove-unwanted-tags(:$text) {
-    my $para = $text;
-    #-- clean up
-    #-- whitespace before BR
-    $para ~~ s:g/\s+(\<br\/\>)/{$0}/;
-
-    #-- whitespace before </td>
-    $para ~~ s:g/\s+(\<\/td\>)/{$0}/;
-
-    #<br/><ul> - remove br
-    $para ~~ s:g/\<br\/\>(\<ul\>)/{$0}/;
-    $para ~~ s:g/\<br\/\>\s+(\<ul\>)/{$0}/;
-
-    #<br/></ul> - remove br
-    $para ~~ s:g/\<br\/\>(\<\/ul\>)/{$0}/;
-    $para ~~ s:g/\<br\/\>\s+(\<\/ul\>)/{$0}/;
-
-    #<br/><ol> - remove br
-    $para ~~ s:g/\<br\/\>(\<ol\>)/{$0}/;
-    $para ~~ s:g/\<br\/\>\s+(\<ol\>)/{$0}/;
-
-    #<br/>\n</td> - remove br
-    $para ~~ s:g/\<br\/\>\s+(\<\/td\>)/{$0}/;
-
-    #<br/>\n<H\d+> - remove br
-    $para ~~ s:g/\<br\/\>\s+(\<H\d+\>)/{$0}/;
-    $para ~~ s:g/\<br\/\>(\<H\d+\>)/{$0}/;
-
-    #</H\d+><br/> - remove br
-    $para ~~ s:g/(\<\/H\d+\>)\n*?\<br\/\>/{$0}/;
-
-    #</form><br/> - remove br
-    $para ~~ s:g/(\<\/form\>)\<br\/\>/{$0}/;
-
-    #</ul><br/> - remove br
-    $para ~~ s:g/(\<\/ul\>)\<br\/\>/{$0}/;
-
-    #</ol><br/> - remove br
-    $para ~~ s:g/(\<\/ol\>)\<br\/\>/{$0}/;
-    return $para;
-  }
-
-  method wiki-parse-paragraph(:$text) {
-    my $para = '';
-    if $text ne '' {
-      #self.TRACE: '>' ~ $text ~ '<hr/>';
-      $para = self.wiki-common-markup(text => $text);
-    }
-    return '<p>' ~ $para ~ '</p>';
-  }
-
-  method wiki-paragraph(:$text) {
-    return '' if $text eq '' || $text eq "\n";
-    my $para = $text;
-
-    #pattern = [http://some.url some remarks]
-    $para ~~ s:g/\[(['http'|'https'])\:\/\/(.*?)\s+(.*?)[\]]/{
-            self.wiki-bracket-url(protocol => $0, uri => $1, desc => $2);
-            }/;
-
-    #pattern = <wspace>http://some.url.somewhere
-    $para ~~ s:g/(\s+)(['http'|'https'])\:\/\/(.*?)[\"|$$|\s+?]/{  #"
-            self.wiki-url(prefix => $0, protocol => $1, uri => $2);
-            }/;
-
-    #pattern = [http:/somewhere.com this is a sample url]
-    $para ~~ s:g/\[(['http'|'https'])\:\/(.*?)\s+(.*?)[\]]/{
-            self.wiki-local-url(protocol => $0, uri => $1, desc => $2);
-            }/;
-
-    #pattern = [[WikiPattern | Description]]
-    $para ~~ s:g/\[\[(\/?)(<upper>+<alnum>+<alpha>*)\s*?(\|+)\s*?(.*?)\s*?\]\]/{
-      self.wiki-bracket-link(subpage => $0,
-                             page => $1,
-                             desc => self.wiki-expand-word(text => $3.Str));
-    }/;
-
-    #pattern = [[/Sometext/MorePages/AnotherPage | Sometext]]
-    $para ~~ s:g/\[\[(\/?)(.*?)\s*?(\|+)\s*?(.*?)\s*?\]\]/{
-      self.wiki-bracket-multilink(subpage => $0,
-                                  page => $1,
-                                  pipe => $2,
-                                  desc => $3);
-    }/;
-
-    #pattern = [[UpperLowerAndAnything]]
-     $para ~~ s:g/\[\[(<upper>+<alnum>+<alnum>*)\]\]/{
-       self.wiki-bracket-link(subpage => '',
-                              page => $0,
-                              desc => self.wiki-expand-word(text => $0.Str));
-     }/;
-
-    #pattern = [[/WikiPattern]]
-    $para ~~ s:g/\[\[(\/)(.*?)\]\]/{
-      self.wiki-bracket-link(subpage => $0,
-                             page => $1,
-                             desc => self.wiki-expand-word(text => $1.Str));
-    }/;
-
-    $para ~= '<br/>';
-
-    #-- translate paragraph
-    #   parse line by line
-    $para = self.wiki-common-markup(text => $para);
-
-    $para ~~ s:g/(^^.*?$$)/{
-      self.wiki-line(text => $0); # ~ "\n";
-    }/;
-
-
-    #test -- remove \n -- to reduce html size
-    if $.Sys.get(key => 'DEBUG_MODE') ne 'true' {
-      $para ~~ s:g/\n//;
-    }
-
-     $para = self.wiki-list-item(text => $para,
-                                listtype => 'ul',
-                                symbol => '*'); #-- unordered list
-     $para = self.wiki-list-item(text => $para,
-                                listtype => 'ol',
-                                symbol => '#'); #-- ordered list
-
-    $para ~= "\n";
-
-    return $para;
-  }
-
-  method wiki-bracket-url(:$protocol, :$uri, :$desc) {
-    my $url = '<a href="' ~ $protocol ~ '://'
-                          ~ $uri ~ '" target="_new">'
-                          ~ $desc ~ '</a>';
-    return $url;
-  }
-
-  method wiki-url(:$prefix, :$protocol, :$uri) {
-    my $url = $prefix
-            ~ '<a href="'
-            ~ $protocol
-            ~ '://'
-            ~ $uri
-            ~ '" target="_new">'
-            ~ $protocol
-            ~ '://'
-            ~ $uri
-            ~ '</a>'
-            ~ "\n";
-    return $url;
-  }
-
-  method wiki-local-url(:$protocol, :$uri, :$desc) {
-    my $site_url = $.Sys.get(key => 'SITE_URL');
-    my $url = '<a href="'
-            ~ $protocol ~ '://'
-            ~ $site_url ~ '/' ~ $uri
-            ~ '" target="_new">'
-            ~ $desc ~ '</a>';
-    return $url;
-  }
-
-  method wiki-expand-word(Str :$text) {
-    my Str $wiki-word = $text;
-    $wiki-word ~~ s:g/\// \//; #put space before /
-    $wiki-word ~~ s:g/_/ /; #replace _ with space
-    $wiki-word ~~ s:g/(<[a..z]>)(<[A..Z]>)/$0 $1/; #put space between words
-    $wiki-word ~~ s:g/(<[a..z]>)(\d)/$0 $1/; #put space between letter then number
-    $wiki-word ~~ s:g/(\d)(<[a..z]>)/$0 $1/; #put space between number then letter
-    return $wiki-word;
-  }
-
-  method wiki-bracket-link(:$subpage, :$page, :$desc) {
-    my $url = $.Sys.get(key => 'SITE_URL') ~ '/' ~ $C_APP_NAME.lc;
-    my $current_page = $.CurrentWikiPage;
-    if $subpage ne '' {
-      $current_page = $current_page ~ $subpage ~ $page;
-    }
-    else {
-      $current_page = $page;
-    }
-    $url = $url ~ '?p=' ~ $current_page;
-    #-- detect if page exists..
-    my Str $file-name = self.get-page-filename(filename => $current_page.Str);
-    if $file-name.IO.e {
-      $url = '<a href="' ~ $url ~ '">' ~ $desc ~ '</a>';
-    }
-    else {
-      $url = $desc ~ '<a href="' ~ $url ~ '"><sup>?</sup></a>';
-    }
-  return $url;
-  }
-
-  method wiki-bracket-multilink(:$subpage, :$page, :$pipe, :$desc) {
-    my $url = $.Sys.get(key => 'SITE_URL') ~ '/' ~ $C_APP_NAME.lc;
-    my $current_page = $.CurrentWikiPage;
-    my @subpages = $page.split('/');
-    my $the_url = '';
-
-    if $subpage ne '' {
-      my $subpagelink = '';
-      my $i = 0;
-      for @subpages -> $pagelink {
-        $i++;
-        $subpagelink ~= '/' ~ $pagelink;
-        if $i == @subpages.elems {
-          $the_url ~= '<a href="' ~ $url ~ '?p=' ~ $current_page
-                                        ~ $subpagelink ~ '">' ~ $desc ~ '</a>';
-        }
-        else {
-          $the_url ~= '<a href="' ~ $url ~ '?p=' ~ $current_page
-                                  ~ $subpagelink ~ '">' ~ $pagelink ~ '</a>' ~ '/';
-        }
-      }
-    }
-    else {
-      my $subpagelink = '';
-      my $i = 0;
-      for @subpages -> $pagelink {
-        $i++;
-        $subpagelink ~= $pagelink ~ '/';
-        my $subpage_url = $subpagelink.chop;
-        if $i == @subpages.elems {
-          $the_url ~=  '<a href="' ~ $url ~ '?p=' ~ $subpage_url
-                                          ~ '">' ~ $desc ~ '</a>';
-        }
-        else {
-          $the_url ~= '<a href="' ~ $url ~ '?p=' ~ $subpage_url
-                                        ~ '">' ~ $pagelink ~ '</a>' ~ '/';
-        }
-      }
-    }
-  return $the_url;
-  }
-
   method common-markup(Str :$text, Bool :$use-image, Int :$do-lines) {
     my $wiki-text = '';
     $wiki-text = $text;
@@ -1721,9 +1238,27 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     #16***        s/\&lt;sidemenu\&gt;((.|\n)*?)\&lt;\/sidemenu\&gt;/$self->SideMenu($1)/ige;
     #17***        s/\&lt;menubar\&gt;((.|\n)*?)\&lt;\/menubar\&gt;/$self->MenuBar($1)/ige;
     #18***        s/\&lt;tabmenubar\&gt;((.|\n)*?)\&lt;\/tabmenubar\&gt;/$self->TabMenuBar($1)/ige;
+    #b18
+                   
+    #e18
     #19***        s/\&lt;menu\&gt;((.|\n)*?)\&lt;\/menu\&gt;/$self->PopupMenu($1)/ige;
     #20***        s/\&lt;sitemenubar\&gt;((.|\n)*?)\&lt;\/sitemenubar\&gt;/$self->SiteMenuBar($1)/ige;
     #21***        s/\&lt;menugroup\&gt;((.|\n)*?)\&lt;\/menugroup\&gt;/$self->SideMenuGroup($1)/ige;
+    #b21
+                  $wiki-text ~~ s:g/
+                  '&lt;'
+                  'menugroup'
+                  '&gt;'
+                  (.*?)
+                  '&lt;'
+                  \/
+                  'menugroup'
+                  '&gt;'
+                  /{
+                    #-- TODO: HANDLE THIS MENUGROUP later
+                    ''
+                  }/;
+    #e21
     #22***        s/\&lt;insertpage\&gt;((.|\n)*?)\&lt;\/insertpage\&gt;/$self->ExtractPageText($1)/ige;
     #23***        s/\&lt;banner\&gt;((.|\n)*?)\&lt;\/banner\&gt;/$self->PageBanner($1)/ige;
     #24***        s/\&lt;pagetitle\&gt;((.|\n)*?)\&lt;\/pagetitle\&gt;/$self->PageTitle($1)/ige;
@@ -2088,6 +1623,13 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     #140***            s/------+/<hr noshade class=wikiline size=2>/g;
     #141***          }
     #142***          s/----+/<hr noshade class=wikiline size=1>/g;
+    #b140
+                     $wiki-text ~~ s:g/
+                     '----'+
+                     /{
+                     '<hr noshade class=wikiline size=1'
+                     }/;
+    #e140
     #143***        }
     #144***        else {
     #145***          s/----+/<hr class=wikiline>/g;
@@ -2150,6 +1692,33 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     #169***      }
     #170***      s/\{\{(\S+)\s/$self->FontStyle($1)/ge;
     #171***      s|\}\}|</span>|g;
+    #b170
+                 $wiki-text ~~ s:g/
+                 \{\{
+                 \s*
+                 (.*?)   #0
+                 \,
+                 \s*
+                 (\d+)   #1
+                 \%?
+                 \,?
+                 (.*?)   #2
+                 \}\}
+                 /{
+                   self.font-style(color => $0.Str,
+                                   size => $1.Str,
+                                   text => $2.Str)
+                   #'<b>' 
+                   #~ '0: ' ~ $0.Str 
+                   #~ '; 1:' ~ $1.Str 
+                   #~ '; 2:' ~ $2.Str 
+                   #~ '</b>'
+                   #0 - color
+                   #1 - size
+                   #2 - description
+                 }/;
+    #e170
+
     #172***      if ($FullTable) {
     #173***        #This code is pretty trivial. We take table attributes and put them in a string.
     #174***        #Then we iterate over that string, looking for 'safe' matches, adding those matches to
@@ -2325,7 +1894,7 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
                   $wiki-text ~~ s:g/
                     ^^\s*$$
                   /{
-                  '<p></p>' ~ "\n"
+                  '<p></p>' 
                   }/;
     #e66
     #b67
@@ -2352,212 +1921,7 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
 
     return $wiki-text;
   }
-
   
-
-  method wiki-nowiki(:$text) {
-    my $wikitext = $text;
-    #-- remove \n
-    $wikitext ~~ s:g/\&lt\;br\&gt\;//;
-    $wikitext ~~ s:g/\&lt\;\/br\&gt\;//;
-    $wikitext ~~ s:g/\<br\>//;
-    $wikitext ~~ s:g/\<\/br\>//;
-    $wikitext ~~ s:g/\<br\/\>//;
-    return $wikitext;
-  }
-
-  method wiki-free-to-normal(:$text) {
-    my $id = $text;
-    $id ~~ s:g/<space>+/_/;
-    return $id;
-  }
-
-  method wiki-side-menu-group(:$text) {
-    my $wiki-text = '';
-    $wiki-text = $text;
-    $wiki-text ~~ s:g/\n/\<br\/\>/;
-    if $wiki-text ne '' {
-     #$text = 'menugroup:' ~ $wikitext;
-    }
-    return '';
-  };
-
-  method wiki-line(:$text) {
-    my $line = $text;
-
-    #- <toc>
-    $line ~~ s:g/\&lt\;'toc'\&gt\;/TODO:Table-of-Contents/;
-
-    #- B<Bold text> U<underlined> I<italic>
-    $line ~~ s:g/(<[BUIbui]>)(\&lt\;)(.*?)(\&gt\;)/{
-    self.wiki-pod(text => $2, tag => $0);
-    }/;
-
-    my Bool $heading_detected = False;
-
-    #pattern = === Heading === #-- temporarily disable
-    $line ~~ s:g/^^(\=+)\s+?(.*?)\s+?(\=+)/{
-    $heading_detected = True;
-    self.wiki-heading(prefix => $0, heading => $1, suffix => $2);
-    }/;
-
-    #pattern = :text - where : is number of &nbsp;
-    $line ~~ s:g/^^(\:+)(.*?)$$/{
-      self.wiki-indent(indent => $0, text => $1);
-    }/;
-
-    #pattern = <space>text - where : is number of &nbsp;
-    $line ~~ s:g/^^(' '+)(.*)$$/{ #' comment to fix editor color
-      self.wiki-space-indent(indent => $0, text => $1);
-    }/;
-
-    $line ~~ s:g/\%'ICON'\{(.*?)\}\%/{
-      self.wiki-icon-pattern(icon => $0);
-    }/;
-
-    $line ~~ s:g/\[upload\:(.*)\]/{
-    self.wiki-get-file-upload(filename => $0);
-    }/;
-
-
-    $line ~~ s:g/\&lt\;'sapnote'\&gt\;\s*?(\d+)\s*?(.*?)\&lt\;\/'sapnote'\&gt\;/{
-    self.wiki-sap-note(note => $0.Int, desc => $1.Str);
-    }/;
-
-    $line ~~ s:g/\&lt\;hr\/?\&gt\;/\<hr\/\>/;
-
-    $line ~= '<br/>' if !$heading_detected; #-- do not add line break if line is heading
-
-    return $line;
-  }
-
-  method wiki-list-item(:$text, :$listtype, :$symbol) {
-    my $para = $text;
-
-    my @ParagraphLines = $para.split(/\n/);
-    my Bool $inside-list = False;
-    my Bool $new-list = False;
-    my Bool $current-list = False;
-    my Str $item-status = '';
-    my Str $last-status = '';
-    my Str $new-paragraph = '';
-    my Int $depth = 0;
-    my Int $last-depth = 0;
-    for @ParagraphLines -> $line {
-      my $line_item = $line;
-
-      #self.TRACE: 'Line chars: ' ~ $line.chars;
-
-      if $line_item.substr(0..0) eq $symbol {
-        my $star = '';
-
-        $line_item ~~ s:g/^^($symbol+)(.*?)$$/{
-          $star = $0;
-          $depth = $star.chars;
-          $1;
-        }/;
-
-        $new-list = True;
-        if $new-list &&! $current-list {
-          $item-status = 'N'; #new
-          $last-status = $item-status;
-          # OL LI xxx
-          my $indent = '';
-          if $depth > $last-depth {
-            my Int $depthDelta = $depth - $last-depth;
-            for 1..$depthDelta {
-              $indent ~= '<' ~ $listtype ~ '>';
-            }
-          }
-
-          $line_item = $indent ~ '<li>' ~ $line_item; #new
-        }
-        else {
-          $item-status = 'C'; #current
-          $last-status = $item-status;
-          # LI xxx
-          my $indent = '';
-          if $depth == $last-depth {
-
-          }
-          elsif $depth > $last-depth {
-            my Int $depthDelta = $depth - $last-depth;
-            for 1..$depthDelta {
-              $indent ~= '<' ~ $listtype ~ '>';
-            }
-          }
-          elsif $depth < $last-depth {
-            my Int $depthDelta = $last-depth - $depth;
-            for 1..$depthDelta {
-              $indent ~= '</' ~ $listtype ~ '>';
-            }
-          }
-
-          $line_item = $indent ~ '<li>' ~ $line_item; #new
-        }
-        $inside-list = True;
-        $current-list = $new-list;
-      }
-      else {
-        $item-status = 'L'; #last
-        if $inside-list {
-          $item-status = 'L'; #last
-          $last-status = $item-status;
-          # LI xxx OL
-          my $indent = '';
-          $line_item = '<li>' ~ $line_item; #new
-          for 0..$last-depth {
-            $line_item ~= '</' ~ $listtype ~ '>';
-          }
-
-          $new-list = False;
-          $inside-list = False; #- turn off List
-        }
-      }
-      $new-paragraph ~= $line_item ~ ' '; # ~ "\n";
-      $last-depth = $depth;
-    }
-    $new-paragraph ~= ' ';
-    $item-status = 'L' if $last-status eq 'C' || $last-status eq 'N';
-    if $last-status eq 'C' || $last-status eq 'N' {
-      # OL
-      for 1..$last-depth {
-        $new-paragraph ~= '</' ~ $listtype ~ '>';
-      }
-
-    }
-    $para = $new-paragraph;
-    # end - lists
-
-    #<li></ol> #-- remove -- extra blank list item
-    $para ~~ s:g/\<li\>\<\/ol\>//;
-
-    #<li></ul> #-- remove extra list item
-    $para ~~ s:g/\<li\>\<\/ul\>//;
-
-    return $para;
-  }
-
-  method wiki-set-page-title(Str :$title = '') {
-    my Str $title-text = '';
-    if $title ne '' {
-      #--FIXME: $.PAGETITLE = $title.Str;
-    }
-    return $title-text;
-  }
-
-  method wiki-source-code(:$text) {
-    my $source-code = $text;
-    $source-code ~~ s:g/(\<br\/\>)+//;
-    #$code = '<pre><code>' ~ $code ~ '</code></pre>';
-    $source-code = '<textarea name="code" rows="5" cols="132" wrap="virtual" style="width:75%">' ~ $text ~ '</textarea>';
-    return $source-code;
-  }
-
-  method wiki-pod(:$text, :$tag) {
-    my $pod = '<' ~ $tag ~ '>' ~ $text ~ '</' ~ $tag ~ '>';
-    return $pod;
-  }
 
   method wiki-heading(:$prefix, :$heading, :$suffix) {
     my $headtext = $heading;
@@ -2576,13 +1940,7 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     return $icon-path;
   };
 
-  method wiki-indent(:$indent, :$text) {
-    my $indent_text = self.space(2); #'&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;';
-    for 1..$indent.chars {
-      $indent_text ~= $indent_text;
-    }
-    return $indent_text ~ $text;
-  }
+  
 
   method store-href(:$anchor, :$text) {
     # l-anchor = local-variable anchor
@@ -2602,59 +1960,10 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     return $l-href;
   }
 
-  method wiki-space-indent(:$indent, :$text) {
-    my $indent_text = self.space(1); #'&nbsp;&nbsp;';
-    for 1..$indent.chars {
-      $indent_text ~= $indent_text;
-    }
-    return self.space(5) ~ $indent_text ~ $text;
-  }
+   
 
 
-  method wiki-icon-pattern(:$icon) {
-    return '<img src="/themes/img/icons/' ~ $icon.lc ~ '.png"/>';
-    #return 'icon:' ~ $icon.uc ~ '; ';
-  }
-
-
-
-  method wiki-get-file-upload(:$filename) {
-    my Str $file-path = '';
-
-    #[upload:/photos/books.jpg] maps to /file/uploads/photos/books.jpg
-
-    my Str $path-prefix = '/file/uploads/';
-    if $filename ne '' {
-      #self.TRACE: 'FILENAME = ' ~ $filename;
-      my $file = $filename;
-      my $alt = '';
-      $file ~~ s:g/^^(.*?)\s+(.*)/{
-        #self.TRACE: '0 = ' ~ $0;
-        #self.TRACE: '1 = ' ~ $1;
-        $alt = $1;
-        $0;
-      }/;
-      #self.TRACE: 'FILE = ' ~ $file;
-      $file-path = '<img src="' ~ $path-prefix ~ $file ~ '" alt="' ~ $alt ~ '"/>';
-    }
-    return $file-path;
-  }
-
-
-  method wiki-sap-note(Int :$note, Str :$desc?) {
-    my Int $sap-note = $note;
-    my Str $sDesc = $desc;
-    my Str $sap-link = '<a href="'
-                    ~ 'https://launchpad.support.sap.com/#/notes/'
-                    ~ $sap-note.Str
-                    ~ '" target=sapnote_"'
-                    ~ $sap-note.Str
-                    ~ '">'
-                    ~ $sap-note.Str
-                    ~ '</a>';
-    $sap-link ~= self.space ~ $desc if defined $desc;
-    return $sap-link;
-  }
+  
   method sap-note(:$note, :$desc?) {
     my Int $sap-note = 0;
     $sap-note = $note.Int;
@@ -2687,6 +1996,15 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
   }
 
 
+  method font-style(Str :$color, Str :$size, Str :$text) {
+    my $text-style = '';
+    $text-style = '<span style="' 
+               ~ 'color:' ~ $color ~ ';'
+               ~ 'font-size:' ~ $size ~ '%">' 
+               ~ $text 
+               ~ '</span>'; 
+    return self.store-raw(text => $text-style);
+  }
 
   #-- BEGIN-WIKI library/utilities
 
