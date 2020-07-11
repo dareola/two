@@ -1102,6 +1102,8 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     #23***            $pageText =~ s/\&lt;code\&gt;((.|\n)*?)\&lt;\/code\&gt;/$self->StorePre($1, "code")/ige;
     #24***            $pageText =~ s/\&lt;pre\&gt;((.|\n)*?)\&lt;\/pre\&gt;/$self->StorePre($1, "pre")/ige;
     #25***            $pageText =~ s/((.|\n)+?\n)\s*\n/$self->ParseParagraph($1)/geo;
+    #b25 #-- will not work bec it $.ParseParas is False
+    #e25
     #26***            $pageText =~ s/(.*)<\/p>(.+)$/$1.$self->ParseParagraph($2)/geo;
     #27***          }
                     }
@@ -1666,6 +1668,7 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     }
   return $the_url;
   }
+
   method common-markup(Str :$text, Bool :$use-image, Int :$do-lines) {
     my $wiki-text = '';
     $wiki-text = $text;
