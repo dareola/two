@@ -1020,7 +1020,7 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     #47***          }
     #48***          return $self->RestoreSavedText($pageText);
     #b48
-                $wiki-text = self.restore-saved-text(text => $wiki-text);
+    #            $wiki-text = self.restore-saved-text(text => $wiki-text);
     #e48
 
 
@@ -1378,6 +1378,24 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     #70***        . "<\/" . join("><\/", split("", scalar(reverse($1)))) . ">"/gisex;    #replacement string
     #71***        #bi20090828dma
     #72***        s/
+    #b64..72
+                  $wiki-text ~~ s:g/
+                   (<[BbIiUu]>)
+                   '&lt;' 
+                   (.*?)
+                   '&gt;'
+                   /{
+                   self.store-raw(text => 
+                   '<' ~ $0.Str ~ '>' ~ $1.Str ~ '</' ~ $0.Str ~ '>');
+                   #'<b>' 
+                   #~ '0: ' ~ $0.Str 
+                   #~ '; 1:' ~ $1.Str 
+                   #~ '; 2:' ~ $2.Str 
+                   #~ '; 3:' ~ $3.Str 
+                   #~ '</b>'
+                   }/;
+
+    #e64..72
     #73***      TEXT\&lt\; #match opening tag
     #74***      (?>(.*?)((\n\n)|(\&gt\;))) # match up to closing tag or end of para
     #75***      (?<!\n\n)  # fail if end of para
@@ -1667,6 +1685,29 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     #130***          #correct format: [upload:uploaded_doc.ext Description]
     #131***          #invalid format: [upload:uploaded_do.ext] -- to be fixed
     #132***          s/\[$UploadPattern\s+([^\]]+?)\]/$self->StoreUpload($1, $2, $useImage)/geos;
+     $wiki-text ~~ s:g/
+                    \[
+                     'upload'
+                     \:
+                     \s*
+                     (\S+)  #0 - filename
+                     \s*
+                     (.*?)  #1 - description
+                     \]
+                    /{
+                    self.store-raw(text => 
+                         self.store-upload(file => $0.Str, desc => $1.Str))
+                   #'<b>' 
+                   #~ '0: ' ~ $0.Str  
+                   #~ '; 1:' ~ $1.Str 
+                   #~ '; 2:' ~ $2.Str 
+                   #~ '; 3:' ~ $3.Str 
+                   #~ '</b>'
+                     }/;
+
+
+
+
     #133***          #ei20090824dma
     #134***        }
     #135***        if ($ThinLine) {
@@ -2067,6 +2108,44 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     $free-text ~~ s:g/__+/_/;
     $free-text ~~ s:g/' '+/_/;
     return $free-text;
+  }
+
+  method store-upload(Str :$file, Str :$desc) {
+    my Str $fname = '';
+    my Str $description = '';
+    $fname = $file;
+    $description = $desc;
+    my Str $upload-path = '';
+    $upload-path = 
+      ~ $.Sys.get(key => 'PUBLIC_DIR') 
+      ~ '/' 
+      ~ 'uploads'
+      ~ '/'
+      ~ $.Sys.get(key => 'SID') 
+      ~ $.Sys.get(key => 'SID_NR')
+      ~ '/'
+      ~ $fname.substr(0,1).uc
+      ~ '/'
+      ~ $fname;
+    return self.upload-link(file => $upload-path, text => $description);
+  }
+
+  method upload-link(Str :$file, Str :$text) {
+  my Str $fname = '';
+  my Str $desc = '';
+  $fname = $file;
+  $desc = $text;
+  my Str $file-path = '';
+  $desc = $fname if $desc eq '';
+
+  $file-path = $file;
+  if $file-path.IO.e {
+    $file-path = '<a href="' ~ $file-path ~'">' ~ $desc ~ '</a>';
+  }
+  else {
+    $file-path = $desc ~ ' [file-not-exists]'; 
+  }
+  return $file-path;
   }
 
   #-- BEGIN-WIKI library/utilities
