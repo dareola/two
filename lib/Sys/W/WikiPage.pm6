@@ -1025,7 +1025,8 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     #47***          }
     #48***          return $self->RestoreSavedText($pageText);
     #b48
-                $wiki-text = self.restore-saved-text(text => $wiki-text);
+    #            $wiki-text = self.restore-saved-text(text => $wiki-text);
+
     #e48
 
 
@@ -1038,6 +1039,8 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     my Str $wiki-text = '';
     $wiki-text = $text;
     1 while $wiki-text ~~ s:g/$C_FS(\d+)$C_FS/%.SaveUrl{$0}/; # Restore saved text
+    #-- clear text buffer
+    %.SaveUrl = ();
     return $wiki-text;
   }
 
@@ -2152,8 +2155,19 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     my Str $description = '';
     $fname = $file;
     $description = $desc;
-    my Str $upload-path = '';
-    $upload-path = 
+    return self.upload-link(file => $fname, text => $description);
+  }
+
+  method upload-link(Str :$file, Str :$text) {
+  my Str $fname = '';
+  my Str $desc = '';
+  my Str $file-path = '';
+
+  $fname = $file;
+  $desc = $text;
+  $desc = $fname if $desc eq '';
+
+  $file-path = 
       ~ $.Sys.get(key => 'PUBLIC_DIR') 
       ~ '/' 
       ~ 'uploads'
@@ -2164,23 +2178,18 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
       ~ $fname.substr(0,1).uc
       ~ '/'
       ~ $fname;
-    return self.upload-link(file => $upload-path, text => $description);
-  }
 
-  method upload-link(Str :$file, Str :$text) {
-  my Str $fname = '';
-  my Str $desc = '';
-  $fname = $file;
-  $desc = $text;
-  my Str $file-path = '';
-  $desc = $fname if $desc eq '';
-
-  $file-path = $file;
   if $file-path.IO.e {
-    $file-path = '<a href="' ~ $file-path ~'">' ~ $desc ~ '</a>';
+    my Str $img_ext = $.ImageExtensions;
+    #self.TRACE: 'Found file ' ~ $fname;
+    if $fname ~~ m:g/<$img_ext>/ {
+      $desc = '<img src="/file/uploads/' ~ $fname ~ '" alt="' ~ $desc ~ '">';
+    }
+    $file-path = '<a href="/file/uploads/' ~ $fname ~'" target="_blank">' ~ $desc ~ '</a>';
   }
   else {
-    $file-path = $desc ~ ' [file-not-exists]'; 
+    #self.TRACE: ' Not found for upload ' ~ $fname;
+    $file-path = $desc ~ ' [not-found]'; 
   }
   return $file-path;
   }
