@@ -984,6 +984,11 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     #e22
     #23***            $pageText =~ s/\&lt;code\&gt;((.|\n)*?)\&lt;\/code\&gt;/$self->StorePre($1, "code")/ige;
     #24***            $pageText =~ s/\&lt;pre\&gt;((.|\n)*?)\&lt;\/pre\&gt;/$self->StorePre($1, "pre")/ige;
+
+    #b24
+                 
+    #e24
+
     #25***            $pageText =~ s/((.|\n)+?\n)\s*\n/$self->ParseParagraph($1)/geo;
     #b25 #-- will not work bec it $.ParseParas is False
     #e25
@@ -1020,7 +1025,7 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     #47***          }
     #48***          return $self->RestoreSavedText($pageText);
     #b48
-    #            $wiki-text = self.restore-saved-text(text => $wiki-text);
+                $wiki-text = self.restore-saved-text(text => $wiki-text);
     #e48
 
 
@@ -1264,6 +1269,22 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     #24***        s/\&lt;pagetitle\&gt;((.|\n)*?)\&lt;\/pagetitle\&gt;/$self->PageTitle($1)/ige;
     #25***        s/\&lt;picture\&gt;((.|\n)*?)\&lt;\/picture\&gt;/$self->FloatImage($1)/ige;
     #26***        # The <pre> tag wraps the stored text with the HTML <pre> tag
+    #b26
+                $wiki-text ~~ s:g/
+                  '&lt;'
+                  'pre'
+                  '&gt;'
+                  (.*?)
+                  '&lt;'
+                  \/
+                  'pre'
+                  '&gt;'
+                  /{
+                  self.store-raw(text => '<pre>' ~ $0.Str ~ '</pre>')
+                  }/;
+
+
+    #e26
     #27***        s/\&lt;code\&gt;((.|\n)*?)\&lt;\/code\&gt;/$self->StoreCode($1, "nowiki")/ige;
     #28***        s/\&lt;sapnote\&gt;((.|\n)*?)\&lt;\/sapnote\&gt;/$self->StoreSAPNote($1, "nowiki")/ige;
     #b28
@@ -1673,6 +1694,22 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     #e119
     #119***        }
     #120***        s/\&lt;hide\&gt;((.|\n)*?)\&lt;\/hide\&gt;/$self->StorePre("", "hide")/ige;
+    #b120
+                 $wiki-text ~~ s:g/
+                  '&lt;'
+                  'hide'
+                  '&gt;'
+                  (.*?)
+                  '&lt;'
+                  \/
+                  'hide'
+                  '&gt;'
+                  /{
+                    #-- TODO: Handle HIDE later
+                    ''
+                  }/;
+
+    #e120
     #121***        s/\b$RFCPattern/$self->StoreRFC($1)/geo;
     #122***        s/\b$ISBNPattern/$self->StoreISBN($1)/geo;
     #123***        s/\[(?:(\w+);)\s*(\S+\.$ImageExtensions)\s*\]/$self->StoreImageTagAlign($2, $1)/geo; #dbChange for [] images.
