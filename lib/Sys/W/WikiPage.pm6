@@ -198,7 +198,7 @@ class Sys::W::WikiPage is export {
                                                     # into mailto: hyperlinks
     has Str $.UploadFileInfo = '';                  # filename|newfile|X|printfilename
     has Int $.IndentLimit = 20;                     # Maximum depth of nested lists
-    has Bool $.TOCFlag = False;
+    has Bool $.TOCFlag is rw = False;
 
 
 
@@ -2114,7 +2114,31 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     #160***        s/('*)'''(.*?)'''/$1<strong>$2<\/strong>/g;
     #161***        s/''(.*?)''/<em>$1<\/em>/g;
     #162***        if ($UseHeadings) {
+    #b162
+                   if $.UseHeadings {
+    #e162
     #163***          s/(^|\n)\s*(\=+)\s+([^\n]+)\s+\=+/$self->WikiHeading($1, $2, $3)/geo;
+                     $wiki-text ~~ s:g/
+                     ^^
+                     \s*
+                     (\=+)
+                     (.*?)
+                     \s*
+                     (\=+)
+                     /{
+                   #'<b>' 
+                   #~ '0: ' ~ $0.Str 
+                   #~ '; 1:' ~ $1.Str 
+                   #~ '; 2:' ~ $2.Str 
+                   #~ '; 3:' ~ $3.Str 
+                   #~ '</b>'
+                   self.wiki-heading(prefix => $0.Str,
+                                     heading => $1.Str,
+                                     suffix => $2.Str);
+                     }/;
+    #b164
+                   }
+    #e164
     #164***        }
     #165***        if ($TableMode) {
     #166***          s/((\|\|)+)/"<\/TD><TD class='wikitablecell' valign='top' COLSPAN=\"" . (length($1)\/2) . "\">"/ge;
@@ -2310,6 +2334,12 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     #67***      }
 
     #68***      $pageHtml .= $self->CommonMarkup($_, 1, 2);    # Line-oriented common markup
+    #b68
+                $wiki-text = self.common-markup(text => $wiki-text,
+                                                      use-image => True,
+                                                      do-lines => 2);
+
+    #e68
     #b69
               }
     #e59
