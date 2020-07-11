@@ -1086,6 +1086,19 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     #20***            # Note: The following 3 rules may span paragraphs, so they are
     #21***            #       copied from CommonMarkup
     #22***            $pageText =~ s/\&lt;nowiki\&gt;((.|\n)*?)\&lt;\/nowiki\&gt;/$self->StoreRaw($1)/ige;
+    #b22
+    $wiki-text ~~ s:g/
+    '&lt;' 'nowiki' '&gt;'
+    (.*?)
+    '&lt;' \/ 'nowiki' '&gt;'
+    /{
+    '<b>' 
+    ~ '0: ' ~ $0 
+    ~ '1: ' ~ $1 
+    ~ '2: ' ~ $2 
+    ~ '</b>';
+    }/;
+    #e22
     #23***            $pageText =~ s/\&lt;code\&gt;((.|\n)*?)\&lt;\/code\&gt;/$self->StorePre($1, "code")/ige;
     #24***            $pageText =~ s/\&lt;pre\&gt;((.|\n)*?)\&lt;\/pre\&gt;/$self->StorePre($1, "pre")/ige;
     #25***            $pageText =~ s/((.|\n)+?\n)\s*\n/$self->ParseParagraph($1)/geo;
@@ -1118,158 +1131,15 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     #46***            $pageText = $self->EvalLocalRules($LateRules, $pageText, 0);
     #47***          }
     #48***          return $self->RestoreSavedText($pageText);
+    #b48
+                #$wiki-text = self.restore-saved-text(text => $wiki-text);
+    #e48
 
 
     return $wiki-text;
   }
 
-  method wiki-to-html-old1(Str :$text) {
-    my Str $wiki-text = '';
-
-    self.wiki-init-link-patterns();
-
-    #self.TRACE: 'TEXT = ' ~ '<hr>' ~ $text;
-
-    my %SaveUrl = ();
-
-    #-- begin: remove field separators
-    $wiki-text = self.wiki-remove-field-separator(text => $text);
-    #-- end: remove field separators
-
-    #-- begin: remove \r\n
-    $wiki-text = $text ~ "\r\n";
-    #-- end: remove \r\n
-
-
-    #-- begin: quote html
-    $wiki-text = self.wiki-quote-html(text => $wiki-text);
-    #-- end: quote html
-
-
-    #-- begin: replace .\ with BR
-    $wiki-text ~~ s:g/\.\\ *\r?\n/\<br\/\>\&nbsp; /;
-    #-- end: replace .\ with BR
-
-
-    #-- begin: <back> tag
-    $wiki-text ~~ s:g/\&lt\;'back'\&gt\;/{
-    self.store-raw(text => 'back to ' ~ $.CurrentWikiPage);
-    }/;
-    #Ref: $pageText =~
-    #Ref: s/&lt;back&gt;/$self->StoreRaw("<b>"
-    #Ref: . $self->Ts('Backlinks for: %s', $MainPage)
-    #Ref: . "<\/b><br \/>\n" . $self->GetPageList($self->SearchTitleAndBody($MainPage)))/ige;
-    #-- end: <back> tag
-
-
-    #-- begin: nowiki tag
-    #ref: $pageText =~ s/\&lt;nowiki\&gt;((.|\n)*?)\&lt;\/nowiki\&gt;/$self->StoreRaw($1)/ige;
-
-    #pattern = <nowiki>text<nowiki>
-    $wiki-text ~~ s:g/\&lt\;nowiki\&gt\;(.*?)\&lt\;\/nowiki\&gt\;/{
-    self.store-raw(text => $0.Str);
-    }/;
-    #-- end: nowiki tag
-
-
-    #-- begin: code
-    $wiki-text ~~ s:g/\&lt\;code\&gt\;(.*?)\&lt\;\/code\&gt\;/{
-    self.store-raw-tag(text => $0.Str, tag => 'code');
-    }/;
-
-    #Hide:$wiki-text ~~ s:g/\&lt\;'code'\&gt\;(.*)\&lt\;\/'code'\&gt\;/{
-    #Hide:  self.wiki-source-code(text => $0);
-    #Hide:}/;
-    #-- end: code
-
-    #-- begin: pre
-    #Hide:#-- save PRE tags to buffer (for further parsing later in code)
-    $wiki-text ~~ s:g/\&lt\;'pre'\&gt\;(.*?)\&lt\;\/'pre'\&gt\;/{
-    self.store-raw-tag(text => $0.Str, tag => 'pre');
-    #Hide:  self.wiki-pre-formatted_text(text => $0);
-    }/;
-    #-- end: pre
-
-    #-- begin: paragraph
-    #-- split text by paragraph marked by \n
-    #$wiki-text ~~ s:g/[^^|\n](.*?)\n$$/{
-    #self.TRACE: 'PARA :' ~ $0;
-    #self.wiki-parse-paragraph(text => $0);
-    #}/;
-    #-- end: paragraph
-
-    #-----
-    #-- begin: paragraph
-    #-- split text by paragraph marked by \n
-    $wiki-text ~= "\n";
-    $wiki-text ~~ s:g/[^^|\n](.*?)\n|$$/{
-    #self.TRACE: 'PARA :' ~ $0;
-    #self.TRACE: '<br/>';
-    self.wiki-parse-paragraph(text => $0);
-    }/;
-    #-- end: paragraph
-
-    #-----
-
-
-    #Hide:#-- HIDE tags
-    #Hide:$wiki-text ~~ s:g/\&lt\;hide\&gt\;(.*?)\&lt\;\/hide\&gt\;//;
-    #Hide:
-    #Hide:#-- join lines terminated with backslash
-    #Hide:$wiki-text ~~ s:g/\\' '*\r?\n//; #' comment needed to editor color
-    #Hide:
-    #Hide:
-    #Hide:#-- save TABLE data to buffer
-    #Hide:$wiki-text ~~ s:g/^^(\|\|.*?\|\|)\n\n/{
-    #Hide:  self.wiki-table(text => $0.Str);
-    #Hide:}/;
-    #Hide:
-    #Hide:  #-- color pattern = {{color,digit% some text}}
-    #Hide:$wiki-text ~~ s:g/\{\{(.*?)\,(\d+)\%\s*?(.*?)\}\}/{
-    #Hide:  self.wiki-colored-text(color => $0, size => $1, text => $2);
-    #Hide:}/;
-    #Hide:
-    #Hide:#-- translate  &lt;br&gt; to \n
-    #Hide:$wiki-text ~~ s:g/\&lt\;br\&gt\;/\n/;
-    #Hide:
-    #Hide:#-- pattern: == # Heading ==
-    #Hide:$wiki-text = self.wiki-numbered-heading(text => $wiki-text);
-    #Hide:
-    #Hide:#-- clean-up extra tags
-    #Hide:$wiki-text = self.wiki-remove-unwanted-tags(text => $wiki-text);
-    #Hide:
-    #Hide:#-- split text by paragraph marked by \n
-    #Hide:$wiki-text ~~ s:g/[^^|\n](.*?)\n$$/{
-    #Hide:  self.wiki-paragraph(text => $0);
-    #Hide:}/;
-    #Hide:
-    #Hide:#-- split text by paragraph "</p>" marker
-    #Hide:
-    #Hide:
-    #Hide:
-    #Hide:#-- pattern = <pagetitle>SOMETITLE</pagetitle>
-    #Hide:$wiki-text ~~ s:g/\&lt\;pagetitle\&gt\;(.*)\&lt\;\/pagetitle\&gt\;/{
-    #Hide:  self.wiki-set-page-title(title => $0.Str);
-    #Hide:}/;
-    #Hide:
-    #Hide:
-    #Hide:#-- Bring back PREformatted texts
-    #Hide:#-- The preformatted text buffer is %.Preformatted
-    #Hide:for 1 .. $.PreformattedIndex -> $i {
-    #Hide:  $wiki-text ~~ s:g/\<pre\>PRE_$i\<\/pre\>/{
-    #Hide:    '<pre>' ~ %.Preformatted{$i.Str} ~ '</pre>';
-    #Hide:  }/;
-    #Hide:}
-    #Hide:%.Preformatted = (); #-- reclaim memory
-    #Hide:$.PreformattedIndex = 0;
-    #Hide:
-    #Hide:#-- clean-up extra tags
-    #Hide:$wiki-text = self.wiki-remove-unwanted-tags(text => $wiki-text);
-    #Hide:
-
-    $wiki-text = self.restore-saved-text(text => $wiki-text);
-    return $wiki-text;
-  }
+  
 
   method restore-saved-text(:$text) {
     my Str $wiki-text = '';
@@ -1807,7 +1677,7 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     #b4
                if $do-lines < 2 {
     #e4
-    #5***                            # The <nowiki> tag stores text with no markup (except quoting HTML)
+    #5***        # The <nowiki> tag stores text with no markup (except quoting HTML)
     #6***        if (m/\&lt;toc\&gt;/) {
     #b6
                  if $wiki-text ~~ m:g/ '&lt;' 'toc' '&gt;' / {
@@ -1822,6 +1692,21 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     #8***        }
     #9***         s/\&lt;localdir\&gt;((.|\n)*?)\&lt;\/localdir\&gt;/$self->StoreRaw($self->DisplayLocalDirectory($1))/ige;
     #10***        s/\&lt;nowiki\&gt;((.|\n)*?)\&lt;\/nowiki\&gt;/$self->StoreRaw($1)/ige;
+    #b10
+    $wiki-text ~~ s:g/
+    '&lt;' 'nowiki' '&gt;'
+    (.*?)
+    '&lt;' \/ 'nowiki' '&gt;'
+    /{
+    self.store-raw(text => $0.Str);
+    #'<b>' 
+    #~ '0: ' ~ $0 
+    #~ '1: ' ~ $1 
+    #~ '2: ' ~ $2 
+    #~ '</b>';
+    }/;
+
+    #e10
     #11***        s/\&lt;wikiproc\&gt;((.|\n)*?)\&lt;\/wikiproc\&gt;/$self->WikiProc($1)/ige;
     #12***        s/\&lt;training\&gt;((.|\n)*?)\&lt;\/training\&gt;/$self->SetTrainingText($1)/ige;
     #13***        s/\&lt;postit\&gt;((.|\n)*?)\&lt;\/postit\&gt;/$self->PostItNote($1)/ige;
@@ -1840,6 +1725,23 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     #26***        # The <pre> tag wraps the stored text with the HTML <pre> tag
     #27***        s/\&lt;code\&gt;((.|\n)*?)\&lt;\/code\&gt;/$self->StoreCode($1, "nowiki")/ige;
     #28***        s/\&lt;sapnote\&gt;((.|\n)*?)\&lt;\/sapnote\&gt;/$self->StoreSAPNote($1, "nowiki")/ige;
+    #b28
+    $wiki-text ~~ s:g/
+    '&lt;' 'sapnote' '&gt;'
+    (\d+)
+    \s*
+    (\S+)*
+    '&lt;' \/ 'sapnote' '&gt;'
+    /{
+    self.store-raw(text => self.sap-note(note => $0, desc => $1));
+    #'<b>' 
+    #~ '0: ' ~ $0 
+    #~ '1: ' ~ $1 
+    #~ '2: ' ~ $2 
+    #~ '</b>';
+    }/;
+
+    #e28
     #29***        s/\&lt;pre\&gt;((.|\n)*?)\&lt;\/pre\&gt;/$self->StorePre($1, "pre")/ige;
     #30***        #s/\&lt;center\&gt;((.|\n)*?)\&lt;\/center\&gt;/$self->StorePre($1, "center")/ige;
     #31***        if ($EarlyRules ne '') {
@@ -2039,11 +1941,10 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
 
     #100***          s/\[$UrlPattern\s+([^\]]+?)\]/$self->StoreBracketUrl($1, $2, $useImage)/geos;
     #b100
-    #                 $wiki-text ~~ s:g/\[$UrlPattern\s+([^\]]+?)\]/$self->StoreBracketUrl($1, $2, $useImage)/
-                      self.TRACE: 'URL PATTERN :' ~ $.UrlPattern;
-    #-- begin: CONTINUE HERE
+    #                  self.TRACE: 'URL PATTERN :' ~ $.UrlPattern;
                      $wiki-text ~~ s:g/
                      \[
+                     (
                      ((
                      http|https|ftp|afs|news|nntp|mid|cid|mailto|wais|image|download|mms|prospero|telnet|gopher|file
                      )
@@ -2051,20 +1952,19 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
                      (\/)?
                      \/)
                      (\S+)
+                     )
                      \s*
                      (\S+)
                      \]
                      /{
-                             ' 0: <u>' ~ $0.Str ~ '</u>'
-                           ~ ';1: <u>' ~ $1.Str ~ '</u>' 
-                           ~ ';2: <u><b>' ~ $2.Str ~ '</b></u>' 
-                     #self.store-bracket-url(protocol => $0.Str, 
-                     #                       url => $1.Str)
+                     #        ' 0: <u>' ~ $0.Str ~ '</u>'
+                     #      ~ ';1: <u>' ~ $1.Str ~ '</u>' 
+                     #      ~ ';2: <u><b>' ~ $2.Str ~ '</b></u>' 
+                     self.store-bracket-url(url => $0.Str, 
+                                            text => $1.Str)
                      }/;
-    #                 #-- 0 - protocol
-    #                 #-- 1 - url
-    #                 #-- 2 - description
-    #-- end:CONTINUE HERE
+    #                 #-- 0 - url 
+    #                 #-- 1 - description
     #e100
     #101***          s/\[$InterLinkPattern\s+([^\]]+?)\]/$self->StoreBracketInterPage($1, $2,
     #102***                                                                $useImage)/geos;
@@ -2079,8 +1979,78 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     #108***        }
 
     #109***        s/\[$UrlPattern\]/$self->StoreBracketUrl($1, "", 0)/geo;
+    #b109
+                   #self.TRACE: 'URL PATTERN :' ~ $.UrlPattern;
+                   $wiki-text ~~ s:g/
+                   \[
+                    (
+                    (http|https|ftp|afs|news|nntp|mid|cid|mailto|wais|image|download|mms|prospero|telnet|gopher|file)
+                    \:
+                    (\/)?
+                    \/
+                    (\S+)
+                    )
+                    \s*
+                    (
+                    (.*?)
+                    )
+                   \]
+                   /{
+                     self.store-bracket-url(url => $0.Str,
+                                            text => $1.Str);
+                     #'<b>0: ' ~ $0.Str 
+                     #~ '; 1:' ~ $1.Str ~ '</b>'
+                   }/;
+
+    #e109
+
     #110***        s/\[$InterLinkPattern\]/$self->StoreBracketInterPage($1, "", 0)/geo;
+    #b110
+    #begin: TODO: LATER - no matching text yet
+                   #self.TRACE: 'INTERLINK PATTERN: ' ~ $.InterLinkPattern;
+                   $wiki-text ~~ s:g/
+                   \[
+                   <[A..Z]><[A..Za..z_0..9]>+
+                   \:
+                   \?
+                   \s*
+                   \w*
+                   \]
+                   /{
+                   '<b>0: ' ~ $0.Str 
+                   ~ '; 1:' ~ $1.Str ~ '</b>'
+
+                   }/;
+    #end: TODO: LATER - no matching text yet
+    #e110
     #111***        s/\b$UrlPattern/$self->StoreUrl($1, $useImage)/geo;    #--
+    #b111
+
+                   #self.TRACE: 'URL PATTERN: ' ~ $.UrlPattern;
+                   $wiki-text ~~ s:g/
+                   \[
+                   (
+                   (http|https|ftp|afs|news|nntp|mid|cid|mailto|wais|image|download|mms|prospero|telnet|gopher|file)
+                   \:
+                   (\/)?\/?
+                   (\S+)
+                   )
+                   \s*
+                   (\S+)
+                   \]
+                   /{
+                   self.store-bracket-url(url => $0.Str,
+                                          text => $1.Str);
+                   #'<b>' 
+                   #~ '0: ' ~ $0.Str 
+                   #~ '; 1:' ~ $1.Str 
+                   #~ '; 2:' ~ $2.Str 
+                   #~ '; 3:' ~ $3.Str 
+                   #~ '</b>'
+                   }/;
+
+
+    #e111
     #112***        s/\b$InterLinkPattern/$self->StoreInterPage($1, $useImage)/geo;
     #113***        if ($WikiLinks) {
     #114***          s/$AnchoredLinkPattern/$self->StoreRaw($self->GetPageOrEditAnchoredLink($1,
@@ -2225,15 +2195,23 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     return $wiki-text;
   }
 
-  method store-bracket-url(Str :$protocol, 
-                           Str :$url) {
-    my Str $proto = '';
+  method store-bracket-url(Str :$url, 
+                           Str :$text) {
     my Str $uri = '';
-    $proto = $protocol.Str;
-    $uri = $url.Str;
+    my Str $name = '';
     my Str $http = '';
-    $http = $proto ~ $uri;
-    return $http;
+    my Bool $internet-link = False;
+    $uri = $url.Str;
+    $name = $text;
+    if $uri ~~ m:g/^https?:(.*)/ {
+      my $uri-link = $0.Str;
+      $internet-link = True if $uri-link ~~ m:g/\/\//; 
+    }
+    $uri ~= '" target="_blank' if $internet-link; 
+
+    $http = '<a href="' ~ $uri ~ '">' ~ $name ~ '</a>';
+    #return $http;
+    return self.store-raw(text => $http);
  }
 
   method wiki-lines-to-html(Str :$text) {
@@ -2318,220 +2296,7 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     return $text;
   }
 
-  method wiki-common-markup-test1(:$text) {
-    my $wiki-text = $text;
-
-    #- begin: localdir
-
-    #- end: localdir
-
-    #- begin: nowiki
-
-    #- end: nowiki
-
-    #- begin: wikiproc
-    #- end: wikiproc
-
-    #- begin: training
-    #- end: training
-
-    #- begin: postit
-    #- end: postit
-
-    #- begin: scroll
-    #- end: scroll
-
-    #- begin: sidebar
-    #- end: sidebar
-
-    #- begin: sidemenu
-    #- end: sidemenu
-
-    #- begin: menubar
-    #- end: menubar
-
-    #- begin: sitemenubar
-    #- end: sitemenubar
-
-    #- begin: menugroup
-    #- end: menugroup
-
-    #- begin: insertpage
-    #- end: insertpage
-
-    #- begin: banner
-    #- end: banner
-
-    #- begin: pagetitle
-    #- end: pagetitle
-
-    #- begin: picture
-    #- end: picture
-
-    #- begin: code
-    #-- begin: code
-    $wiki-text ~~ s:g/\&lt\;code\&gt\;(.*?)\&lt\;\/code\&gt\;/{
-    self.store-code(text => $0.Str, tag => 'nowiki');
-    }/;
-    #- end: code
-
-    #- begin: sapnote
-    $wiki-text ~~ s:g/\&lt\;sapnote\&gt\;(.*?)\&lt\;\/sapnote\&gt\;/{
-    self.store-sap-note(text => $0.Str, tag => 'nowiki');
-    }/;
-    #- end: sapnote
-
-    #- begin: pre
-    $wiki-text ~~ s:g/\&lt\;pre\&gt\;(.*?)\&lt\;\/pre\&gt\;/{
-    self.store-pre(text => $0.Str, tag => 'pre');
-    }/;
-    #- end: pre
-
-    #-- begin: html pairs
-    for @.HtmlPairs -> $tag {
-      $wiki-text ~~ s:g/
-        \&lt\;$tag\&gt\;
-        (.*?)
-        \&lt\;\/$tag\&gt\;
-        /
-        \<$tag\>$0\<\/$tag\>
-        /;
-    }
-    #-- end: html pairs
-
-    #-- begin: html single
-    # :FIXME
-    #-- end: html single
-
-
-    #- begin: center, strong, em, tt
-    for <b i center strong em tt> -> $tag {
-      $wiki-text ~~ s:g/
-        \&lt\;$tag\&gt\;
-        (.*?)
-        \&lt\;\/$tag\&gt\;
-        /
-        \<$tag\>$0\<\/$tag\>
-        /;
-    }
-    #- end: center
-
-    #- begin: line break
-      $wiki-text ~~ s:g/
-        \&lt\;br\&gt\;
-        /
-        \<br\>
-        /;
-    #- end: line break
-
-    #- begin: tt
-    $wiki-text ~~ s:g/
-      \&lt\;tt\&gt\;
-      (.*?)
-      \&lt\;\/tt\&gt\;
-      /
-      \<tt\>$0\<\/tt\>
-      /;
-    #- end: tt
-
-    #begin: counter
-    #end: counter
-
-    #begin: pod
-    $wiki-text ~~ s:g/
-      (<[BbIiUu]>)\&lt\;((.*?))\&gt\;
-      /
-      \<$0\>$1\<\/$0\>
-      /;
-
-    #end: pod
-
-    #begin: TEXT-T01
-
-    #end: TEXT-T01
-
-    #begin: ICON
-    $wiki-text ~~ s:g/
-      \%'ICON'\{(.*?)\}\%
-    /{
-      self.store-icon-tag(icon => $0);
-    }/;
-    #end: ICON
-
-    #begin: html links
-    # s/
-    #  \&lt;            <
-    #  A(\s[^<>]+?)     A
-    #  \&gt;            >
-    #  (.*?)           .*?
-    #  \&lt;           <
-    #  \/a             /a
-    #  \&gt;           >
-    # /$self->StoreHref($1, $2)/gise;
-    #
-    $wiki-text ~~ s:g/
-    \&lt\;a\s(.*?)\&gt\;(.*?)\&lt\;\/a\&gt\;
-    /{
-      self.store-href(anchor => $0, text => $1);
-    }/;
-    #end: html links
-
-
-    #begin: action pattern
-
-    #end: action pattern
-
-    #begin: search link
-    #end: search link
-
-    #begin: free link pattern
-    #end: free link pattern
-
-    #begin: anchored link pattern
-    #end: anchored link pattern
-
-    #begin: urlpattern
-    #end: urlpattern
-
-    #begin: interlink pattern
-    #end: interlink pattern
-
-    #begin: linkpattern
-    #end: linkpattern
-
-    #begin: anchoredlinkpattern
-    #end: anchoredlinkpattern
-
-
-    #Hide: #pattern = <nowiki>text<nowiki>
-    #Hide: $wikitext ~~ s:g/\&lt\;nowiki\&gt\;(.*?)\&lt\;\/nowiki\&gt\;/{
-    #Hide:   self.wiki-nowiki(text => $0);
-    #Hide: }/;
-
-    #Hide: #pattern = Bold, italics, emphasized etc -- passed
-    #Hide: $wikitext ~~ s:g/\&lt\;(<[BbIiUu]>)\&gt\;(.*?)\&lt\;\/(<[BbIiUu]>)\&gt\;/{
-    #Hide:   '<' ~ $0 ~ '>' ~ $1 ~ '</' ~ $0 ~ '>';
-    #Hide: }/;
-
-    #Hide: #pattern = <tt>some text</tt>
-    #Hide: $wikitext ~~ s:g/\&lt\;('tt')\&gt\;(.*?)\&lt\;\/('tt')\&gt\;/{
-    #Hide:   '<' ~ $0 ~ '>' ~ $1 ~ '</' ~ $0 ~ '>';
-    #Hide: }/;
-
-    #Hide: #pattern = [[UpperAndAnything]]
-    #Hide: $wikitext ~~ s:g/\[\[(<upper>*<alpha>*.*?)\]\]/{
-    #Hide:    self.wiki-bracket-link(subpage => '',
-    #Hide:                           page => self.wiki-free-to-normal(text => $0),
-    #Hide:                           desc => self.wiki-expand-word(text => $0.Str));
-    #Hide: }/;
-
-    #Hide: -- menugroup
-    #Hide: $wikitext ~~ s:g/\&lt\;menugroup\&gt\;(.*?)\&lt\;\/menugroup\&gt\;/{
-    #Hide:   self.wiki-side-menu-group(text => $0);
-    #Hide: }/;
-
-    return $wiki-text;
-  }
+  
 
   method wiki-nowiki(:$text) {
     my $wikitext = $text;
@@ -2833,6 +2598,23 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     $sap-link ~= self.space ~ $desc if defined $desc;
     return $sap-link;
   }
+  method sap-note(:$note, :$desc?) {
+    my Int $sap-note = 0;
+    $sap-note = $note.Int;
+    my Str $sDesc = '';
+    $sDesc = $desc.Str;
+    my Str $sap-link = '<a href="'
+                    ~ 'https://launchpad.support.sap.com/#/notes/'
+                    ~ $sap-note.Str
+                    ~ '" target=sapnote_"'
+                    ~ $sap-note.Str
+                    ~ '">'
+                    ~ $sap-note.Str
+                    ~ '</a>';
+    $sap-link ~= self.space ~ $desc if defined $desc;
+    return $sap-link;
+  }
+
 
   method space(Int $length?) {
     my Str $blank = '';
