@@ -1114,6 +1114,9 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
                                                       use-image => True,
                                                       do-lines => 0);
     #30***            $pageText = $self->WikiLinesToHtml($pageText);       # Line-oriented markup
+    #b30
+                      $wiki-text = self.wiki-lines-to-html(text => $wiki-text);
+    #e30
     #31***          }
                     }
     #32***          while (@HeadingNumbers) {
@@ -1134,7 +1137,7 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     #47***          }
     #48***          return $self->RestoreSavedText($pageText);
     #b48
-                #$wiki-text = self.restore-saved-text(text => $wiki-text);
+                $wiki-text = self.restore-saved-text(text => $wiki-text);
     #e48
 
 
@@ -2229,6 +2232,9 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     #5***    $depth     = 0;
     #6***    $pageHtml  = "";
     #7***    foreach (split(/\n/, $pageText)) {    # Process lines one-at-a-time
+    #b7
+             for $wiki-text.lines {
+    #e7
     #8***      $code           = '';
     #9***      $codeAttributes = '';
     #10***      $TableMode      = 0;
@@ -2287,16 +2293,34 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     #63***        }
     #64***      }
     #65***      if (!$ParseParas) {
+    #b65
+                if !$.ParseParas {
+    #e65
     #66***        s/^\s*$/<p><\/p>\n/;    # Blank lines become <p></p> tags
+    #b66
+                  $wiki-text ~~ s:g/
+                    ^^\s*$$
+                  /{
+                  '<p></p>' ~ "\n"
+                  }/;
+    #e66
+    #b67
+                }
+    #e67
     #67***      }
+
     #68***      $pageHtml .= $self->CommonMarkup($_, 1, 2);    # Line-oriented common markup
+    #b69
+              }
+    #e59
     #69***    }
+
     #70***    while (@htmlStack > 0) {                         # Clear stack
     #71***      $pageHtml .= "</" . pop(@htmlStack) . ">\n";
     #72***    }
     #73***    return $pageHtml;
 
-    return $text;
+    return $wiki-text;
   }
 
   
