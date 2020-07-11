@@ -2203,10 +2203,83 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
 
   method wiki-heading(:$prefix, :$heading, :$suffix) {
     my $headtext = $heading;
+    my Int $level = 0;
+    $level = $prefix.chars;
+
+    $level = 3 if $level < 3; #-- maximum is H3
+
     if $prefix.chars == $suffix.chars {
-      $headtext = '<H' ~ $prefix.chars ~ '>' ~ $headtext ~ '</H' ~ $prefix.chars ~ '>';
+      $headtext = '<H' ~ $level ~ '>' 
+                       ~ self.parse-heading-text(text => $headtext) 
+                ~ '</H' ~ $level ~ '>';
     }
     return $headtext;
+  }
+
+  method parse-heading-text(Str :$text) {
+    my Str $heading = '';
+    $heading = $text;
+    $heading ~~ s:g/
+      (\#+)
+      (.*?)
+    /{
+      self.heading-text(prefix => $0.Str, text => $2.Str)
+      #'<b>' 
+      #~ '0: ' ~ $0.Str 
+      #~ '; 1:' ~ $1.Str 
+      #~ '; 2:' ~ $2.Str 
+      #~ '</b>'
+    }/;
+    return $heading;
+  }
+
+  method heading-text(Str :$prefix, Str :$text) {
+     my Str $tag = ''; 
+     my Str $heading = '';
+     $tag = $prefix;
+     $heading = $text;
+     given $tag.chars {
+       when 1 {
+         $heading = '<img src="' 
+               ~ '/themes/img/common/yellow_square.gif' 
+               ~ '"/>' 
+               ~ '&nbsp;' 
+               ~ $heading;
+       }
+       when 2 {
+         $heading = '<img src="' 
+               ~ '/themes/img/common/bullet2.gif' 
+               ~ '"/>' 
+               ~ '&nbsp;' 
+               ~ $heading;
+       }
+       when 3 {
+         $heading = '<img src="' 
+               ~ '/themes/img/common/bullet.gif' 
+               ~ '"/>' 
+               ~ '&nbsp;' 
+               ~ $heading;
+       }
+       when 4 {
+         $heading = '<img src="' 
+               ~ '/themes/img/common/active.gif' 
+               ~ '"/>' 
+               ~ '&nbsp;' 
+               ~ $heading;
+       }
+       when 5 {
+       }
+       when 6 {
+       }
+       when 7 {
+       }
+       when 8 {
+       }
+       when 9 {
+       }
+     }
+
+     return $heading;
   }
 
   method store-icon-tag(:$icon){
