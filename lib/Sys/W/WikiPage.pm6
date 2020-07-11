@@ -1613,8 +1613,10 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
                      \]
                      \]
                      /{
-                     self.store-raw(text => self.get-page-or-edit-link(url => self.free-to-normal(text => $0.Str), 
-                                        desc => $1.Str))
+                     self.store-raw(text => 
+                          self.get-page-or-edit-link(url => 
+                              self.free-to-normal(text => $0.Str), 
+                                    desc => $1.Str))
                    #'<b>' 
                    #~ '0: ' ~ $0.Str  ~ self.free-to-normal(text => $0.Str)
                    #~ '; 1:' ~ $1.Str 
@@ -1632,8 +1634,10 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
                      \]
                      \]
                      /{
-                     self.store-raw(text => self.get-page-or-edit-link(url => self.free-to-normal(text => $0.Str), 
-                                        desc => $0.Str))
+                     self.store-raw(text => 
+                         self.get-page-or-edit-link(url => 
+                             self.free-to-normal(text => $0.Str), 
+                                    desc => $0.Str))
                    #'<b>' 
                    #~ '0: ' ~ $0.Str  ~ self.free-to-normal(text => $0.Str)
                    #~ '; 1:' ~ $1.Str 
