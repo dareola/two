@@ -1020,7 +1020,7 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     #47***          }
     #48***          return $self->RestoreSavedText($pageText);
     #b48
-    #            $wiki-text = self.restore-saved-text(text => $wiki-text);
+                $wiki-text = self.restore-saved-text(text => $wiki-text);
     #e48
 
 
@@ -1603,22 +1603,48 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     #117***          #      (subpage links without the main page)
     #118***          s/$LinkPattern/$self->GetPageOrEditLink($1, $2)/geo;
     #b118
-                     self.TRACE: 'LINK PATTERN: ' ~ $.LinkPattern;
+                     #self.TRACE: 'LINK PATTERN: ' ~ $.LinkPattern;
                      $wiki-text ~~ s:g/
                      \[
                      \[
-                     (.*?)
+                     (.*?)  #0 - free-to-normal (wiki link)
+                     \|
+                     (.*?)  #1 - description
                      \]
                      \]
                      /{
-                   '<b>' 
-                   ~ '0: ' ~ $0.Str 
-                   ~ '; 1:' ~ $1.Str 
-                   ~ '; 2:' ~ $2.Str 
-                   ~ '; 3:' ~ $3.Str 
-                   ~ '</b>'
+                     self.store-raw(text => self.get-edit-link(page => self.free-to-normal(text => $0.Str), 
+                                        text => $1.Str))
+                   #'<b>' 
+                   #~ '0: ' ~ $0.Str  ~ self.free-to-normal(text => $0.Str)
+                   #~ '; 1:' ~ $1.Str 
+                   #~ '; 2:' ~ $2.Str 
+                   #~ '; 3:' ~ $3.Str 
+                   #~ '</b>'
 
                      }/;
+
+                     #self.TRACE: 'LINK PATTERN: ' ~ $.LinkPattern;
+                     $wiki-text ~~ s:g/
+                     \[
+                     \[
+                     (.*?)  #0 - free-to-normal (wiki link)
+                     \]
+                     \]
+                     /{
+                     self.store-raw(text => self.get-edit-link(page => self.free-to-normal(text => $0.Str), 
+                                        text => $0.Str))
+                   #'<b>' 
+                   #~ '0: ' ~ $0.Str  ~ self.free-to-normal(text => $0.Str)
+                   #~ '; 1:' ~ $1.Str 
+                   #~ '; 2:' ~ $2.Str 
+                   #~ '; 3:' ~ $3.Str 
+                   #~ '</b>'
+
+                     }/;
+
+
+
     #e118
     #b119
                    }
@@ -2028,6 +2054,15 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
                ~ $text 
                ~ '</span>'; 
     return self.store-raw(text => $text-style);
+  }
+
+  method free-to-normal(Str :$text) {
+    my Str $free-text = '';
+    $free-text = $text;
+    $free-text = tc($free-text);
+    $free-text ~~ s:g/__+/_/;
+    $free-text ~~ s:g/' '+/_/;
+    return $free-text;
   }
 
   #-- BEGIN-WIKI library/utilities
