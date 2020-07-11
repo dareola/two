@@ -1594,11 +1594,35 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     #e111
     #112***        s/\b$InterLinkPattern/$self->StoreInterPage($1, $useImage)/geo;
     #113***        if ($WikiLinks) {
+    #b113
+                   if $.WikiLinks {
+    #e113
     #114***          s/$AnchoredLinkPattern/$self->StoreRaw($self->GetPageOrEditAnchoredLink($1,
     #115***                                $2, ""))/geo if $NamedAnchors;
     #116***          # CAA: Putting \b in front of $LinkPattern breaks /SubPage links
     #117***          #      (subpage links without the main page)
     #118***          s/$LinkPattern/$self->GetPageOrEditLink($1, $2)/geo;
+    #b118
+                     self.TRACE: 'LINK PATTERN: ' ~ $.LinkPattern;
+                     $wiki-text ~~ s:g/
+                     \[
+                     \[
+                     (.*?)
+                     \]
+                     \]
+                     /{
+                   '<b>' 
+                   ~ '0: ' ~ $0.Str 
+                   ~ '; 1:' ~ $1.Str 
+                   ~ '; 2:' ~ $2.Str 
+                   ~ '; 3:' ~ $3.Str 
+                   ~ '</b>'
+
+                     }/;
+    #e118
+    #b119
+                   }
+    #e119
     #119***        }
     #120***        s/\&lt;hide\&gt;((.|\n)*?)\&lt;\/hide\&gt;/$self->StorePre("", "hide")/ige;
     #121***        s/\b$RFCPattern/$self->StoreRFC($1)/geo;
