@@ -393,6 +393,8 @@ method EDIT_SCREEN_1000() {
       my Str $login-link = '';
       my Str $wiki-name = '';
       my Int $regex-counter = 1;
+      my Str $rex = '';
+
       $wiki-name = $.Sys.get(key => 'WIKI_NAME');
 
       $logout-link = '<a href="/logout">Logout</a>' if $.UserID ne '';
@@ -401,6 +403,7 @@ method EDIT_SCREEN_1000() {
       my Int $status = 0;
       my Str $wiki-text = '';
       my Str $summary = '';
+      my Str $regex = '';
 
       $.CurrentWikiPage = $.Sys.get(key => 'WIKI_HOME');
       $.CurrentWikiPage = %.Params<p> if defined %.Params<p> && %.Params<p> ne '';
@@ -411,6 +414,7 @@ method EDIT_SCREEN_1000() {
       $wiki-text = %.Text<txtdata>.Str;
       $summary = %.Text<summary>.Str;
 
+
       if defined %.Params<savc> {
         self.message('Detected SAVE command, then continue editing');
         self.wiki-save-data(id => $.CurrentWikiPage);
@@ -420,14 +424,17 @@ method EDIT_SCREEN_1000() {
 
       my Int $edit-rows = 15;
       my Int $edit-cols = 60;
-      my Int $summary-cols = 180;
+      my Int $summary-cols = 60;
+      my Int $regex-cols = 80;
       #my Str $wiki-text = '';
       my Int $rows = 0;
       my Int $cols = 0;
+
       $rows = %.Params<ROWS>.Int if defined %.Params<ROWS> && %.Params<ROWS> ne '';
       $edit-rows = $rows if $rows >= 3;
       $cols = %.Params<COLS>.Int if defined %.Params<COLS> && %.Params<COLS> ne '';
       $edit-cols = $cols if $cols >= 10;
+      $regex = %.Params<regex> if defined %.Params<regex> && %.Params<regex> ne '';
 
       if defined %.Params<p> && %.Params<p> ne '' {
         $.CurrentWikiPage = %.Params<p>;
@@ -471,18 +478,32 @@ method EDIT_SCREEN_1000() {
       $.Sys.FORM-BREAK();
       $.Sys.FORM-BREAK();
 
+      $.Sys.FORM-STRING(text => 'Tool: REGEX Filter');
+      $.Sys.FORM-SPACE();
+      $.Sys.FORM-TEXT(key => 'regex', value => $regex,
+                                    size => $regex-cols.Str, length => '1024');
+
+
+
       $.Sys.FORM-STRING(text => '<table border="0"><tr><td valign="top" valign="top" colspan="2">');
 
-      $.Sys.FORM-STRING(text => 'REGEX');
+      $.Sys.FORM-STRING(text => 'Summary');
       $.Sys.FORM-SPACE();
       $.Sys.FORM-TEXT(key => 'summary', value => $summary,
                                     size => $summary-cols.Str, length => '1024');
 
-      $.Sys.FORM-STRING(text => '</td><td></td></tr><tr><td valign="top">');
 
 
-      my Str $regex = '';
-      $regex = $summary.Str;
+      $rex = $regex.Str;
+
+      if $rex ne '' {
+        $.Sys.FORM-STRING(text => '</td><td></td></tr><tr><td valign="top">');
+      }
+      else {
+        $.Sys.FORM-STRING(text => '</td><td></td></tr><tr><td colspan="2" valign="top">');
+      }
+
+
 
       my Str $text-string = '';
       $text-string = $wiki-text;
@@ -504,16 +525,22 @@ method EDIT_SCREEN_1000() {
       #$.Sys.FORM-STRING(text => $preview);
 
       my $regex-result = '';
-      if $regex ne '' {
-        $text-string ~~ s:g/<$regex>/{
+      if $rex ne '' {
+        $text-string ~~ s:g/<$rex>/{
           $regex-result ~= self.eval-regex($regex-counter++, $/);
         }/;
+
+       $.Sys.FORM-STRING(text => '</td><td valign="top">REGEX MATCHES:<br/>' ~ $regex-result);
+
       };
 
-      $.Sys.FORM-STRING(text => '</td><td valign="top">REGEX MATCH RESULT<br/>' 
-                             ~ $regex-result ~ '</td></tr></table>');
+      #$.Sys.FORM-STRING(text => '</td><td valign="top">REGEX MATCH RESULT<br/>' 
+      #                       ~ $regex-result ~ '</td></tr></table>');
+
+      $.Sys.FORM-STRING(text => '</td></tr></table>');
 
       $.Sys.FORM-STRING(text => '<hr/>WIKI Preview<br/>' ~ $preview);
+
 
       $cancel = '&nbsp;|&nbsp;<a href="/wiki/display?p='
             ~ $.CurrentWikiPage ~ '">cancel</a>';

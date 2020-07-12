@@ -161,7 +161,7 @@ class Sys::System is export {
               }
             }
           }
-          #self.TRACE: 'SYS00.main.Parameters: ' ~ $kv;
+          self.TRACE: 'SYS00.main.Parameters: ' ~ $kv;
           #self.TRACE: 'APPLICATION ID: ' ~ $.App;
 
           my $next-screen = '';
