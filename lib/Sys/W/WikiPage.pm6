@@ -2615,14 +2615,14 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
                   given $k {
                     when 'txtdata' {
                       my $text = $v;
-                      #-- hide! $file-data = base64-decode($text).decode;
-                      $file-data = $text;
+                      $file-data = base64-decode($text).decode;
+                      #$file-data = $text;
                       #$file-data = $text;
                       %.Text{$k} = $file-data;
                     }
                     when 'summary' {
                       my $summary = $v;
-                      #-- hide! $summary = base64-decode($summary).decode;
+                      $summary = base64-decode($summary).decode;
 
                       #self.TRACE: 'Summary';
                       #%.Text{$k} = $v.Str;
@@ -2863,12 +2863,12 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
       given $key {
         when 'txtdata' {
           #-- $text = $.Sys.getparam(key => 'text');
-          #-- hide! $text = base64-encode($text, :str);
-          $text = $text; #base64-encode($text, :str);
+          $text = base64-encode($text, :str);
+          #$text = $text; #base64-encode($text, :str);
         }
         when 'summary' {
-          #-- hide! $text = base64-encode($text, :str);
-          $text = $text; #base64-encode($text, :str);
+          $text = base64-encode($text, :str);
+          #$text = $text; #base64-encode($text, :str);
         }
         default {
           if $key ne '' {
