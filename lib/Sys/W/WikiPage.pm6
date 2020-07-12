@@ -144,97 +144,97 @@ class Sys::W::WikiPage is export {
     # Minor options:
     has Bool $.UseSmilies = True;        # True = use smiley pics
                                          # False = do not change :)
-    has Bool $.RecentTop = True;         # True = recent on top, 
+    has Bool $.RecentTop = True;         # True = recent on top,
                                          # False = recent on bottom
-    has Bool $.UseDiffLog = True;        # True = save diffs to log,  
+    has Bool $.UseDiffLog = True;        # True = save diffs to log,
                                          # False = do not save diffs
-    has Bool $.MetaNoIndexHist = True;   # True - disallow robots indexing old pages, 
+    has Bool $.MetaNoIndexHist = True;   # True - disallow robots indexing old pages,
                                          # False = allow
-    has Bool $.KeepMajor = True;         # True = keep major rev,     
+    has Bool $.KeepMajor = True;         # True = keep major rev,
                                          # False = expire all revisions
-    has Bool $.KeepAuthor = True;        # True = keep author rev, 
+    has Bool $.KeepAuthor = True;        # True = keep author rev,
                                          # False = expire all revisions
-    has Bool $.ShowEdits = False;        # True = show minor edits, 
+    has Bool $.ShowEdits = False;        # True = show minor edits,
                                          # False = hide edits by default
     has Str $.DefaultLanguage='English'; # True = default user language
-    has Bool $.HtmlLinks = False;        # True = allow A HREF links, 
+    has Bool $.HtmlLinks = False;        # True = allow A HREF links,
                                          # False = no raw HTML links
-    has Bool $.SimpleLinks = False;      # True = only letters,      
+    has Bool $.SimpleLinks = False;      # True = only letters,
                                          # False = allow _ and numbers
-    has Bool $.NonEnglish = False;       # True = extra link chars,   
+    has Bool $.NonEnglish = False;       # True = extra link chars,
                                          # False = only A-Za-z chars
-    has Bool $.ThinLine = False;         # True = fancy <hr> tags,    
+    has Bool $.ThinLine = False;         # True = fancy <hr> tags,
                                          # False = classic wiki <hr>
-    has Int $.BracketText = 2;           # True = allow [URL text],   
+    has Int $.BracketText = 2;           # True = allow [URL text],
                                          # 0 = no link descriptions,
                                          # 2 = allow but dont emit bracket
-    has Bool $.UseAmPm = True;           # True = use am/pm in times, 
+    has Bool $.UseAmPm = True;           # True = use am/pm in times,
                                          # False = use 24-hour times
-    has Bool $.UseIndex = False;         # True = use index file, 
+    has Bool $.UseIndex = False;         # True = use index file,
                                          # False = slow/reliable method
-    has Bool $.UseHeadings = True;       # True = allow = h1 text =,  
+    has Bool $.UseHeadings = True;       # True = allow = h1 text =,
                                          # False = no header formatting
-    has Bool $.NetworkFile = True;       # True = allow remote file:,  
+    has Bool $.NetworkFile = True;       # True = allow remote file:,
                                          # False = no file:// links
-    has Bool $.BracketWiki = False;      # True = [WikiLnk txt] link,  
+    has Bool $.BracketWiki = False;      # True = [WikiLnk txt] link,
                                          # False = no local descriptions
-    has Bool $.UseLookup = True;         # True = lookup host names,   
+    has Bool $.UseLookup = True;         # True = lookup host names,
                                          # False = skip lookup (IP only)
-    has Bool $.FreeUpper = True;         # True = force upper case,    
+    has Bool $.FreeUpper = True;         # True = force upper case,
                                          # False = do not force case
-    has Bool $.FastGlob = True;          # True = new faster code,     
+    has Bool $.FastGlob = True;          # True = new faster code,
                                          # False = old compatible code
     has Bool $.DefaultSearch = False;
-    has Bool $.MetaKeywords = True;      # True = Google-friendly,     
+    has Bool $.MetaKeywords = True;      # True = Google-friendly,
                                          # False = search-engine averse
-    has Int $.NamedAnchors = True;       # 0 = no anchors, 
+    has Int $.NamedAnchors = True;       # 0 = no anchors,
                                          # 1 = enable anchors,
                                          # 2 = enable but suppress display
     has Str $.ScrumHdColor = "#ffcccc";  # The scrum wiki table header color
-    has Bool $.SlashLinks = False;       # True = use script/action links,  
+    has Bool $.SlashLinks = False;       # True = use script/action links,
                                          # False = script?action
-    has Bool $.UpperFirst = True;        # True = free links start uppercase, 
+    has Bool $.UpperFirst = True;        # True = free links start uppercase,
                                          # False = no ucfirst
-    has Bool $.AdminBar = True;          # True = admins see admin links,  
+    has Bool $.AdminBar = True;          # True = admins see admin links,
                                          # False = no admin bar
-    has Bool $.RepInterMap = False;      # True = intermap is replacable,  
+    has Bool $.RepInterMap = False;      # True = intermap is replacable,
                                          # False = not replacable
     has Bool $.ConfirmDel = True;        # True = delete link confirm page,
                                          # False = immediate delete
-    has Bool $.MaskHosts = False;        # True = mask hosts/IPs,       
+    has Bool $.MaskHosts = False;        # True = mask hosts/IPs,
                                          # False = no masking
-    has Bool $.LockCrash = False;        # True = crash if lock stuck,  
+    has Bool $.LockCrash = False;        # True = crash if lock stuck,
                                          # False = auto clear locks
-    has Bool $.HistoryEdit = False;      # True = edit links on history page,  
+    has Bool $.HistoryEdit = False;      # True = edit links on history page,
                                          # False = no edit links
     has Bool $.OldThinLine = False;      # True = old ==== thick line,
                                          # False = ------ for thick line
-    has Bool $.NumberDates = False;      # True = 2003-6-17 dates,      
+    has Bool $.NumberDates = False;      # True = 2003-6-17 dates,
                                          # False = June 17, 2003 dates
-    has Bool $.ParseParas = False;       # True = new paragraph markup,  
+    has Bool $.ParseParas = False;       # True = new paragraph markup,
                                          # False = old markup
-    has Bool $.AuthorFooter = True;      # True = show last author in footer,  
+    has Bool $.AuthorFooter = True;      # True = show last author in footer,
                                          # False = do not show
-    has Bool $.AllUpload = False;        # True = anyone can upload,    
+    has Bool $.AllUpload = False;        # True = anyone can upload,
                                          # False = only editor/admins
-    has Bool $.LimitFileUrl = True;      # True = limited use of file: URLs,  
+    has Bool $.LimitFileUrl = True;      # True = limited use of file: URLs,
                                          # False = no limits
-    has Bool $.MaintTrimRc = False;      # True = maintain action trims RC,  
+    has Bool $.MaintTrimRc = False;      # True = maintain action trims RC,
                                          # False = only maintainrc
-    has Bool $.SearchButton = False;     # True = search button on page,  
+    has Bool $.SearchButton = False;     # True = search button on page,
                                          # False = old behavior
-    has Bool $.EditNameLink = False;     # True = edit links use name (CSS),  
+    has Bool $.EditNameLink = False;     # True = edit links use name (CSS),
                                          # False = '?' links
-    has Bool $.UseMetaWiki = False;      # True = add MetaWiki search links,  
+    has Bool $.UseMetaWiki = False;      # True = add MetaWiki search links,
                                          # False = no MW links
-    has Bool $.BracketImg = True;        # True = [url url.gif] becomes image link,  
+    has Bool $.BracketImg = True;        # True = [url url.gif] becomes image link,
                                          # False = no img
-    has Bool $.FreeUserNames = True;     # True = spaces in username,  
+    has Bool $.FreeUserNames = True;     # True = spaces in username,
                                          # False = LinkPattern only
     has Bool $.FullTable  = True;
     has Bool $.UseNumberedAnchor = True; # True = numbered anchor in NumberedHeadings
     has Str $.DateFormat = '%eBmY';      # not yet used
-    has Bool $.SearchLinks = True;       # True = allow search links syntax,  
+    has Bool $.SearchLinks = True;       # True = allow search links syntax,
                                          # False = don't
     has Bool $.AutoMailto = True;        # converts emails in format name@host
                                          # into mailto: hyperlinks
@@ -361,7 +361,7 @@ method main($App, Str :$userid, Str :$ucomm, :%params) {
         $summary = %.Text<summary>.Str;
       }
       $wiki-name = $.CurrentWikiPage if $.CurrentWikiPage ne '';
-      $.Sys.FT(tag => 'PAGE_TITLE', text => $wiki-name);
+      $.Sys.FT(tag => 'PAGE_TITLE', text => self.expand-wiki-word(text => $wiki-name, desc => $wiki-name));
       #$.Sys.FT(tab => 'PAGE_TITLE', text => $.CurrentWikiPage);
 
       $.Sys.FT(tag => 'SITE_LOGO', text => $.Sys.site-logo());
@@ -519,7 +519,7 @@ method EDIT_SCREEN_1000() {
       $.Sys.FORM-BREAK();
       my Str $preview = self.wiki-to-html(text => $wiki-text);
 
-      #$.Sys.FORM-STRING(text => '</td><td valign="top">PREVIEW<br/>' 
+      #$.Sys.FORM-STRING(text => '</td><td valign="top">PREVIEW<br/>'
       #                          ~ $preview ~ '</td></tr></table>');
 
       #$.Sys.FORM-STRING(text => $preview);
@@ -534,7 +534,7 @@ method EDIT_SCREEN_1000() {
 
       };
 
-      #$.Sys.FORM-STRING(text => '</td><td valign="top">REGEX MATCH RESULT<br/>' 
+      #$.Sys.FORM-STRING(text => '</td><td valign="top">REGEX MATCH RESULT<br/>'
       #                       ~ $regex-result ~ '</td></tr></table>');
 
       $.Sys.FORM-STRING(text => '</td></tr></table>');
@@ -633,10 +633,10 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
         note $e.message;
     }
 
-  
+
 
   method init-link-patterns() {
-             $.ScriptName = $.Sys.get(key => 'SITE_URL') 
+             $.ScriptName = $.Sys.get(key => 'SITE_URL')
                  ~ '/'
                  ~ $C_APP_NAME.lc;
 
@@ -739,9 +739,9 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
   #31***      # Main link pattern: lowercase between uppercase, then anything
   #32***      $LpA = $UpperLetter . "+" . $LowerLetter . "+" . $UpperLetter . $AnyLetter . "*";
   #b32
-              $lpA = $upper-letter ~ '+ ' 
-                   ~ $lower-letter ~ '+ ' 
-                   ~ $upper-letter 
+              $lpA = $upper-letter ~ '+ '
+                   ~ $lower-letter ~ '+ '
+                   ~ $upper-letter
                    ~ $any-letter ~ '*';
               #self.TRACE: 'link pattern A: ' ~ $lpA;
               #LINK PATTERN A = <[A..Z]>+ <[a..z]>+ <[A..Z]><[A..Za..z_0..9]>*
@@ -758,11 +758,11 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
   #e34
   #35***      $LpC = $UpperLetter . "+" . $AnyLetter . "*";
   #b35
-              $lpC = $upper-letter ~ '+ ' 
+              $lpC = $upper-letter ~ '+ '
                    ~ $any-letter ~ '*';
               #self.TRACE: 'link pattern C: ' ~ $lpC;
               #LINK PATTERN C = <[A..Z]>+ <[A..Za..z_0..9]>*
-  #e35    
+  #e35
   #36***      if ($UseSubpage) { # defa: True
   #37***        # Loose pattern: If subpage is used, subpage may be simple name
   #38***        $LinkPattern     = "(((?:(?:$LpA)?\\/)+$LpB)|$LpA)";
@@ -775,14 +775,14 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
   #45***      }
   #b35..45
               if $.UseSubpage {
-                $.LinkPattern = '(' 
-                              ~   '(' 
-                              ~     '('                   # capture 
+                $.LinkPattern = '('
+                              ~   '('
+                              ~     '('                   # capture
                               ~        '(' ~ $lpA ~ ')?'  # optional lpA
-                              ~        '\/'               # followed by ) 
-                              ~     ')+ '                 # one or more  
+                              ~        '\/'               # followed by )
+                              ~     ')+ '                 # one or more
                               ~     $lpB                  # and then lpB
-                              ~  ')'           
+                              ~  ')'
                               ~  '|'                      # or
                               ~  $lpA                     # lpA
                               ~  ')';
@@ -790,14 +790,14 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
               #self.TRACE: 'Link pattern including subpage: ' ~ $.LinkPattern;
               #link pattern = ((((<[A..Z]>+ <[a..z]>+ <[A..Z]><[A..Za..z_0..9]>*)?\/)+ <[A..Z]>+ <[a..z]>+ <[A..Za..z_0..9]>*) |<[A..Z]>+ <[a..z]>+ <[A..Z]><[A..Za..z_0..9]>*)
 
-               $.HalfLinkPattern = '(' 
-                              ~   '(' 
-                              ~     '('                   # capture 
+               $.HalfLinkPattern = '('
+                              ~   '('
+                              ~     '('                   # capture
                               ~        '(' ~ $lpB ~ ')?'  # optional lpB
-                              ~        '\/'               # followed by ) 
-                              ~     ')+ '                 # one or more  
+                              ~        '\/'               # followed by )
+                              ~     ')+ '                 # one or more
                               ~     $lpB                  # and then lpB
-                              ~  ')'           
+                              ~  ')'
                               ~  '|'                      # or
                               ~  $lpB                     # lpB
                               ~  ')';
@@ -824,7 +824,7 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
                                     ~ '\#'             # then hash
                                     ~ '('             # followed by
                                     ~ '\w+'           # one or more words
-                                    ~ ')';            
+                                    ~ ')';
                                     #~ $qdelim;        # and optional quotation
                #self.TRACE: 'Anchored link pattern: ' ~ $.AnchoredLinkPattern;
                #-- Anchor link pattern = ((((<[A..Z]>+ <[a..z]>+ <[A..Z]><[A..Za..z_0..9]>*)?\/)+ <[A..Z]>+ <[a..z]>+ <[A..Za..z_0..9]>*)|<[A..Z]>+ <[a..z]>+ <[A..Z]><[A..Za..z_0..9]>*)\#(\w+)'"'<-["]>*'"'
@@ -851,9 +851,9 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
               #-- <[A..Z]><[A..Za..z_0..9]>+ #e54
   #55***      $InterLinkPattern = "((?:$InterSitePattern:[^\\]\\s\"<>$FS]+)$QDelim)";
   #b55
-              $.InterLinkPattern = $.InterSitePattern 
+              $.InterLinkPattern = $.InterSitePattern
                                  ~ ':'
-                                 ~ '\?' 
+                                 ~ '\?'
                                  ~ '\s*'
                                  ~ '\w*';
 
@@ -876,9 +876,9 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
   #63***            $AnyLetter = "[-,.()' _0-9A-Za-z\xc0-\xff]";
   #64***          }
   #65***        }
-  #66***        else { 
+  #66***        else {
   #67***          $AnyLetter = "[-,.()' _0-9A-Za-z]";
-               
+
                   #self.TRACE: 'ANYLETTER :' ~ $any-letter;
                   #-- <[A..Za..z_0..9]> - previous value
                   $any-letter = '<[A..Za..z_0..9\-,\.()' ~ "'" ~ ' ]>';
@@ -929,8 +929,8 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
   #87***      #   6.  A double double-quote ("")           (removed from output)
   #88***      $UrlProtocols = "http|https|ftp|afs|news|nntp|mid|cid|mailto|wais|image|download|mms|" . "prospero|telnet|gopher";
   #b88
-              $.UrlProtocols = "http|https|ftp|afs|news|nntp|mid|" 
-                             ~ "cid|mailto|wais|image|download|mms|" 
+              $.UrlProtocols = "http|https|ftp|afs|news|nntp|mid|"
+                             ~ "cid|mailto|wais|image|download|mms|"
                              ~ "prospero|telnet|gopher";
   #e88
 
@@ -944,9 +944,9 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
   #e89
   #90***      $UrlPattern      = "((?:(?:$UrlProtocols):[^\\]\\s\"<>$FS]+)$QDelim)";
   #b90
-              $.UrlPattern = '(' 
+              $.UrlPattern = '('
                            ~  '('
-                           ~   $.UrlProtocols 
+                           ~   $.UrlProtocols
                            ~  ')'
                            ~  '\:'
                            ~  '(\/)?'
@@ -959,9 +959,9 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
               #    |wais|image|download|mms|prospero|telnet|gopher|file)
               #    \:(\/)?\/(\S+))
   #e90
-  #91***      $ImageExtensions = "(gif|jpg|png|bmp|jpeg)"; 
+  #91***      $ImageExtensions = "(gif|jpg|png|bmp|jpeg)";
   #b91
-              $.ImageExtensions = "(gif|jpg|png|bmp|jpeg)"; 
+              $.ImageExtensions = "(gif|jpg|png|bmp|jpeg)";
 
   #e91
   #92***      $RFCPattern      = "RFC\\s?(\\d+)";
@@ -1041,10 +1041,10 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     (.*?)
     '&lt;' \/ 'nowiki' '&gt;'
     /{
-    '<b>' 
-    ~ '0: ' ~ $0 
-    ~ '1: ' ~ $1 
-    ~ '2: ' ~ $2 
+    '<b>'
+    ~ '0: ' ~ $0
+    ~ '1: ' ~ $1
+    ~ '2: ' ~ $2
     ~ '</b>';
     }/;
     #e22
@@ -1052,7 +1052,7 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     #24***            $pageText =~ s/\&lt;pre\&gt;((.|\n)*?)\&lt;\/pre\&gt;/$self->StorePre($1, "pre")/ige;
 
     #b24
-                 
+
     #e24
 
     #25***            $pageText =~ s/((.|\n)+?\n)\s*\n/$self->ParseParagraph($1)/geo;
@@ -1121,7 +1121,7 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     return $wiki-text;
   }
 
-  
+
 
   method restore-saved-text(:$text) {
     my Str $wiki-text = '';
@@ -1132,6 +1132,17 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     return $wiki-text;
   }
 
+  method expand-wiki-word(Str :$text, Str :$desc) {
+    my Str $wiki-word = '';
+    $wiki-word = $desc;
+    if $wiki-word eq '' {
+      $wiki-word = $text if $text ne '';
+    }
+    $wiki-word ~~ s:g/\// \//; #- Put space after slash
+    $wiki-word ~~ s:g/<[_]>/ /; #- Replace underline with spaces
+    $wiki-word ~~ s:g/(<[a..z]>)(<[A..Z]>)/$0 $1/; #- Put space between lower and Upper
+    return $wiki-word;
+  }
 
   method store-raw(Str :$text) {
     %.SaveUrl{$.SaveUrlIndex} = $text;
@@ -1241,13 +1252,13 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
   method get-edit-link(Str :$page, Str :$text) {
     my Str $page-id = '';
     my Str $page-text = '';
-    my Str $edit-link = ''; 
+    my Str $edit-link = '';
 
     $page-id = $page;
     $page-text = $text;
     $edit-link = $page-id ~ '&nbsp;<b>' ~ $text ~ '</b>';
 
-    $edit-link = self.script-link-class(action => 'action=edit&p=' ~ $page-id ~ '', 
+    $edit-link = self.script-link-class(action => 'action=edit&p=' ~ $page-id ~ '',
                                         text => $page-text,
                                         class => 'wikipageedit');
     return $edit-link;
@@ -1262,15 +1273,15 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     $page-action = $action;
     $page-text = $text;
     $page-class = $class;
-    $page-action = '<a href="' 
-                 ~ $.ScriptName 
-                 ~ self.script-link-char() 
+    $page-action = '<a href="'
+                 ~ $.ScriptName
+                 ~ self.script-link-char()
                  ~ $page-action
                  ~ '">'
-                 ~ $page-text 
+                 ~ $page-text
                  ~ '</a>';
     $page-id = $page-action;
-  
+
     return $page-id;
   }
 
@@ -1318,10 +1329,10 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     '&lt;' \/ 'nowiki' '&gt;'
     /{
     self.store-raw(text => $0.Str);
-    #'<b>' 
-    #~ '0: ' ~ $0 
-    #~ '1: ' ~ $1 
-    #~ '2: ' ~ $2 
+    #'<b>'
+    #~ '0: ' ~ $0
+    #~ '1: ' ~ $1
+    #~ '2: ' ~ $2
     #~ '</b>';
     }/;
 
@@ -1335,7 +1346,7 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     #17***        s/\&lt;menubar\&gt;((.|\n)*?)\&lt;\/menubar\&gt;/$self->MenuBar($1)/ige;
     #18***        s/\&lt;tabmenubar\&gt;((.|\n)*?)\&lt;\/tabmenubar\&gt;/$self->TabMenuBar($1)/ige;
     #b18
-                   
+
     #e18
     #19***        s/\&lt;menu\&gt;((.|\n)*?)\&lt;\/menu\&gt;/$self->PopupMenu($1)/ige;
     #20***        s/\&lt;sitemenubar\&gt;((.|\n)*?)\&lt;\/sitemenubar\&gt;/$self->SiteMenuBar($1)/ige;
@@ -1387,10 +1398,10 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     '&lt;' \/ 'sapnote' '&gt;'
     /{
     self.store-raw(text => self.sap-note(note => $0, desc => $1));
-    #'<b>' 
-    #~ '0: ' ~ $0 
-    #~ '1: ' ~ $1 
-    #~ '2: ' ~ $2 
+    #'<b>'
+    #~ '0: ' ~ $0
+    #~ '1: ' ~ $1
+    #~ '2: ' ~ $2
     #~ '</b>';
     }/;
 
@@ -1493,17 +1504,17 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     #b64..72
                   $wiki-text ~~ s:g/
                    (<[BbIiUu]>)
-                   '&lt;' 
+                   '&lt;'
                    (.*?)
                    '&gt;'
                    /{
-                   self.store-raw(text => 
+                   self.store-raw(text =>
                    '<' ~ $0.Str ~ '>' ~ $1.Str ~ '</' ~ $0.Str ~ '>');
-                   #'<b>' 
-                   #~ '0: ' ~ $0.Str 
-                   #~ '; 1:' ~ $1.Str 
-                   #~ '; 2:' ~ $2.Str 
-                   #~ '; 3:' ~ $3.Str 
+                   #'<b>'
+                   #~ '0: ' ~ $0.Str
+                   #~ '; 1:' ~ $1.Str
+                   #~ '; 2:' ~ $2.Str
+                   #~ '; 3:' ~ $3.Str
                    #~ '</b>'
                    }/;
 
@@ -1541,7 +1552,7 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     #93***          # Consider: should local free-link descriptions be conditional?
     #94***          # Also, consider that one could write [[Bad Page|Good Page]]?
     #95***          s/\[\[$FreeLinkPattern\|([^\]]+)\]\]/$self->StorePageOrEditLink($1, $2)/geo;
-    
+
     #b95
                     #self.TRACE: 'FREELINKPATTERN: ' ~ $.FreeLinkPattern;
                     $wiki-text ~~ s:g/
@@ -1584,13 +1595,13 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
                     \[
                     \[
                     (
-                     ((((<[A..Z]>+ 
-                         <[a..z]>+ 
-                         <[A..Z]><[A..Za..z_0..9]>*)?\/)+ 
+                     ((((<[A..Z]>+
+                         <[a..z]>+
+                         <[A..Z]><[A..Za..z_0..9]>*)?\/)+
                          <[A..Z]>+ <[a..z]>+ <[A..Za..z_0..9]>*)
                          |
-                         <[A..Z]>+ 
-                         <[a..z]>+ 
+                         <[A..Z]>+
+                         <[a..z]>+
                          <[A..Z]><[A..Za..z_0..9]>*)\#(\w+)
                     )
                     \]
@@ -1629,12 +1640,12 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
                      \]
                      /{
                      #        ' 0: <u>' ~ $0.Str ~ '</u>'
-                     #      ~ ';1: <u>' ~ $1.Str ~ '</u>' 
-                     #      ~ ';2: <u><b>' ~ $2.Str ~ '</b></u>' 
-                     self.store-bracket-url(url => $0.Str, 
+                     #      ~ ';1: <u>' ~ $1.Str ~ '</u>'
+                     #      ~ ';2: <u><b>' ~ $2.Str ~ '</b></u>'
+                     self.store-bracket-url(url => $0.Str,
                                             text => $1.Str)
                      }/;
-    #                 #-- 0 - url 
+    #                 #-- 0 - url
     #                 #-- 1 - description
     #e100
     #101***          s/\[$InterLinkPattern\s+([^\]]+?)\]/$self->StoreBracketInterPage($1, $2,
@@ -1669,7 +1680,7 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
                    /{
                      self.store-bracket-url(url => $0.Str,
                                             text => $1.Str);
-                     #'<b>0: ' ~ $0.Str 
+                     #'<b>0: ' ~ $0.Str
                      #~ '; 1:' ~ $1.Str ~ '</b>'
                    }/;
 
@@ -1688,7 +1699,7 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
                    \w*
                    \]
                    /{
-                   '<b>0: ' ~ $0.Str 
+                   '<b>0: ' ~ $0.Str
                    ~ '; 1:' ~ $1.Str ~ '</b>'
 
                    }/;
@@ -1712,11 +1723,11 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
                    /{
                    self.store-bracket-url(url => $0.Str,
                                           text => $1.Str);
-                   #'<b>' 
-                   #~ '0: ' ~ $0.Str 
-                   #~ '; 1:' ~ $1.Str 
-                   #~ '; 2:' ~ $2.Str 
-                   #~ '; 3:' ~ $3.Str 
+                   #'<b>'
+                   #~ '0: ' ~ $0.Str
+                   #~ '; 1:' ~ $1.Str
+                   #~ '; 2:' ~ $2.Str
+                   #~ '; 3:' ~ $3.Str
                    #~ '</b>'
                    }/;
 
@@ -1743,15 +1754,15 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
                      \]
                      \]
                      /{
-                     self.store-raw(text => 
-                          self.get-page-or-edit-link(url => 
-                              self.free-to-normal(text => $0.Str), 
+                     self.store-raw(text =>
+                          self.get-page-or-edit-link(url =>
+                              self.free-to-normal(text => $0.Str),
                                     desc => $1.Str))
-                   #'<b>' 
+                   #'<b>'
                    #~ '0: ' ~ $0.Str  ~ self.free-to-normal(text => $0.Str)
-                   #~ '; 1:' ~ $1.Str 
-                   #~ '; 2:' ~ $2.Str 
-                   #~ '; 3:' ~ $3.Str 
+                   #~ '; 1:' ~ $1.Str
+                   #~ '; 2:' ~ $2.Str
+                   #~ '; 3:' ~ $3.Str
                    #~ '</b>'
 
                      }/;
@@ -1764,15 +1775,15 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
                      \]
                      \]
                      /{
-                     self.store-raw(text => 
-                         self.get-page-or-edit-link(url => 
-                             self.free-to-normal(text => $0.Str), 
+                     self.store-raw(text =>
+                         self.get-page-or-edit-link(url =>
+                             self.free-to-normal(text => $0.Str),
                                     desc => $0.Str))
-                   #'<b>' 
+                   #'<b>'
                    #~ '0: ' ~ $0.Str  ~ self.free-to-normal(text => $0.Str)
-                   #~ '; 1:' ~ $1.Str 
-                   #~ '; 2:' ~ $2.Str 
-                   #~ '; 3:' ~ $3.Str 
+                   #~ '; 1:' ~ $1.Str
+                   #~ '; 2:' ~ $2.Str
+                   #~ '; 3:' ~ $3.Str
                    #~ '</b>'
 
                      }/;
@@ -1823,13 +1834,13 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
                      (.*?)  #1 - description
                      \]
                     /{
-                    self.store-raw(text => 
+                    self.store-raw(text =>
                          self.store-upload(file => $0.Str, desc => $1.Str))
-                   #'<b>' 
-                   #~ '0: ' ~ $0.Str  
-                   #~ '; 1:' ~ $1.Str 
-                   #~ '; 2:' ~ $2.Str 
-                   #~ '; 3:' ~ $3.Str 
+                   #'<b>'
+                   #~ '0: ' ~ $0.Str
+                   #~ '; 1:' ~ $1.Str
+                   #~ '; 2:' ~ $2.Str
+                   #~ '; 3:' ~ $3.Str
                    #~ '</b>'
                      }/;
 
@@ -1891,11 +1902,11 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
                      \s*
                      (\=+)
                      /{
-                   #'<b>' 
-                   #~ '0: ' ~ $0.Str 
-                   #~ '; 1:' ~ $1.Str 
-                   #~ '; 2:' ~ $2.Str 
-                   #~ '; 3:' ~ $3.Str 
+                   #'<b>'
+                   #~ '0: ' ~ $0.Str
+                   #~ '; 1:' ~ $1.Str
+                   #~ '; 2:' ~ $2.Str
+                   #~ '; 3:' ~ $3.Str
                    #~ '</b>'
                    self.wiki-heading(prefix => $0.Str,
                                      heading => $1.Str,
@@ -1931,10 +1942,10 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
                    self.font-style(color => $0.Str,
                                    size => $1.Str,
                                    text => $2.Str)
-                   #'<b>' 
-                   #~ '0: ' ~ $0.Str 
-                   #~ '; 1:' ~ $1.Str 
-                   #~ '; 2:' ~ $2.Str 
+                   #'<b>'
+                   #~ '0: ' ~ $0.Str
+                   #~ '; 1:' ~ $1.Str
+                   #~ '; 2:' ~ $2.Str
                    #~ '</b>'
                    #0 - color
                    #1 - size
@@ -2017,7 +2028,7 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     return $wiki-text;
   }
 
-  method store-bracket-url(Str :$url, 
+  method store-bracket-url(Str :$url,
                            Str :$text) {
     my Str $uri = '';
     my Str $name = '';
@@ -2027,9 +2038,9 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     $name = $text;
     if $uri ~~ m:g/^https?:(.*)/ {
       my $uri-link = $0.Str;
-      $internet-link = True if $uri-link ~~ m:g/\/\//; 
+      $internet-link = True if $uri-link ~~ m:g/\/\//;
     }
-    $uri ~= '" target="_blank' if $internet-link; 
+    $uri ~= '" target="_blank' if $internet-link;
 
     $http = '<a href="' ~ $uri ~ '">' ~ $name ~ '</a>';
     #return $http;
@@ -2071,7 +2082,7 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     #e8..10
     #11***      $_ .= "\n";
     #b11
-                $line ~= "\n"; 
+                $line ~= "\n";
     #e11
 
     #12***      if (s/^(\;+)([^:]+\:?)\:/<dt>$2<dd>/) {
@@ -2096,7 +2107,7 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     #18***        $depth = length $1;
     #19***      }
     #b16..19
-                elsif 
+                elsif
                   $line ~~ s:g/
                    ^(\:+)
                   /{
@@ -2112,12 +2123,12 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     #22***        $depth = length $1;
     #23***      }
     #b20..23
-                elsif 
+                elsif
                   $line ~~ s:g/
                     ^(\*+)
                    /{
                     '<li>'
-                   }/ 
+                   }/
                 {
                   $code = "UL";
                   $depth = $0.chars;
@@ -2132,14 +2143,14 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     #29***        }
     #30***      }
     #b24..30
-                elsif 
+                elsif
                   $line ~~ s:g/
                    ^(\#+)
                    (\d*)
                    (<[aAiI]>?)
                   /{
                    '<li' ~ ( $1 ?? ' value="' ~ $1 ~ '"' !! '' ) ~ '>'
-                  }/ 
+                  }/
                 {
                   $code = "OL";
                   $depth = $0.chars;
@@ -2168,10 +2179,10 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
                   /{
                    '<TR valign="center" align="left">'
                    ~ '<TD align="left">' ~ self.table-cell(row => $1.Str) ~ '</TD></TR>' ~ "\n" # todo: Break table line
-                  }/ 
+                  }/
                 {
                   $code = 'TABLE';
-                  $code-attributes = ' border=' ~ "'0'"; 
+                  $code-attributes = ' border=' ~ "'0'";
                   $.TableMode = True;
                   $depth = 1;
                 }
@@ -2181,7 +2192,7 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     #43***        $depth = 1;
     #44***      }
     #b41..44
-                elsif 
+                elsif
                   $line ~~ m:g/ ^[' '|\t] .* \S/ {
                   $code = "PRE";
                   $depth = 1;
@@ -2244,7 +2255,7 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
                   $line ~~ s:g/
                     ^^\s*$$
                   /{
-                  '<p></p>' 
+                  '<p></p>'
                   }/;
     #e66
     #b67
@@ -2276,7 +2287,7 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
 
     return $page-html;
   }
- 
+
   method table-cell(Str :$row) {
     my Str $cells = '';
     $cells = $row;
@@ -2297,8 +2308,8 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
 
     if $prefix.chars == $suffix.chars {
 
-      $headtext = '<H' ~ $level ~ '>' 
-                       ~ self.parse-heading-text(text => $headtext) 
+      $headtext = '<H' ~ $level ~ '>'
+                       ~ self.parse-heading-text(text => $headtext)
                 ~ '</H' ~ $level ~ '>';
 
     }
@@ -2311,12 +2322,12 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     $heading ~~ s:g/
       (\#+)
       (.*)
-      $$ 
+      $$
     /{
      self.heading-text(prefix => $0.Str, text => $1.Str)
-     # '<b>' 
-     # ~ '0: ' ~ $0.Str 
-     # ~ '; 1:' ~ $1.Str 
+     # '<b>'
+     # ~ '0: ' ~ $0.Str
+     # ~ '; 1:' ~ $1.Str
      # ~ '; 2:<' ~ $2.Str ~ '>'
      # ~ '</b>'
     }/;
@@ -2324,7 +2335,7 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
   }
 
   method heading-text(Str :$prefix, Str :$text) {
-     my Str $tag = ''; 
+     my Str $tag = '';
      my Str $heading = '';
      my Str $toc_heading = '';
 
@@ -2341,57 +2352,57 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
                        ~ '/themes/img/common/odir.gif'
                        ~ '"/>';
      $toc_heading = '<a name="toc_' ~ $.HeadingNumberIndex.Str ~ '">'
-                  ~ '<a href="' ~ $.ScriptName 
-                                ~ '/display?p=' 
-                                ~ $.CurrentWikiPage 
+                  ~ '<a href="' ~ $.ScriptName
+                                ~ '/display?p='
+                                ~ $.CurrentWikiPage
                                 ~ '#header_' ~ $.HeadingNumberIndex.Str
-                                ~ '">' 
-                                ~ $toc_heading 
+                                ~ '">'
+                                ~ $toc_heading
                                 ~ '</a>';
-     $heading = $heading ~ '&nbsp;' 
+     $heading = $heading ~ '&nbsp;'
               ~ '<a name="header_' ~ $.HeadingNumberIndex.Str ~ '">'
-              ~ '<a href="' 
-              ~ $.ScriptName 
-              ~ '/display?p=' 
-              ~ $.CurrentWikiPage 
-              ~ '#toc_' 
+              ~ '<a href="'
+              ~ $.ScriptName
+              ~ '/display?p='
+              ~ $.CurrentWikiPage
+              ~ '#toc_'
               ~ $.HeadingNumberIndex.Str
-              ~ '">' 
-              ~ $toc_xlink 
+              ~ '">'
+              ~ $toc_xlink
               ~ '</a>';
      }
 
-     push(@.HeadingNumbers, '<img src="' ~ '/themes/img/common/bullet.gif' 
+     push(@.HeadingNumbers, '<img src="' ~ '/themes/img/common/bullet.gif'
                                          ~ '"/>' ~ '&nbsp;' ~ $toc_heading);
 
 
      given $tag.chars {
        when 1 {
-         $heading = '<img src="' 
-               ~ '/themes/img/common/yellow_square.gif' 
-               ~ '"/>' 
-               ~ '&nbsp;' 
+         $heading = '<img src="'
+               ~ '/themes/img/common/yellow_square.gif'
+               ~ '"/>'
+               ~ '&nbsp;'
                ~ $heading;
        }
        when 2 {
-         $heading = '<img src="' 
-               ~ '/themes/img/common/bullet2.gif' 
-               ~ '"/>' 
-               ~ '&nbsp;' 
+         $heading = '<img src="'
+               ~ '/themes/img/common/bullet2.gif'
+               ~ '"/>'
+               ~ '&nbsp;'
                ~ $heading;
        }
        when 3 {
-         $heading = '<img src="' 
-               ~ '/themes/img/common/bullet.gif' 
-               ~ '"/>' 
-               ~ '&nbsp;' 
+         $heading = '<img src="'
+               ~ '/themes/img/common/bullet.gif'
+               ~ '"/>'
+               ~ '&nbsp;'
                ~ $heading;
        }
        when 4 {
-         $heading = '<img src="' 
-               ~ '/themes/img/common/active.gif' 
-               ~ '"/>' 
-               ~ '&nbsp;' 
+         $heading = '<img src="'
+               ~ '/themes/img/common/active.gif'
+               ~ '"/>'
+               ~ '&nbsp;'
                ~ $heading;
        }
        when 5 {
@@ -2418,7 +2429,7 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     return $icon-path;
   };
 
-  
+
 
   method store-href(:$anchor, :$text) {
     # l-anchor = local-variable anchor
@@ -2438,10 +2449,10 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     return $l-href;
   }
 
-   
 
 
-  
+
+
   method sap-note(:$note, :$desc?) {
     my Int $sap-note = 0;
     $sap-note = $note.Int;
@@ -2476,11 +2487,11 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
 
   method font-style(Str :$color, Str :$size, Str :$text) {
     my $text-style = '';
-    $text-style = '<span style="' 
+    $text-style = '<span style="'
                ~ 'color:' ~ $color ~ ';'
-               ~ 'font-size:' ~ $size ~ '%">' 
-               ~ $text 
-               ~ '</span>'; 
+               ~ 'font-size:' ~ $size ~ '%">'
+               ~ $text
+               ~ '</span>';
     return self.store-raw(text => $text-style);
   }
 
@@ -2510,12 +2521,12 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
   $desc = $text;
   $desc = $fname if $desc eq '';
 
-  $file-path = 
-      ~ $.Sys.get(key => 'PUBLIC_DIR') 
-      ~ '/' 
+  $file-path =
+      ~ $.Sys.get(key => 'PUBLIC_DIR')
+      ~ '/'
       ~ 'uploads'
       ~ '/'
-      ~ $.Sys.get(key => 'SID') 
+      ~ $.Sys.get(key => 'SID')
       ~ $.Sys.get(key => 'SID_NR')
       ~ '/'
       ~ $fname.substr(0,1).uc
@@ -2532,7 +2543,7 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
   }
   else {
     #self.TRACE: ' Not found for upload ' ~ $fname;
-    $file-path = $desc ~ ' [not-found]'; 
+    $file-path = $desc ~ ' [not-found]';
   }
   return $file-path;
   }
