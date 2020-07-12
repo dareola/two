@@ -38,6 +38,9 @@ class Sys::W::WikiPage is export {
     has Int $.PreformattedIndex is rw = 0;
     has %.SaveUrl = ();
     has Int $.SaveUrlIndex is rw = 0;
+    has @.HeadingNumbers = ();
+    has Int $.HeadingNumberIndex is rw = 0;
+    has Str $.TableOfContents is rw = '';
 
     # Tags that must be in <tag> ... </tag> pairs:
     has @.HtmlPairs = <b i u font big small sub sup h1 h2 h3 h4 h5 h6 cite code
@@ -47,7 +50,6 @@ class Sys::W::WikiPage is export {
     # Single tags (that do not require a closing /tag)
     has @.HtmlSingle  = <br p hr li dt dd th>;
 
-    #-- begin: testing-declaration
     has $.FS is rw = '';
     has $.FS1 is rw = '';
     has $.FS2 is rw = '';
@@ -70,32 +72,32 @@ class Sys::W::WikiPage is export {
     has Int $.CookieExpire = 60;
     has Int $.KeepDays = 14;
     has Int $.RedirType = 1;
-    has Str $.NotFoundPg = "";                      # Page for not-found links ("" for blank pg)
-    has Str $.EmailFrom = "Wiki";                   # Text for "From: " field of email notes.
-    has Str $.FooterNote = "";                      # HTML for bottom of every page
-    has Str $.EditNote = "";                        # HTML notice above buttons on edit page
-    has Str $.NewText = "";                         # New page text ("" for default message)
-    has Str $.HttpCharset = "";                     # Charset for pages, like "iso-8859-2"
-    has Str $.UserGotoBar = "";                     # HTML added to end of goto bar
-    has Str $.InterWikiMoniker = '';                # InterWiki moniker for this wiki. (for RSS)
+    has Str $.NotFoundPg = "";           # Page for not-found links ("" for blank pg)
+    has Str $.EmailFrom = "Wiki";        # Text for "From: " field of email notes.
+    has Str $.FooterNote = "";           # HTML for bottom of every page
+    has Str $.EditNote = "";             # HTML notice above buttons on edit page
+    has Str $.NewText = "";              # New page text ("" for default message)
+    has Str $.HttpCharset = "";          # Charset for pages, like "iso-8859-2"
+    has Str $.UserGotoBar = "";          # HTML added to end of goto bar
+    has Str $.InterWikiMoniker = '';     # InterWiki moniker for this wiki. (for RSS)
     has Str $.SiteName = '';
-    has Str $.SiteDescription = '';                 # Description of this wiki. (for RSS)
-    has Str $.RssLogoUrl = '';                      # Optional image for RSS feed
-    has Str $.EarlyRules = '';                      # Local syntax rules for wiki->html (evaled)
-    has Str $.LateRules = '';                       # Local syntax rules for wiki->html (evaled)
-    has Int $.KeepSize = 0;                         # If non-zero, maximum size of keep file
-    has Str $.BGColor = 'white';                    # Background color ('' to disable)
-    has Str $.DiffColor1 = '#ffffaf';               # Background color of old/deleted text
-    has Str $.DiffColor2 = '#cfffcf';               # Background color of new/added text
-    has Str $.FavIcon = '';                         # URL of bookmark/favorites icon, or ''
-    has Int $.RssDays = 7;                          # Default number of days in RSS feed
+    has Str $.SiteDescription = '';      # Description of this wiki. (for RSS)
+    has Str $.RssLogoUrl = '';           # Optional image for RSS feed
+    has Str $.EarlyRules = '';           # Local syntax rules for wiki->html (evaled)
+    has Str $.LateRules = '';            # Local syntax rules for wiki->html (evaled)
+    has Int $.KeepSize = 0;              # If non-zero, maximum size of keep file
+    has Str $.BGColor = 'white';         # Background color ('' to disable)
+    has Str $.DiffColor1 = '#ffffaf';    # Background color of old/deleted text
+    has Str $.DiffColor2 = '#cfffcf';    # Background color of new/added text
+    has Str $.FavIcon = '';              # URL of bookmark/favorites icon, or ''
+    has Int $.RssDays = 7;               # Default number of days in RSS feed
     has Str $.PublicFolderMatch = '';
-    has Str $.UserHeader = '';                      #<<AUTOFOCUSJAVASCRIPT;
-                                                    # Optional HTML header additional content
-    has Str $.UserBody = '';                        #'onload="onLoad()"';
-                                                    # Optional <BODY> tag additional content
-    has Int $.StartUID  = 1001;                     # Starting number for user IDs
-    has @.ImageSites = ();                          # Url prefixes of good image sites: ()=all
+    has Str $.UserHeader = '';           #<<AUTOFOCUSJAVASCRIPT;
+                                         # Optional HTML header additional content
+    has Str $.UserBody = '';             #'onload="onLoad()"';
+                                         # Optional <BODY> tag additional content
+    has Int $.StartUID  = 1001;          # Starting number for user IDs
+    has @.ImageSites = ();               # Url prefixes of good image sites: ()=all
     has Str $.BreadCrumb = '';
     has Str $.MenuGroup = '';
     has Str $.SiteMenuBar = '';
@@ -104,108 +106,142 @@ class Sys::W::WikiPage is export {
     has Str $.HttpDocsDir = '../httpdocs';
 
     # Major options:
-    has Bool $.UseSubpage = True;                   # True = use subpages,
-                                                    # False = do not use subpages
-    has Bool $.UseCache = False;                    # True = cache HTML pages,
-                                                    # False = generate every page
-    has Bool $.EditAllowed = False;                 # True = editing allowed,
-                                                    # False = read-only
-    has Bool $.RawHtml = False;                     # 1 = allow <HTML> tag,
-                                                    # 0 = no raw HTML in pages
-    has Bool $.HtmlTags = True;                     # 1 = "unsafe" HTML tags,
-                                                    # 0 = only minimal tags
-    has Bool $.UseDiff = True;                      # 1 = use diff features,
-                                                    # 0 = do not use diff
-    has Bool $.FreeLinks = True;                    # 1 = use [[word]] links,
-                                                    # 0 = LinkPattern only
-    has Bool $.WikiLinks = True;                    # 1 = use LinkPattern,
-                                                    # 0 = use [[word]] only
-    has Bool $.AdminDelete = True;                  # 1 = Admin only deletes,
-                                                    # 0 = Editor can delete
-    has Bool $.RunCGI = True;                       # 1 = Run script as CGI,
-                                                    # 0 = Load but do not run
-    has Bool $.EmailNotify = False;                 # 1 = use email notices,
-                                                    # 0 = no email on changes
-    has Bool $.EmbedWiki = False;                   # 1 = no headers/footers,
-                                                    # 0 = normal wiki pages
-    has Str $.DeletedPage = 'DeletedPage';          # 0 = disable, 'PageName' = tag to delete page
-    has Str $.ReplaceFile = 'ReplaceFile';          # 0 = disable, 'PageName' = indicator tag
-    has @.ReplaceableFiles = ();                    # List of allowed server files to replace
-    has Bool $.TableSyntax = True;                  # 1 = wiki syntax tables,
-                                                    # 0 = no table syntax
-    has Bool $.NewFS = False;                       # 1 = new multibyte $FS,
-                                                    # 0 = old $FS
-    has Bool $.UseUpload = True;                    # 1 = allow uploads,
-                                                    # 0 = no uploads
+    has Bool $.UseSubpage = True;        # True = use subpages,
+                                         # False = do not use subpages
+    has Bool $.UseCache = False;         # True = cache HTML pages,
+                                         # False = generate every page
+    has Bool $.EditAllowed = False;      # True = editing allowed,
+                                         # False = read-only
+    has Bool $.RawHtml = False;          # True = allow <HTML> tag,
+                                         # False = no raw HTML in pages
+    has Bool $.HtmlTags = True;          # True = "unsafe" HTML tags,
+                                         # False = only minimal tags
+    has Bool $.UseDiff = True;           # True = use diff features,
+                                         # False = do not use diff
+    has Bool $.FreeLinks = True;         # True = use [[word]] links,
+                                         # False = LinkPattern only
+    has Bool $.WikiLinks = True;         # True = use LinkPattern,
+                                         # False = use [[word]] only
+    has Bool $.AdminDelete = True;       # True = Admin only deletes,
+                                         # False = Editor can delete
+    has Bool $.RunCGI = True;            # True = Run script as CGI,
+                                         # False = Load but do not run
+    has Bool $.EmailNotify = False;      # True = use email notices,
+                                         # False = no email on changes
+    has Bool $.EmbedWiki = False;        # True = no headers/footers,
+                                         # False = normal wiki pages
+    has Str $.DeletedPage = 'DeletedPage';  # '' = disable, 'PageName' = tag to delete page
+    has Str $.ReplaceFile = 'ReplaceFile';  # '' = disable, 'PageName' = indicator tag
+    has @.ReplaceableFiles = ();         # List of allowed server files to replace
+    has Bool $.TableSyntax = True;       # True = wiki syntax tables,
+                                         # False = no table syntax
+    has Bool $.NewFS = False;            # True = new multibyte $FS,
+                                         # False = old $FS
+    has Bool $.UseUpload = True;         # True = allow uploads,
+                                         # False = no uploads
     has Str $.MenuSpacer = '&nbsp;';
 
     # Minor options:
-    has Bool $.UseSmilies = True;                   # 1 = use smiley pics
-                                                    # 0 = do not change :)
-    has Bool $.RecentTop = True;                    # 1 = recent on top, 0 = recent on bottom
-    has Bool $.UseDiffLog = True;                   # 1 = save diffs to log,  0 = do not save diffs
-    has Bool $.MetaNoIndexHist = True;              # 1 - disallow robots indexing old pages, 0 = allow
-    has Bool $.KeepMajor = True;                    # 1 = keep major rev,     0 = expire all revisions
-    has Bool $.KeepAuthor = True;                   # 1 = keep author rev,    0 = expire all revisions
-    has Bool $.ShowEdits = False;                   # 1 = show minor edits,   0 = hide edits by default
-    has Str $.DefaultLanguage = 'English';          # 1 = default user language
-    has Bool $.HtmlLinks = False;                   # 1 = allow A HREF links, 0 = no raw HTML links
-    has Bool $.SimpleLinks = False;                 # 1 = only letters,       0 = allow _ and numbers
-    has Bool $.NonEnglish = False;                  # 1 = extra link chars,   0 = only A-Za-z chars
-    has Bool $.ThinLine = False;                    # 1 = fancy <hr> tags,    0 = classic wiki <hr>
-    has Int $.BracketText = 2;                      # 1 = allow [URL text],   0 = no link descriptions,
-                                                    # 2 = allow but dont emit bracket
-    has Bool $.UseAmPm = True;                      # 1 = use am/pm in times, 0 = use 24-hour times
-    has Bool $.UseIndex = False;                    # 1 = use index file,     0 = slow/reliable method
-    has Bool $.UseHeadings = True;                  # 1 = allow = h1 text =,  0 = no header formatting
-    has Bool $.NetworkFile = True;                  # 1 = allow remote file:, 0 = no file:// links
-    has Bool $.BracketWiki = False;                 # 1 = [WikiLnk txt] link, 0 = no local descriptions
-    has Bool $.UseLookup = True;                    # 1 = lookup host names,  0 = skip lookup (IP only)
-    has Bool $.FreeUpper = True;                    # 1 = force upper case,   0 = do not force case
-    has Bool $.FastGlob = True;                     # 1 = new faster code,    0 = old compatible code
+    has Bool $.UseSmilies = True;        # True = use smiley pics
+                                         # False = do not change :)
+    has Bool $.RecentTop = True;         # True = recent on top, 
+                                         # False = recent on bottom
+    has Bool $.UseDiffLog = True;        # True = save diffs to log,  
+                                         # False = do not save diffs
+    has Bool $.MetaNoIndexHist = True;   # True - disallow robots indexing old pages, 
+                                         # False = allow
+    has Bool $.KeepMajor = True;         # True = keep major rev,     
+                                         # False = expire all revisions
+    has Bool $.KeepAuthor = True;        # True = keep author rev, 
+                                         # False = expire all revisions
+    has Bool $.ShowEdits = False;        # True = show minor edits, 
+                                         # False = hide edits by default
+    has Str $.DefaultLanguage='English'; # True = default user language
+    has Bool $.HtmlLinks = False;        # True = allow A HREF links, 
+                                         # False = no raw HTML links
+    has Bool $.SimpleLinks = False;      # True = only letters,      
+                                         # False = allow _ and numbers
+    has Bool $.NonEnglish = False;       # True = extra link chars,   
+                                         # False = only A-Za-z chars
+    has Bool $.ThinLine = False;         # True = fancy <hr> tags,    
+                                         # False = classic wiki <hr>
+    has Int $.BracketText = 2;           # True = allow [URL text],   
+                                         # 0 = no link descriptions,
+                                         # 2 = allow but dont emit bracket
+    has Bool $.UseAmPm = True;           # True = use am/pm in times, 
+                                         # False = use 24-hour times
+    has Bool $.UseIndex = False;         # True = use index file, 
+                                         # False = slow/reliable method
+    has Bool $.UseHeadings = True;       # True = allow = h1 text =,  
+                                         # False = no header formatting
+    has Bool $.NetworkFile = True;       # True = allow remote file:,  
+                                         # False = no file:// links
+    has Bool $.BracketWiki = False;      # True = [WikiLnk txt] link,  
+                                         # False = no local descriptions
+    has Bool $.UseLookup = True;         # True = lookup host names,   
+                                         # False = skip lookup (IP only)
+    has Bool $.FreeUpper = True;         # True = force upper case,    
+                                         # False = do not force case
+    has Bool $.FastGlob = True;          # True = new faster code,     
+                                         # False = old compatible code
     has Bool $.DefaultSearch = False;
-    has Bool $.MetaKeywords = True;                 # 1 = Google-friendly,    0 = search-engine averse
-    has Int $.NamedAnchors = True;                  # 0 = no anchors, 1 = enable anchors,
-                                                    # 2 = enable but suppress display
-    has Str $.ScrumHdColor = "#ffcccc";             # The scrum wiki table header color
-    has Bool $.SlashLinks = False;                  # 1 = use script/action links, 0 = script?action
-    has Bool $.UpperFirst = True;                   # 1 = free links start uppercase, 0 = no ucfirst
-    has Bool $.AdminBar = True;                     # 1 = admins see admin links, 0 = no admin bar
-    has Bool $.RepInterMap = False;                 # 1 = intermap is replacable, 0 = not replacable
-    has Bool $.ConfirmDel = True;                   # 1 = delete link confirm page,
-                                                    # 0 = immediate delete
-    has Bool $.MaskHosts = False;                   # 1 = mask hosts/IPs,      0 = no masking
-    has Bool $.LockCrash = False;                   # 1 = crash if lock stuck, 0 = auto clear locks
-    has Bool $.HistoryEdit = False;                 # 1 = edit links on history page, 0 = no edit links
-    has Bool $.OldThinLine = False;                 # 1 = old ==== thick line,
-                                                    # 0 = ------ for thick line
-    has Bool $.NumberDates = False;                 # 1 = 2003-6-17 dates,     0 = June 17, 2003 dates
-    has Bool $.ParseParas = False;                  # 1 = new paragraph markup, 0 = old markup
-    has Bool $.AuthorFooter = True;                 # 1 = show last author in footer, 0 = do not show
-    has Bool $.AllUpload = False;                   # 1 = anyone can upload,   0 = only editor/admins
-    has Bool $.LimitFileUrl = True;                 # 1 = limited use of file: URLs, 0 = no limits
-    has Bool $.MaintTrimRc = False;                 # 1 = maintain action trims RC, 0 = only maintainrc
-    has Bool $.SearchButton = False;                # 1 = search button on page, 0 = old behavior
-    has Bool $.EditNameLink = False;                # 1 = edit links use name (CSS), 0 = '?' links
-    has Bool $.UseMetaWiki = False;                 # 1 = add MetaWiki search links, 0 = no MW links
-    has Bool $.BracketImg = True;                   # 1 = [url url.gif] becomes image link, 0 = no img
-    has Bool $.FreeUserNames = True;                # 1 = spaces in username, 0 = LinkPattern only
+    has Bool $.MetaKeywords = True;      # True = Google-friendly,     
+                                         # False = search-engine averse
+    has Int $.NamedAnchors = True;       # 0 = no anchors, 
+                                         # 1 = enable anchors,
+                                         # 2 = enable but suppress display
+    has Str $.ScrumHdColor = "#ffcccc";  # The scrum wiki table header color
+    has Bool $.SlashLinks = False;       # True = use script/action links,  
+                                         # False = script?action
+    has Bool $.UpperFirst = True;        # True = free links start uppercase, 
+                                         # False = no ucfirst
+    has Bool $.AdminBar = True;          # True = admins see admin links,  
+                                         # False = no admin bar
+    has Bool $.RepInterMap = False;      # True = intermap is replacable,  
+                                         # False = not replacable
+    has Bool $.ConfirmDel = True;        # True = delete link confirm page,
+                                         # False = immediate delete
+    has Bool $.MaskHosts = False;        # True = mask hosts/IPs,       
+                                         # False = no masking
+    has Bool $.LockCrash = False;        # True = crash if lock stuck,  
+                                         # False = auto clear locks
+    has Bool $.HistoryEdit = False;      # True = edit links on history page,  
+                                         # False = no edit links
+    has Bool $.OldThinLine = False;      # True = old ==== thick line,
+                                         # False = ------ for thick line
+    has Bool $.NumberDates = False;      # True = 2003-6-17 dates,      
+                                         # False = June 17, 2003 dates
+    has Bool $.ParseParas = False;       # True = new paragraph markup,  
+                                         # False = old markup
+    has Bool $.AuthorFooter = True;      # True = show last author in footer,  
+                                         # False = do not show
+    has Bool $.AllUpload = False;        # True = anyone can upload,    
+                                         # False = only editor/admins
+    has Bool $.LimitFileUrl = True;      # True = limited use of file: URLs,  
+                                         # False = no limits
+    has Bool $.MaintTrimRc = False;      # True = maintain action trims RC,  
+                                         # False = only maintainrc
+    has Bool $.SearchButton = False;     # True = search button on page,  
+                                         # False = old behavior
+    has Bool $.EditNameLink = False;     # True = edit links use name (CSS),  
+                                         # False = '?' links
+    has Bool $.UseMetaWiki = False;      # True = add MetaWiki search links,  
+                                         # False = no MW links
+    has Bool $.BracketImg = True;        # True = [url url.gif] becomes image link,  
+                                         # False = no img
+    has Bool $.FreeUserNames = True;     # True = spaces in username,  
+                                         # False = LinkPattern only
     has Bool $.FullTable  = True;
-    has Bool $.UseNumberedAnchor = True;            # 1 = use numbered anchor in NumberedHeadings
-    has Str $.DateFormat = '%eBmY';                 # not yet used
-    has Bool $.SearchLinks = True;                  # 1 = allow search links syntax, 0 = don't
-    has Bool $.AutoMailto = True;                   # converts emails in format name@host
-                                                    # into mailto: hyperlinks
-    has Str $.UploadFileInfo = '';                  # filename|newfile|X|printfilename
-    has Int $.IndentLimit = 20;                     # Maximum depth of nested lists
+    has Bool $.UseNumberedAnchor = True; # True = numbered anchor in NumberedHeadings
+    has Str $.DateFormat = '%eBmY';      # not yet used
+    has Bool $.SearchLinks = True;       # True = allow search links syntax,  
+                                         # False = don't
+    has Bool $.AutoMailto = True;        # converts emails in format name@host
+                                         # into mailto: hyperlinks
+    has Str $.UploadFileInfo = '';       # filename|newfile|X|printfilename
+    has Int $.IndentLimit = 20;          # Maximum depth of nested lists
     has Bool $.TOCFlag is rw = False;
     has Bool $.TableMode is rw = False;
-
-
-
-
-    #-- end: testing-declaration
-
 
     constant $C_APP_NAME = "WIKI";
     constant $C_FS  = "\xb3";
@@ -313,7 +349,7 @@ method main($App, Str :$userid, Str :$ucomm, :%params) {
       my Int $status = 0;
       my Str $wiki-text = '';
       my Str $summary = '';
-      self.TRACE: 'CURRENT WIKI PAGE = ' ~ $.CurrentWikiPage;
+      #self.TRACE: 'CURRENT WIKI PAGE = ' ~ $.CurrentWikiPage;
       $status = self.wiki-open-page(id => $.CurrentWikiPage);
       $wiki-text = %.Text<txtdata>.Str;
       $summary = %.Text<summary>.Str;
@@ -462,7 +498,8 @@ method EDIT_SCREEN_1000() {
       $.Sys.FORM-BREAK();
       my Str $preview = self.wiki-to-html(text => $wiki-text);
 
-      #$.Sys.FORM-STRING(text => '</td><td valign="top">PREVIEW<br/>' ~ $preview ~ '</td></tr></table>');
+      #$.Sys.FORM-STRING(text => '</td><td valign="top">PREVIEW<br/>' 
+      #                          ~ $preview ~ '</td></tr></table>');
 
       #$.Sys.FORM-STRING(text => $preview);
 
@@ -473,7 +510,8 @@ method EDIT_SCREEN_1000() {
         }/;
       };
 
-      $.Sys.FORM-STRING(text => '</td><td valign="top">REGEX MATCH RESULT<br/>' ~ $regex-result ~ '</td></tr></table>');
+      $.Sys.FORM-STRING(text => '</td><td valign="top">REGEX MATCH RESULT<br/>' 
+                             ~ $regex-result ~ '</td></tr></table>');
 
       $.Sys.FORM-STRING(text => '<hr/>WIKI Preview<br/>' ~ $preview);
 
@@ -575,7 +613,7 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
                  ~ '/'
                  ~ $C_APP_NAME.lc;
 
-             self.TRACE: 'SCRIPT NAME = ' ~ $.ScriptName;
+             #self.TRACE: 'SCRIPT NAME = ' ~ $.ScriptName;
 
   #1***      my $self = shift;
   #2***      my ($UpperLetter, $LowerLetter, $AnyLetter, $LpA, $LpB, $LpC, $QDelim);
@@ -750,7 +788,7 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
   #b46
 
               $qdelim = "'" ~ '"' ~ "'" ~ '<-["]>*' ~ "'" ~ '"' ~ "'";
-              self.TRACE: 'Quoted delimiter: ' ~ $qdelim;
+              #self.TRACE: 'Quoted delimiter: ' ~ $qdelim;
               #quoted delimited text = '"'<-["]>*'"'
   #e46
   #47***      $AnchoredLinkPattern = $LinkPattern . '#(\\w+)' . $QDelim if $NamedAnchors;
@@ -995,28 +1033,50 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     #e25
     #26***            $pageText =~ s/(.*)<\/p>(.+)$/$1.$self->ParseParagraph($2)/geo;
     #27***          }
+    #b27
                     }
+    #e27
     #28***          else {
+    #b28
                     else {
+    #e28
     #29***            $pageText = $self->CommonMarkup($pageText, 1, 0);    # Multi-line markup
+    #b29
                       $wiki-text = self.common-markup(text => $wiki-text,
                                                       use-image => True,
                                                       do-lines => 0);
+    #e29
     #30***            $pageText = $self->WikiLinesToHtml($pageText);       # Line-oriented markup
     #b30
                       $wiki-text = self.wiki-lines-to-html(text => $wiki-text);
     #e30
     #31***          }
+    #b31
                     }
+    #e31
     #32***          while (@HeadingNumbers) {
     #33***            pop @HeadingNumbers;
     #34***            #$TableOfContents .= "</dd></dl>\n\n";
     #35***            $TableOfContents .= "\n\n";
     #36***          }
+    #b32..36
+                    for @.HeadingNumbers -> $heading {
+                      $.TableOfContents ~= $heading ~ '<br/>';
+                    }
+    #e32..36
     #37***          #my $toc = '<div id="page_toc"><dl><dd><span class="wikitext"><h4>' . $self->T('Table of Contents') . '</h4></dd></dl>' . $TableOfContents . '</span></div>' if ($TableOfContents);
     #38***          my $toc = '<div id="page_toc"><span class="wikitext"><h4>' . $self->T('Table of Contents') . '</h4>' . $TableOfContents . '</span></div>' if ($TableOfContents);
     #39***          $toc = "" if (!defined $toc);
     #40***          $pageText =~ s/&lt;toc&gt;/$toc/gi;
+    #b40
+                    $wiki-text ~~ s:g/
+                    '&lt;'
+                    ('toc')
+                    '&gt;'
+                    /{
+                     $.TableOfContents
+                    }/;
+    #e40
     #41***          if ($FloatingImage) {
     #42***            $FloatingImage = "<div id='floating_image'><image src='$FloatingImage' border='0'></div>";
     #43***            $pageText =~ s/&lt;insert_picture&gt;/$FloatingImage/gi;
@@ -2209,9 +2269,11 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     $level = 3 if $level < 3; #-- maximum is H3
 
     if $prefix.chars == $suffix.chars {
+
       $headtext = '<H' ~ $level ~ '>' 
                        ~ self.parse-heading-text(text => $headtext) 
                 ~ '</H' ~ $level ~ '>';
+
     }
     return $headtext;
   }
@@ -2221,14 +2283,15 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     $heading = $text;
     $heading ~~ s:g/
       (\#+)
-      (.*?)
+      (.*)
+      $$ 
     /{
-      self.heading-text(prefix => $0.Str, text => $2.Str)
-      #'<b>' 
-      #~ '0: ' ~ $0.Str 
-      #~ '; 1:' ~ $1.Str 
-      #~ '; 2:' ~ $2.Str 
-      #~ '</b>'
+     self.heading-text(prefix => $0.Str, text => $1.Str)
+     # '<b>' 
+     # ~ '0: ' ~ $0.Str 
+     # ~ '; 1:' ~ $1.Str 
+     # ~ '; 2:<' ~ $2.Str ~ '>'
+     # ~ '</b>'
     }/;
     return $heading;
   }
@@ -2236,8 +2299,45 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
   method heading-text(Str :$prefix, Str :$text) {
      my Str $tag = ''; 
      my Str $heading = '';
-     $tag = $prefix;
+     my Str $toc_heading = '';
+
+     $tag = $prefix;   # number of /=+/
+
      $heading = $text;
+
+     #-- Register $heading into TOC
+
+     $.HeadingNumberIndex++;
+     $toc_heading = $heading;
+     if $.TOCFlag {
+     my Str $toc_xlink = '<img src="'
+                       ~ '/themes/img/common/odir.gif'
+                       ~ '"/>';
+     $toc_heading = '<a name="toc_' ~ $.HeadingNumberIndex.Str ~ '">'
+                  ~ '<a href="' ~ $.ScriptName 
+                                ~ '/display?p=' 
+                                ~ $.CurrentWikiPage 
+                                ~ '#header_' ~ $.HeadingNumberIndex.Str
+                                ~ '">' 
+                                ~ $toc_heading 
+                                ~ '</a>';
+     $heading = $heading ~ '&nbsp;' 
+              ~ '<a name="header_' ~ $.HeadingNumberIndex.Str ~ '">'
+              ~ '<a href="' 
+              ~ $.ScriptName 
+              ~ '/display?p=' 
+              ~ $.CurrentWikiPage 
+              ~ '#toc_' 
+              ~ $.HeadingNumberIndex.Str
+              ~ '">' 
+              ~ $toc_xlink 
+              ~ '</a>';
+     }
+
+     push(@.HeadingNumbers, '<img src="' ~ '/themes/img/common/bullet.gif' 
+                                         ~ '"/>' ~ '&nbsp;' ~ $toc_heading);
+
+
      given $tag.chars {
        when 1 {
          $heading = '<img src="' 
@@ -2960,7 +3060,7 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
 
     $wiki-page = $id;
     $wiki-file = self.get-page-filename(filename => $wiki-page);
-    self.TRACE: 'WIKI-FILE = ' ~ $wiki-file;
+    #self.TRACE: 'WIKI-FILE = ' ~ $wiki-file;
     ($status, $wiki-text) = self.wiki-read-file(filename => $wiki-file);
     if $status {
       #-- file exists
