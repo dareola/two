@@ -1570,6 +1570,8 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
                       self.store-page-or-edit-link(url => $0.Str, desc => $1.Str);
                     }/;
 
+
+
     #e95
     #96***          s/\[\[$FreeLinkPattern\]\]/$self->StorePageOrEditLink($1, "")/geo;
     #b96
@@ -1789,6 +1791,19 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
                      }/;
 
 
+    #b-test
+                    $wiki-text ~~ s:g/
+                    (
+                     (
+                     (( <[A..Za..z_0..9\-]>+ <upper>+  )?\/)* <[A..Za..z_0..9\-]>+ <upper>+
+                     )
+                     (\S+)
+                    )
+                    /{
+                    #'<b>0: ' ~ $0.Str ~ '; 1: ' ~ $1.Str ~ '</b>'
+                    self.store-page-or-edit-link(url => $0.Str, desc => $0.Str);
+                    }/;
+    #e-test
 
     #e118
     #b119
@@ -2303,8 +2318,7 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
     my $headtext = $heading;
     my Int $level = 0;
     $level = $prefix.chars;
-
-    $level = 3 if $level < 3; #-- maximum is H3
+    $level = $level + 2; #-- max level is 3
 
     if $prefix.chars == $suffix.chars {
 
@@ -2386,14 +2400,14 @@ method TRACE(Str $msg, :$id = "W1", :$no = "001", :$ty = "I", :$t1 = "", :$t2 = 
        }
        when 2 {
          $heading = '<img src="'
-               ~ '/themes/img/common/bullet2.gif'
+               ~ '/themes/img/common/bullet.gif'
                ~ '"/>'
                ~ '&nbsp;'
                ~ $heading;
        }
        when 3 {
          $heading = '<img src="'
-               ~ '/themes/img/common/bullet.gif'
+               ~ '/themes/img/common/bullet2.gif'
                ~ '"/>'
                ~ '&nbsp;'
                ~ $heading;
