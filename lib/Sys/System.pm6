@@ -140,10 +140,10 @@ class Sys::System is export {
           1000 => "TESTING_1000";
         );
         method main($App, Str :$userid, Str :$ucomm, :%params) {
-          self.TRACE: 'SYS00.main: ' 
-          ~ 'app = ' ~ $App ~ '; '
-          ~ 'cmd = ' ~ $ucomm ~ '; '
-          ~ 'userid = ' ~ $userid ~ '; ';
+          #self.TRACE: 'SYS00.main: ' 
+          #~ 'app = ' ~ $App ~ '; '
+          #~ 'cmd = ' ~ $ucomm ~ '; '
+          #~ 'userid = ' ~ $userid ~ '; ';
           
           $.UserCommand = $ucomm;
           %.Params = %params;
@@ -161,7 +161,7 @@ class Sys::System is export {
               }
             }
           }
-          self.TRACE: 'SYS00.main.Parameters: ' ~ $kv;
+          #self.TRACE: 'SYS00.main.Parameters: ' ~ $kv;
           #self.TRACE: 'APPLICATION ID: ' ~ $.App;
 
           my $next-screen = '';
@@ -185,7 +185,7 @@ class Sys::System is export {
               }
             }  
           }
-          self.TRACE: 'User Command: ' ~ $.UserCommand;
+          #self.TRACE: 'User Command: ' ~ $.UserCommand;
           #-- todo: Get screen for application
           self.goto-screen(app => $.App, screen => $next-screen);
 
